@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Team Meets | Modern Attendance Management</title>
+    <meta name="description" content="Premium SaaS attendance management with glassmorphism UI.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ================== MOBILE VIEW ================== -->
+    <div class="mobile-view">
+        
+        <!-- Dashboard Screen -->
+        <div id="mobile-dashboard" class="screen" style="padding: 0;">
+            <div class="header-mobile" style="background: #9BB8B8; padding: 2.5rem 1.5rem 4.5rem; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; position: relative;">
+                <!-- Decorative hidden circles purely for depth -->
+                <div style="position: absolute; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -50px; left: -20px;"></div>
+                <div style="position: absolute; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; top: -80px; right: -50px;"></div>
+                
+                <div class="header-top" style="align-items: flex-start; position: relative; z-index: 10;">
+                    <div style="margin-top: 0.5rem;">
+                        <h2 id="greeting-mob" class="text-white" style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px;">Hey Loading... 👋</h2>
+                        <p class="text-white" style="font-size: 0.85rem; margin-top: 6px; font-weight: 500;">Update your attendance regularly</p>
+                    </div>
+                    <div class="profile-img" style="width: 58px; height: 58px; border-radius: 18px; border: 3px solid white; overflow: hidden; padding: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.08); background: white;">
+                        <img src="profile.png?v=2" alt="Profile" style="border-radius: 0;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="gap: 15px; margin-top: -45px; padding: 0 1.5rem; align-items: stretch;">
+                <!-- Today's Log Card -->
+                <div class="stats-card" style="border-radius: 20px; padding: 1.25rem; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; height: 24px;">
+                        <i data-lucide="clock" style="width: 16px; color: #6F9B96;"></i>
+                        <span style="font-size: 0.75rem; color: #334155; font-weight: 600;">Today's Log</span>
+                    </div>
+                    <h3 id="p-today-hours" style="font-size: 1.2rem; font-weight: 800; color: #0F172A;">0 Hours</h3>
+                    <p style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin-top: 4px;">Today</p>
+                </div>
+                
+                <!-- Deadline Card -->
+                <div class="stats-card" style="border-radius: 20px; padding: 1.25rem; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; height: 24px;">
+                        <i data-lucide="alert-circle" style="width: 16px; color: #EF4444;"></i>
+                        <span style="font-size: 0.75rem; color: #334155; font-weight: 600;">Deadline</span>
+                    </div>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #0F172A;">11:59 PM</h3>
+                </div>
+            </div>
+
+            <div class="list-section" id="pending-section" style="margin-top: 2rem; padding: 0 1.5rem;">
+                <div class="list-section-title" style="margin-bottom: 1rem;">
+                    <span style="color: #0F172A; font-weight: 700;">Recent Logs</span> <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; text-transform: none;">Syncing...</span>
+                </div>
+                <!-- Skeleton Loader Items -->
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9; box-shadow: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="skeleton" style="width: 100px; height: 16px; border-radius: 4px;"></div>
+                    </div>
+                    <div class="skeleton" style="width: 80%; height: 12px; border-radius: 4px; margin-bottom: 12px;"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                    </div>
+                </div>
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9; box-shadow: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="skeleton" style="width: 85px; height: 16px; border-radius: 4px;"></div>
+                    </div>
+                    <div class="skeleton" style="width: 60%; height: 12px; border-radius: 4px; margin-bottom: 12px;"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Add Attendance Screen (Mobile) -->
+        <div id="mobile-add" class="screen hidden animate-slide-up" style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                <button class="btn-icon" id="btn-back-add" style="background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <i data-lucide="chevron-left" style="color: var(--text-primary);"></i>
+                </button>
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">Add Attendance Hour</h2>
+                <div style="width: 40px;"></div>
+            </div>
+
+            <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block;">Date</label>
+                    <div style="background: #F1F5F9; padding: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="p-date-mobile" style="font-weight: 600;">...</span>
+                        <i data-lucide="calendar" style="width: 18px; color: var(--text-secondary);"></i>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block;">Roll No</label>
+                    <div style="background: #F1F5F9; padding: 1rem; border-radius: 12px; font-weight: 600;" id="p-reg-mobile">...</div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block;">Name</label>
+                    <div style="background: #F1F5F9; padding: 1rem; border-radius: 12px; font-weight: 600;" id="p-name-mobile">...</div>
+                </div>
+                <p id="p-mail-mobile" style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 4px;">...</p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="font-weight: 700; margin-bottom: 1rem; display: block;">Select Hours</label>
+                <div class="hour-grid" id="hour-selector-mobile">
+                    <button class="hour-btn" data-hour="1">1</button>
+                    <button class="hour-btn" data-hour="2">2</button>
+                    <button class="hour-btn" data-hour="3">3</button>
+                    <button class="hour-btn" data-hour="4">4</button>
+                    <button class="hour-btn" data-hour="5">5</button>
+                    <button class="hour-btn" data-hour="6">6</button>
+                    <button class="hour-btn" data-hour="7">7</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; line-height: 1.4; font-weight: 500;">
+                    (you can select single/multiple not updated otp hours that presented at design series venue you wish to record)
+                </p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+                <textarea id="mobile-task-desc" class="textarea-field" rows="3" placeholder="Reason for missing this hour (Mandatory)" style="border: none; background: white; box-shadow: var(--shadow-soft); border-radius: 16px; padding: 1.25rem;"></textarea>
+            </div>
+            <p style="font-size: 0.75rem; color: #EF4444; margin-bottom: 2rem; padding: 0 10px; line-height: 1.5; font-weight: 600;">
+                <i data-lucide="info" style="width: 12px; vertical-align: middle;"></i> 
+                You cannot submit after 11:59 PM. Contact admin with a letter that must be signed with attendance coordinator for the late entries.
+            </p>
+
+            <button class="btn btn-primary" id="btn-submit-mobile" style="height: 62px; border-radius: 99px; font-size: 1.1rem; letter-spacing: 1px;">Submit Attendance</button>
+        </div>
+
+        <!-- Full Profile Screen (Mobile) -->
+        <div id="mobile-profile" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem 1.5rem 120px;">
+             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <button class="btn-icon" id="btn-back-profile"><i data-lucide="chevron-left"></i></button>
+                <h2 style="font-size: 1.5rem; font-weight: 700;">Full Profile</h2>
+            </div>
+
+            <div class="card" style="text-align: center; padding: 2.5rem 1.5rem; margin-bottom: 2rem; position: relative;">
+                <div style="width: 110px; height: 110px; border-radius: 35px; background: #EEF2FF; margin: 0 auto 1.5rem; overflow: hidden; border: 4px solid white; box-shadow: var(--shadow-soft);">
+                    <img src="profile.png?v=fixed_v3" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <h3 id="p-name-mobile-prof" style="font-size: 1.50rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">...</h3>
+                <p id="p-mail-mobile-prof" style="color: var(--text-secondary); font-size: 0.95rem;">...</p>
+            </div>
+
+            <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase;">🎓 ACADEMIC RECORD</p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2.5rem;">
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Registration No</span>
+                    <span id="p-reg-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem;">...</span>
+                </div>
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Department</span>
+                    <span id="p-dept-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem; line-height: 1.3;">...</span>
+                </div>
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Academic Year</span>
+                    <span id="p-year-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem;">...</span>
+                </div>
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Specialization / Domain</span>
+                    <span id="p-domain-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem; line-height: 1.3;">...</span>
+                </div>
+            </div>
+
+            <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase;">📞 CONTACT INFORMATION</p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2.5rem;">
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Mobile Number</span>
+                    <span id="p-mobile-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem;">...</span>
+                </div>
+                <div class="card" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f1f5f9;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Mentor Name</span>
+                    <span id="p-mentor-mobile-prof" style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem; line-height: 1.3;">...</span>
+                </div>
+            </div>
+
+            <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase;">🌐 PROFESSIONAL PRESENCE</p>
+            <div style="display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2.5rem;">
+                <a href="#" id="p-linkedin-mobile-prof" target="_blank" class="card" style="display: flex; justify-content: center; align-items: center; width: 68px; height: 68px; text-decoration: none; border-radius: 22px; background: #f0f7ff; border: 1.5px solid #e0e8f0; transition: transform 0.2s;">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0077B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+                </a>
+                <a href="#" id="p-github-mobile-prof" target="_blank" class="card" style="display: flex; justify-content: center; align-items: center; width: 68px; height: 68px; text-decoration: none; border-radius: 22px; background: #f8f8f8; border: 1.5px solid #e0e8f0; transition: transform 0.2s;">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                </a>
+            </div>
+
+            <button class="btn btn-secondary" onclick="handleLogout()" style="width: 100%; border-radius: 20px; color: #EF4444; background: #FEF2F2; height: 62px; font-weight: 700; border: 1.5px solid #FEE2E2;">
+                <i data-lucide="log-out"></i> Logout Account
+            </button>
+        </div>
+
+        <!-- History Screen (Mobile) -->
+        <div id="mobile-history" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem 1.5rem 80px;">
+             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-icon" id="btn-back-history"><i data-lucide="chevron-left"></i></button>
+                    <h2 style="font-size: 1.5rem; font-weight: 700;">History</h2>
+                </div>
+                <button class="btn-icon" id="btn-open-calendar" style="background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <i data-lucide="calendar" style="color: var(--accent-teal);"></i>
+                </button>
+            </div>
+
+            <div id="mobile-history-list" class="history-list">
+                <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">RECENT ACTIVITY <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; text-transform: none; float: right;">Syncing...</span></p>
+                <!-- Skeleton Loader Items (Replacing while data loads) -->
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="skeleton" style="width: 100px; height: 16px; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 30px; height: 12px; border-radius: 4px;"></div>
+                    </div>
+                    <div class="skeleton" style="width: 80%; height: 12px; border-radius: 4px; margin-bottom: 12px;"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                    </div>
+                </div>
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="skeleton" style="width: 85px; height: 16px; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 30px; height: 12px; border-radius: 4px;"></div>
+                    </div>
+                    <div class="skeleton" style="width: 60%; height: 12px; border-radius: 4px; margin-bottom: 12px;"></div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="skeleton" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Mobile Nav (Persistent for Dashboard/History) -->
+        <div class="bottom-nav-mobile">
+             <button class="btn-nav active" id="nav-dash-mobile">
+                 <i data-lucide="home"></i>
+                 <span>Home</span>
+             </button>
+             <button class="btn-nav" id="nav-update-mobile">
+                 <i data-lucide="calendar-plus"></i>
+                 <span>Update</span>
+             </button>
+             <button class="btn-nav" id="nav-history-mobile">
+                 <i data-lucide="history"></i>
+                 <span>History</span>
+             </button>
+             <button class="btn-nav" id="nav-profile-mobile">
+                 <i data-lucide="user"></i>
+                 <span>Profile</span>
+             </button>
+        </div>
+
+    </div>
+
+    <!-- ================== DESKTOP VIEW ================== -->
+    <div class="desktop-layout">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="logo-brand.png" alt="Logo" style="width: 38px; border-radius: 12px;">
+                <span style="font-weight: 800; font-size: 1.25rem; color: white;">DesignSeries</span>
+            </div>
+
+            <ul class="nav-links">
+                <li class="nav-item active" id="nav-dash-desktop">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="nav-item" id="nav-history-desktop">
+                    <i data-lucide="history"></i>
+                    <span>History</span>
+                </li>
+                <li class="nav-item" id="nav-profile-desktop">
+                    <i data-lucide="user"></i>
+                    <span>Profile</span>
+                </li>
+                <li class="nav-item" onclick="handleLogout()" style="margin-top: auto; color: #FDA4AF; padding-top: 2rem;">
+                    <i data-lucide="log-out"></i>
+                    <span>Logout</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content (Managed by Screens) -->
+        <main class="main-content">
+            <div id="desktop-dashboard" class="desktop-screen">
+                <div class="top-bar">
+                    <div class="search-box">
+                        <i data-lucide="search" style="color: var(--text-secondary); width: 20px;"></i>
+                        <input type="text" placeholder="Search by date...">
+                    </div>
+
+                    <div class="top-bar-actions">
+                        <div class="badge badge-pill" style="background: white; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; cursor: pointer; height: 44px; padding: 0 1rem;">
+                            <i data-lucide="filter" style="width: 16px;"></i>
+                            <span>This Week</span>
+                        </div>
+                        <button class="btn-icon"><i data-lucide="bell"></i></button>
+                        <div style="width: 44px; height: 44px; border-radius: 12px; overflow: hidden; border: 2px solid white; box-shadow: var(--shadow);">
+                            <img src="profile.png?v=2" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    </div>
+                </div>
+
+            <div class="desktop-banner" style="background: linear-gradient(135deg, #7AB3B1 0%, #5B8480 100%); border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(91, 132, 128, 0.15); margin-bottom: 2.5rem; color: white;">
+                <!-- Decorative Shapes -->
+                <div style="position: absolute; top: -50px; right: -20px; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(2px);"></div>
+                <div style="position: absolute; bottom: -80px; right: 150px; width: 180px; height: 180px; background: rgba(255,255,255,0.08); border-radius: 50%; filter: blur(4px);"></div>
+                
+                <div style="position: relative; z-index: 2;">
+                    <p style="font-size: 0.85rem; font-weight: 700; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 0.5rem; text-transform: uppercase;">DesignSeries Workspace</p>
+                    <h1 id="greeting-desk" style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.5px;">Hey Loading!</h1>
+                    <p style="opacity: 0.9; font-size: 1rem; font-weight: 400; max-width: 500px; line-height: 1.5;">You're doing great. Keep up the momentum and don't forget to sync your logged hours today.</p>
+                </div>
+            </div>
+
+            <div class="desktop-stats">
+                <div class="card stat-card animate-slide-up" style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div class="badge badge-blue"><i data-lucide="clock"></i></div>
+                        <span style="font-size: 0.8rem; color: #10B981; font-weight: 700;">+2.4%</span>
+                    </div>
+                    <label style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">Today's Attendance</label>
+                    <h3 style="font-size: 1.75rem; margin-top: 4px;">06:42 <span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">Hours</span></h3>
+                </div>
+
+                <div class="card stat-card animate-slide-up" style="flex: 1; animation-delay: 0.1s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div class="badge badge-orange"><i data-lucide="alert-circle"></i></div>
+                        <span style="font-size: 0.8rem; color: #EF4444; font-weight: 700;">Pending</span>
+                    </div>
+                    <label style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">Pending Hours</label>
+                    <h3 style="font-size: 1.75rem; margin-top: 4px;">01:18 <span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">Hours</span></h3>
+                </div>
+                <!-- Highlighted Solid Add Attendance Card -->
+                <div id="btn-add-desktop" class="card stat-card animate-slide-up" style="flex: 1; animation-delay: 0.2s; background: linear-gradient(135deg, #7AB3B1 0%, #5B8480 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 15px 35px rgba(91, 132, 128, 0.3); border: none; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; this.style.boxShadow='0 25px 45px rgba(91, 132, 128, 0.4)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 15px 35px rgba(91, 132, 128, 0.3)'">
+                    <!-- Subtle glass flair -->
+                    <div style="position: absolute; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -30px; right: -30px; filter: blur(2px);"></div>
+                    <div style="position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -20px; left: -20px; filter: blur(4px);"></div>
+                    
+                    <div style="width: 52px; height: 52px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #5B8480; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 2;">
+                        <i data-lucide="plus" style="width: 28px; stroke-width: 2.5px;"></i>
+                    </div>
+                    <label style="color: white; font-size: 1.15rem; font-weight: 800; cursor: pointer; z-index: 2; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Log New Activity</label>
+                    <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 500; margin-top: 4px; z-index: 2;">Click to add attendance</p>
+                </div>
+            </div>
+
+            <h3 class="list-section-title" style="margin-top: 3rem;">Recent Activity</h3>
+            
+            <div class="card" style="padding: 0; overflow: hidden; margin-top: 1rem;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #F9FAFB; border-bottom: 1px solid var(--border-color);">
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; font-size: 0.85rem; color: var(--text-secondary);">DATE</th>
+                            <th style="padding: 1rem; text-align: left; font-size: 0.85rem; color: var(--text-secondary);">REASON / TASK</th>
+                            <th style="padding: 1rem; text-align: center; font-size: 0.85rem; color: var(--text-secondary);">HOURS</th>
+                            <th style="padding: 1rem; text-align: right; font-size: 0.85rem; color: var(--text-secondary);">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-recent-history">
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 85px; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 70%; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 60px; height: 28px; border-radius: 99px; margin-left: auto;"></div></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 70px; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 50%; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 60px; height: 28px; border-radius: 99px; margin-left: auto;"></div></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 80px; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 65%; height: 16px; border-radius: 4px;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                            <td style="padding: 1rem;"><div class="skeleton" style="width: 60px; height: 28px; border-radius: 99px; margin-left: auto;"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+            <!-- Desktop History Screen -->
+            <div id="desktop-history" class="desktop-screen hidden" style="padding: 2rem;">
+                
+                <!-- Header with Top-Right Calendar Option -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; position: relative; z-index: 50;">
+                    <h2 style="font-size: 2rem; margin: 0;">Attendance History</h2>
+                    
+                    <div style="position: relative;">
+                        <!-- Calendar Option Toggle Button -->
+                        <button class="btn-icon" id="btn-open-desktop-calendar" style="background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.borderColor='var(--accent-teal)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                            <i data-lucide="calendar" style="color: var(--accent-teal); width: 22px;"></i>
+                        </button>
+
+                        <!-- Absolute Floating Dropdown Calendar -->
+                        <div id="desktop-calendar-dropdown" class="card hidden animate-slide-up" style="position: absolute; right: 0; top: 60px; width: 420px; padding: 2rem; background: white; border-radius: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.05); z-index: 100;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary);" id="desktop-calendar-month-year">Month Year</h3>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-icon" id="btn-prev-month-desk" style="width: 36px; height: 36px;"><i data-lucide="chevron-left" style="width: 18px;"></i></button>
+                                    <button class="btn-icon" id="btn-next-month-desk" style="width: 36px; height: 36px;"><i data-lucide="chevron-right" style="width: 18px;"></i></button>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 700; color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 10px;">
+                                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                            </div>
+                            <div id="desktop-calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;">
+                                <!-- Days will be generated by JS -->
+                            </div>
+                            
+                            <div id="desktop-calendar-day-details" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                                <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.8rem; letter-spacing: 1.5px;">LOG DETAILS</p>
+                                <div id="desktop-calendar-day-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Full Width Table Card -->
+                <div class="card" style="padding: 2rem; margin: 0; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--bg-light);">
+                                <th style="padding: 1rem; text-align: left;">DATE</th>
+                                <th style="padding: 1rem; text-align: left;">REASON / TASK</th>
+                                <th style="padding: 1rem; text-align: center;">HOURS</th>
+                                <th style="padding: 1rem; text-align: center;">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-history-table">
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 90px; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 80%; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 80px; height: 24px; border-radius: 12px; margin: 0 auto;"></div></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 80px; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 60%; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 80px; height: 24px; border-radius: 12px; margin: 0 auto;"></div></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 85px; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 75%; height: 16px; border-radius: 4px;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 30px; height: 16px; border-radius: 4px; margin: 0 auto;"></div></td>
+                                <td style="padding: 1.25rem 1rem;"><div class="skeleton" style="width: 80px; height: 24px; border-radius: 12px; margin: 0 auto;"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Desktop Profile Screen -->
+            <div id="desktop-profile" class="desktop-screen hidden" style="padding: 2rem;">
+                <h2 style="font-size: 2rem; margin-bottom: 2rem;">My Profile</h2>
+                <div class="grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+                    <div class="card" style="text-align: center; padding: 2.5rem 1.5rem; margin-bottom: 2rem;">
+                        <div style="width: 120px; height: 120px; border-radius: 40px; background: #EEF2FF; margin: 0 auto 1.5rem; overflow: hidden; border: 4px solid white; box-shadow: var(--shadow-soft);">
+                            <img src="profile.png?v=fixed_v3" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <h3 id="p-name-desk-full" style="font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">...</h3>
+                        <p id="p-mail-desk-full" style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 1.5rem;">...</p>
+                        
+                        <div style="display: flex; justify-content: center; gap: 1.25rem;">
+                            <a href="#" id="p-linkedin" target="_blank" class="card" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; border-radius: 18px; text-decoration: none; background: #f0f7ff; border: 1.5px solid #e0e8f0; transition: transform 0.2s;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0077B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+                            </a>
+                            <a href="#" id="p-github" target="_blank" class="card" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; border-radius: 18px; text-decoration: none; background: #f8f8f8; border: 1.5px solid #e0e8f0; transition: transform 0.2s;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 2.5rem; display: flex; flex-direction: column; gap: 2rem;">
+                        <div>
+                            <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; color: var(--accent-teal); font-weight: 800; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">🎓 Academic Record</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Registration Number</label>
+                                    <p id="p-reg-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Department</label>
+                                    <p id="p-dept-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Academic Year</label>
+                                    <p id="p-year-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Specialization / Domain</label>
+                                    <p id="p-domain-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; color: var(--accent-teal); font-weight: 800; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">📞 Contact Information</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Mobile Number</label>
+                                    <p id="p-mobile-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Mentor Name (ID)</label>
+                                    <p id="p-mentor-desk-full" style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-top: 4px;">...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Right Side Panel -->
+        <aside class="profile-panel" style="background: white; border-left: 1px solid var(--border-color); padding: 2.5rem 2rem; display: flex; flex-direction: column; align-items: center; text-align: center; height: 100vh; overflow-y: auto;">
+            <div class="profile-avatar-large" style="width: 100px; height: 100px; border-radius: 30px; margin-bottom: 1.5rem; border: 4px solid var(--bg-light); box-shadow: var(--shadow-soft); overflow: hidden;">
+                <img src="profile.png?v=2" alt="Profile" id="p-avatar" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <h3 id="p-name" style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary);">Loading...</h3>
+            <p style="color: var(--accent-teal); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px;" id="p-domain">...</p>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; font-weight: 500;" id="p-mail">...</p>
+
+            <div style="width: 100%; height: 1px; background: var(--border-color); margin: 2rem 0;"></div>
+
+            <!-- Sleek Metrics list -->
+            <div style="width: 100%; display: flex; flex-direction: column; gap: 1.25rem; text-align: left; margin-bottom: 2.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Performance</span>
+                    <span style="color: #10B981; font-weight: 800; font-size: 0.9rem;">94%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Reg Num</span>
+                    <span id="p-reg" style="color: var(--text-primary); font-weight: 700; font-size: 0.85rem;">...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Department</span>
+                    <span id="p-dept" style="color: var(--text-primary); font-weight: 700; font-size: 0.85rem;">...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Academic Year</span>
+                    <span id="p-year" style="color: var(--text-primary); font-weight: 700; font-size: 0.85rem;">...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Mobile</span>
+                    <span id="p-mobile" style="color: var(--text-primary); font-weight: 700; font-size: 0.85rem;">...</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">Mentor Name</span>
+                    <span id="p-mentor" style="color: var(--text-primary); font-weight: 700; font-size: 0.85rem; line-height: 1.3;">...</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 2rem;">
+                <a href="#" id="p-linkedin" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 0.6rem; font-size: 0.8rem; border-radius: 12px; border: 1.5px solid #e0e8f0; background: #f0f7ff; color: #0077B5;">
+                    <i data-lucide="linkedin" style="width: 14px;"></i> LinkedIn
+                </a>
+                <a href="#" id="p-github" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 0.6rem; font-size: 0.8rem; border-radius: 12px; border: 1.5px solid #e0e8f0; background: #f8f8f8; color: #333;">
+                    <i data-lucide="github" style="width: 14px;"></i> GitHub
+                </a>
+            </div>
+
+            <div class="card" style="width: 100%; text-align: left; background: #EEF2FF; border: none; border-radius: 16px; padding: 1.5rem;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: #6D7CFF; text-transform: uppercase; letter-spacing: 0.5px;">Upcoming Holiday</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); flex-shrink: 0;">
+                        <i data-lucide="calendar-heart" style="width: 18px; color: #6D7CFF;"></i>
+                    </div>
+                    <div>
+                        <p style="font-weight: 700; color: #1E293B; font-size: 0.9rem;">Eid-al-Fitr</p>
+                        <p style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">April 10, 2024</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Attendance Form Modal (Universal) -->
+    <div id="modal-container" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+        <div class="card" style="width: 100%; max-width: 500px; padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                <div>
+                    <h2 style="font-size: 1.5rem;">Add Attendance Hour</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Record your work hours for today.</p>
+                </div>
+                <button class="btn-icon" id="close-modal"><i data-lucide="x"></i></button>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Date</label>
+                    <div class="read-only-field" id="p-date-modal" style="display: flex; justify-content: space-between;">
+                        <span>...</span>
+                    </div>
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Roll No / ID</label>
+                    <div class="read-only-field" id="p-reg-modal">...</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Name</label>
+                <div class="read-only-field" id="p-name-modal" style="margin-bottom: 1.5rem;">...</div>
+            </div>
+
+            <div class="form-group">
+                <label>Select Hour(s)</label>
+                <div class="hour-grid" id="hour-selector-desktop">
+                    <button class="hour-btn" data-hour="1">1</button>
+                    <button class="hour-btn" data-hour="2">2</button>
+                    <button class="hour-btn" data-hour="3">3</button>
+                    <button class="hour-btn" data-hour="4">4</button>
+                    <button class="hour-btn" data-hour="5">5</button>
+                    <button class="hour-btn" data-hour="6">6</button>
+                    <button class="hour-btn" data-hour="7">7</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4; font-weight: 500;">
+                    (you can select single/multiple not updated otp hours that presented at design series venue you wish to record)
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label>Reason / Task Description</label>
+                <textarea id="desktop-task-desc" class="textarea-field" rows="3" placeholder="What did you work on during these hours?"></textarea>
+            </div>
+
+            <p style="font-size: 0.75rem; color: #EF4444; margin-bottom: 1.5rem; line-height: 1.5; font-weight: 600;">
+                <i data-lucide="info" style="width: 12px; vertical-align: middle;"></i> 
+                You cannot submit after 11:59 PM. Contact admin with a letter that must be signed with attendance coordinator for the late entries.
+            </p>
+
+            <button class="btn btn-primary" id="submit-btn-universal">Submit Attendance</button>
+        </div>
+    </div>
+
+    <!-- Calendar Modal (Mobile) -->
+    <div id="calendar-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+        <div id="calendar-card" class="card animate-slide-up" style="width: 100%; max-width: 500px; padding: 2rem; padding-bottom: 3rem; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-top-left-radius: 32px; border-top-right-radius: 32px; background: white; margin: 0; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary);" id="calendar-month-year">Month Year</h3>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-icon" id="btn-prev-month" style="width: 36px; height: 36px;"><i data-lucide="chevron-left" style="width: 18px;"></i></button>
+                    <button class="btn-icon" id="btn-next-month" style="width: 36px; height: 36px;"><i data-lucide="chevron-right" style="width: 18px;"></i></button>
+                    <button class="btn-icon" id="btn-close-calendar" style="width: 36px; height: 36px; background: #FEF2F2; border-color: #FEE2E2; color: #EF4444;"><i data-lucide="x" style="width: 18px;"></i></button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 700; color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 10px;">
+                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+            </div>
+            <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;">
+                <!-- Days will be generated by JS -->
+            </div>
+            
+            <div id="calendar-day-details" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.8rem; letter-spacing: 1.5px;">LOG DETAILS</p>
+                <div id="calendar-day-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Popup -->
+    <div id="custom-toast-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 1.5rem; opacity: 0; transition: opacity 0.3s ease;">
+        <div id="custom-toast-card" class="card" style="width: 100%; max-width: 380px; padding: 2.5rem 2rem; text-align: center; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; position: relative; border: 1px solid rgba(255,255,255,0.8);">
+            <div id="toast-icon-container" style="width: 85px; height: 85px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.1);">
+                <i id="toast-icon" data-lucide="check" style="width: 40px; height: 40px; color: white;"></i>
+            </div>
+            <h2 id="toast-title" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.75rem;">Success!</h2>
+            <p id="toast-message" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5;">Action completed.</p>
+            <button id="toast-close-btn" class="btn" style="width: 100%; border-radius: 99px; height: 50px; font-weight: 700; color: white; border: none; cursor: pointer;">Okay, thanks!</button>
+        </div>
+    </div>
+
+    <script src="students.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DesignSeries | Login</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-wrapper">
+
+    <!-- ================== MOBILE LOGIN ================== -->
+    <!-- Mimics Image 2 with exact user feedback -->
+    <div class="login-mobile" style="background: var(--bg-light); min-height: 100vh; width: 100%; padding: 2.5rem 1.5rem; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+        <!-- Clean Theme Background -->
+        
+        <!-- Logo & Header Text -->
+        <div class="login-header animate-slide-up" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 2rem;">
+            <div style="width: 76px; height: 76px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; background: white; overflow: hidden; border: 2px solid white;">
+                <img src="logo-brand.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <h2 style="color: var(--text-secondary); font-size: 1.15rem; font-weight: 500; margin-bottom: 4px;">Welcome to</h2>
+            <h1 style="color: var(--accent-teal); font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0;">DesignSeries</h1>
+        </div>
+
+        <div class="login-content animate-slide-up" style="width: 100%; max-width: 340px; background: transparent; backdrop-filter: none; box-shadow: none; padding: 0; animation-delay: 0.1s;">
+            
+            <!-- Inputs Container -->
+            <div class="input-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+                <!-- Email Input -->
+                <div style="position: relative; display: flex; align-items: center;">
+                    <i data-lucide="mail" style="position: absolute; left: 1rem; color: #94A3B8; width: 20px;"></i>
+                    <input type="text" id="manual-email-mobile" class="input-field" placeholder="User ID" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" style="width: 100%; padding-left: 3.25rem; background: #EEF2FF; border: 1.5px solid transparent; border-radius: 12px; height: 56px; font-weight: 600; color: var(--text-primary); transition: 0.3s; margin: 0;" onfocus="this.style.borderColor='var(--accent-teal)'" onblur="this.style.borderColor='transparent'">
+                </div>
+                <!-- Password Input -->
+                <div style="position: relative; display: flex; align-items: center;">
+                    <i data-lucide="lock" style="position: absolute; left: 1rem; color: #94A3B8; width: 20px;"></i>
+                    <input type="password" id="manual-password-mobile" class="input-field" placeholder="Password" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" style="width: 100%; padding-left: 3.25rem; padding-right: 3.25rem; background: #EEF2FF; border: 1.5px solid transparent; border-radius: 12px; height: 56px; font-weight: 600; color: var(--text-primary); transition: 0.3s; margin: 0;" onfocus="this.style.borderColor='var(--accent-teal)'" onblur="this.style.borderColor='transparent'">
+                    <i data-lucide="eye-off" style="position: absolute; right: 1rem; color: #94A3B8; width: 20px; cursor: pointer;"></i>
+                </div>
+            </div>
+
+            <!-- Login Button -->
+            <button class="btn btn-primary" id="btn-login-manual-mobile" onclick="handleManualLogin('mobile')" style="width: 100%; height: 56px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; background: #6F9B96; border: none; box-shadow: 0 6px 20px rgba(111, 155, 150, 0.3); margin-bottom: 2rem;">Log in</button>
+
+            <!-- OR divider -->
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem; width: 100%;">
+                <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
+                <span style="font-size: 0.85rem; color: #94A3B8; font-weight: 500;">or</span>
+                <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
+            </div>
+
+            <!-- 🎯 Google Sign in (Moved to Bottom) -->
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">(login with your bitsathymail id)</p>
+            </div>
+            <div class="social-login" style="width: 100%; display: flex; justify-content: center; background: white; padding: 4px; border-radius: 99px; border: 1.5px solid rgba(0,0,0,0.04); box-shadow: 0 4px 15px rgba(122, 179, 177, 0.08);">
+                <div id="g_id_onload"
+                     data-client_id="639228807923-kqoss8t6cvh0e4q48ilvpo45q5lbgcka.apps.googleusercontent.com"
+                     data-context="signin"
+                     data-ux_mode="popup"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <!-- Google Button Configured to Fill Outer Modern Wrapper -->
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="pill"
+                     data-theme="outline"
+                     data-text="continue_with"
+                     data-size="large"
+                     data-logo_alignment="center"
+                     style="width: 100%;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-desktop" style="width: 100vw; height: 100vh; background: var(--header-gradient); border-radius: 0; box-shadow: none; margin: 0; padding: 0; max-width: none;">
+        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 100%; max-width: 1250px; display: flex; align-items: center; justify-content: space-between; padding: 0 4rem;">
+                
+                <!-- Left Side Typography Content -->
+                <div style="flex: 1; padding-right: 5rem;" class="animate-slide-up">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 3.5rem;">
+                        <div style="background: white; padding: 10px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                            <img src="logo-brand.png" alt="Logo" style="width: 44px; display: block;">
+                        </div>
+                        <span style="font-weight: 800; font-size: 1.85rem; color: white;">DesignSeries</span>
+                    </div>
+                    
+                    <h1 style="color: white; font-size: 5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -1.5px;">Hey, Hello!</h1>
+                    <p style="color: white; font-size: 1.6rem; font-weight: 500; margin-bottom: 2rem; opacity: 0.95; letter-spacing: -0.5px;">Join The Waitlist For The Design System!</p>
+                    <p style="color: white; font-size: 1.15rem; opacity: 0.8; line-height: 1.7; max-width: 460px; font-weight: 400;">We provide all the advantages that can simplify all your academic attendance tracking and logging without any further requirements.</p>
+                </div>
+
+                <!-- Right Side Floating Login Card -->
+                <div class="animate-fadeIn" style="width: 460px; background: white; border-radius: 36px; padding: 3.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.15), 0 0 0 10px rgba(255,255,255,0.1);">
+                    
+                    <div style="text-align: center; margin-bottom: 3rem;">
+                        <h2 style="font-size: 2rem; font-weight: 800; color: #0F172A; margin-bottom: 8px;">Welcome Back</h2>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <input type="text" id="manual-email-desktop" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" class="input-field" placeholder="User ID" style="width: 100%; border-radius: 99px; height: 60px; padding: 0 1.75rem; background: transparent; border: 1.5px solid #E2E8F0; font-weight: 500; font-size: 1rem; color: #0F172A; margin: 0; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='#6F9B96'" onblur="this.style.borderColor='#E2E8F0'">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <input type="password" id="manual-password-desktop" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" class="input-field" placeholder="Password" style="width: 100%; border-radius: 99px; height: 60px; padding: 0 1.75rem; background: transparent; border: 1.5px solid #E2E8F0; font-weight: 500; font-size: 1rem; color: #0F172A; margin: 0; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='#6F9B96'" onblur="this.style.borderColor='#E2E8F0'">
+                    </div>
+                    
+                    <div style="display: flex; justify-content: center; margin-bottom: 2.5rem;">
+                         <a href="#" style="color: #64748B; font-weight: 500; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#6F9B96'" onmouseout="this.style.color='#64748B'">Forgot Password?</a>
+                    </div>
+
+                    <button class="btn btn-primary" id="btn-login-manual-desktop" onclick="handleManualLogin('desktop')" style="width: 100%; height: 60px; border-radius: 99px; font-size: 1.1rem; font-weight: 700; background: var(--primary-gradient); border: none; box-shadow: 0 8px 25px rgba(122, 179, 177, 0.25);">Login</button>
+
+                    <!-- OR Divider -->
+                    <div style="display: flex; align-items: center; gap: 15px; margin: 2.5rem 0;">
+                        <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
+                        <span style="font-size: 0.85rem; color: #94A3B8; font-weight: 500;">OR</span>
+                        <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
+                    </div>
+
+                    <!-- Modern Google Social Pill Container -->
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <p style="color: #64748B; font-size: 0.85rem; font-weight: 600;">(login with your bitsathymail id)</p>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <div class="social-login" style="width: 100%; display: flex; justify-content: center; background: white; padding: 4px; border-radius: 99px; border: 1.5px solid rgba(0,0,0,0.04); box-shadow: 0 4px 15px rgba(122, 179, 177, 0.08);">
+                            <div id="g_id_onload"
+                                 data-client_id="639228807923-kqoss8t6cvh0e4q48ilvpo45q5lbgcka.apps.googleusercontent.com"
+                                 data-context="signin"
+                                 data-ux_mode="popup"
+                                 data-callback="handleCredentialResponse"
+                                 data-auto_prompt="false">
+                            </div>
+                            <div class="g_id_signin"
+                                 data-type="standard"
+                                 data-shape="pill"
+                                 data-theme="outline"
+                                 data-text="continue_with"
+                                 data-size="large"
+                                 data-logo_alignment="center"
+                                 style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="students.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
