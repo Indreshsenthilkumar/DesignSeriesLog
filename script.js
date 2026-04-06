@@ -2,15 +2,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwaeDUaUeulNc7qhDFMw4mr
 
 // --- HELPERS ---
 const formatDate = (dateStr) => {
+    if (!dateStr) return '--';
     try {
-        if (!dateStr) return '--';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        const day = String(d.getDate()).padStart(2, '0');
+        // Robust Regex Check for YYYY-MM-DD (Universal)
+        const ymdMatch = dateStr.toString().match(/^(\d{4})-(\d{2})-(\d{2})/);
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const month = months[d.getMonth()];
-        const year = d.getFullYear();
-        return `${day} ${month} ${year}`;
+        
+        if (ymdMatch) {
+            const [_, y, m, d] = ymdMatch;
+            return `${d.padStart(2, '0')} ${months[parseInt(m, 10) - 1]} ${y}`;
+        }
+        
+        const dv = new Date(dateStr);
+        if (isNaN(dv.getTime())) return dateStr;
+        return `${String(dv.getDate()).padStart(2, '0')} ${months[dv.getMonth()]} ${dv.getFullYear()}`;
     } catch(e) { return dateStr; }
 };
 
