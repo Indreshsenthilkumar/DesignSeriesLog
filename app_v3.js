@@ -1,86 +1,42 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwaeDUaUeulNc7qhDFMw4mrhzywo7SO-gbwWlboc1CNmGV3oaTvQqia4SXz_k7xlSTC/exec";
 
-// --- HELPERS ---
-const formatDate = (dateStr) => {
-    try {
-        if (!dateStr) return '--';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        const day = String(d.getDate()).padStart(2, '0');
-        const monthRaw = d.toLocaleString('en-IN', { month: 'short' });
-        const month = monthRaw.charAt(0).toUpperCase() + monthRaw.slice(1).toLowerCase();
-        const year = d.getFullYear();
-        return `${day} ${month} ${year}`;
-    } catch(e) { return dateStr; }
-};
-
-const showLoadingOverlay = () => {
-    const overlay = document.createElement('div');
-    overlay.className = 'loading-overlay';
-    // Style the overlay as a dashboard skeleton!
-    overlay.innerHTML = `
-        <div style="width: 100%; height: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="skeleton" style="width: 180px; height: 35px; border-radius: 12px;"></div>
-                <div class="skeleton" style="width: 52px; height: 52px; border-radius: 16px;"></div>
-            </div>
-            <div style="width: 100%; height: 180px; border-radius: 28px;" class="skeleton"></div>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
-                <div style="height: 110px; border-radius: 24px;" class="skeleton"></div>
-                <div style="height: 110px; border-radius: 24px;" class="skeleton"></div>
-            </div>
-            <div style="width: 100%; height: 260px; border-radius: 24px;" class="skeleton"></div>
-            <p class="loading-text" style="text-align: center; margin-top: 1rem;">SECURELY SYNCING YOUR ACCOUNT...</p>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-};
-
 // --- GLOBAL AUTH HANDLERS ---
-window.handleLogout = () => {
-    localStorage.clear();
-    window.location.replace('login.html?v=refreshed');
+window.handleLogout = () => { 
+    localStorage.clear(); 
+    window.location.replace('login.html'); 
 };
 
-window.handleCredentialResponse = async function (response) {
+window.handleCredentialResponse = async function(response) {
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
     try {
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(payload.email)}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(payload.email)}`);
         const data = await res.json();
         if (data.status === "success" && data.student) {
             localStorage.setItem('user', JSON.stringify(data.student));
-            showLoadingOverlay();
-            window.location.replace('index.html?v=refreshed');
-        } else { 
-            showToast("error", "Access Denied", "Google Account not registered in the system."); 
-        }
-    } catch (e) { 
-        showToast("error", "Login Failed", "Unable to establish connection with the server."); 
-    }
+            window.location.replace('index.html');
+        } else { showToast("error", "Access Denied", "Google Account not registered in the system."); }
+    } catch (e) { showToast("error", "Login Failed", "Unable to establish connection with the server."); }
 };
 
-window.handleManualLogin = async function (type) {
+window.handleManualLogin = async function(type) {
     const email = document.getElementById(type === 'mobile' ? 'manual-email-mobile' : 'manual-email-desktop').value.trim();
     const pass = document.getElementById(type === 'mobile' ? 'manual-password-mobile' : 'manual-password-desktop').value.trim();
     const btn = document.getElementById(type === 'mobile' ? 'btn-login-manual-mobile' : 'btn-login-manual-desktop');
-
+    
     if (!email || !pass) return showToast("error", "Missing Details", "Please fill in all email and password fields.");
     btn.innerText = "Syncing...";
-
+    
     try {
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}`);
         const data = await res.json();
-
+        
         if (data.status === "success" && data.student) {
             localStorage.setItem('user', JSON.stringify(data.student));
-            showLoadingOverlay();
-            window.location.replace('index.html?v=refreshed');
+            window.location.replace('index.html');
         } else {
-            showToast("error", "Authentication Failed", "No Student Found! Check your credentials.");
+            showToast("error", "Authentication Failed", "No Student Found! Check your credentials and try again.");
         }
-    } catch (e) { 
-        showToast("error", "Connection Error", "Please check your internet connection."); 
-    }
+    } catch (e) { showToast("error", "Connection Error", "Please check your internet connection and try again."); }
     btn.innerText = "Login to Portal";
 };
 
@@ -102,98 +58,87 @@ document.addEventListener('DOMContentLoaded', () => {
         mod: document.getElementById('modal-container'), close: document.getElementById('close-modal')
     };
 
-    // 🛡️ SECURITY & STABILITY: Only run dashboard logic if NOT on login page
-    const IS_LOGIN_PAGE = window.location.pathname.includes('login.html');
+    let currentScreen = 'dash';
 
-    if (!IS_LOGIN_PAGE) {
-        // Track current screen for back-button handling
-        let currentScreen = 'dash';
+    function show(scr, pushHistory = true) {
+        const isD = window.innerWidth > 1024;
+        currentScreen = scr;
 
-        function show(scr, pushHistory = true) {
-            const isD = window.innerWidth > 1024;
-            currentScreen = scr;
+        // Hide all screens
+        [...Object.values(screens.mob), ...Object.values(screens.dsk)].forEach(s => s?.classList.add('hidden'));
 
-            // Hide all screens
-            [...Object.values(screens.mob), ...Object.values(screens.dsk)].forEach(s => s?.classList.add('hidden'));
+        // Target specifically the requested context
+        const context = isD ? screens.dsk : screens.mob;
+        if (context[scr]) context[scr].classList.remove('hidden');
+        else if (scr === 'add' && !isD) screens.mob.add.classList.remove('hidden');
 
-            // Target specifically the requested context
-            const context = isD ? screens.dsk : screens.mob;
-            if (context[scr]) context[scr].classList.remove('hidden');
-            else if (scr === 'add' && !isD) screens.mob.add.classList.remove('hidden');
-
-            // Toggle active states on buttons
-            Object.keys(navB.mob).forEach(k => {
-                if (navB.mob[k]) {
-                    const isActive = (k === scr) || (k === 'update' && scr === 'add');
-                    navB.mob[k].classList.toggle('active', isActive);
-                }
-            });
-            Object.keys(navB.dsk).forEach(k => { if (navB.dsk[k]) navB.dsk[k].classList.toggle('active', k === scr); });
-
-            // 📌 Push history state so back button stays in-app (mobile only)
-            if (!isD && pushHistory) {
-                history.pushState({ screen: scr }, '', '#' + scr);
+        // Toggle active states on buttons
+        Object.keys(navB.mob).forEach(k => {
+            if(navB.mob[k]) {
+                const isActive = (k === scr) || (k === 'update' && scr === 'add');
+                navB.mob[k].classList.toggle('active', isActive);
             }
+        });
+        Object.keys(navB.dsk).forEach(k => { if(navB.dsk[k]) navB.dsk[k].classList.toggle('active', k === scr); });
 
-            lucide.createIcons();
+        // 📌 Push history state so back button stays in-app (mobile only)
+        if (!isD && pushHistory) {
+            history.pushState({ screen: scr }, '', '#' + scr);
         }
 
-        // 🔙 Handle browser back button — navigate within app, never exit
-        window.addEventListener('popstate', (e) => {
-            if (window.innerWidth > 1024) return; // Desktop: let browser handle
-            const scr = (e.state && e.state.screen) ? e.state.screen : 'dash';
-            if (scr === 'dash') {
-                // Already at home — push a new state so next back doesn't exit
-                history.pushState({ screen: 'dash' }, '', '#dash');
-            }
-            show(scr, false); // don't push again when handling popstate
-        });
-
-        // Seed initial history entry so first back press is caught
-        history.replaceState({ screen: 'dash' }, '', '#dash');
-
-        Object.keys(navB.mob).forEach(k => navB.mob[k]?.addEventListener('click', () => show(k === 'update' ? 'add' : k)));
-        Object.keys(navB.dsk).forEach(k => navB.dsk[k]?.addEventListener('click', () => show(k)));
-        if (actions.addM) actions.addM.addEventListener('click', () => show('add'));
-        if (actions.addD) actions.addD.addEventListener('click', () => { actions.mod.classList.remove('hidden'); actions.mod.style.display = 'flex'; });
-        if (actions.close) actions.close.addEventListener('click', () => { actions.mod.classList.add('hidden'); actions.mod.style.display = 'none'; });
-
-        // 🔙 In-page back buttons → always go to dashboard
-        document.getElementById('btn-back-add')?.addEventListener('click',     () => show('dash'));
-        document.getElementById('btn-back-profile')?.addEventListener('click', () => show('dash'));
-        document.getElementById('btn-back-history')?.addEventListener('click', () => show('dash'));
-
-        // Enable hour selection
-        document.querySelectorAll('.hour-btn').forEach(btn => {
-            btn.onclick = function () { this.classList.toggle('selected'); };
-        });
-
-        populateDashboard();
-        // Fetch once on load — fast (cache-backed from GAS)
-        const _initUser = JSON.parse(localStorage.getItem('user'));
-        if (_initUser && _initUser.email) fetchAttendance(_initUser.email);
-    } else {
-        // If on login page and already have user, push to dashboard
-        const _initUser = JSON.parse(localStorage.getItem('user'));
-        if (_initUser && _initUser.email) {
-            window.location.replace('index.html?v=session');
-        }
+        lucide.createIcons();
     }
+
+    // 🔙 Handle browser back button — navigate within app, never exit
+    window.addEventListener('popstate', (e) => {
+        if (window.innerWidth > 1024) return;
+        const scr = (e.state && e.state.screen) ? e.state.screen : 'dash';
+        if (scr === 'dash') {
+            history.pushState({ screen: 'dash' }, '', '#dash');
+        }
+        show(scr, false);
+    });
+
+    // Seed initial history entry so first back press is caught
+    history.replaceState({ screen: 'dash' }, '', '#dash');
+
+    Object.keys(navB.mob).forEach(k => navB.mob[k]?.addEventListener('click', () => show(k === 'update' ? 'add' : k)));
+    Object.keys(navB.dsk).forEach(k => navB.dsk[k]?.addEventListener('click', () => show(k)));
+    if (actions.addM) actions.addM.addEventListener('click', () => show('add'));
+    if (actions.addD) actions.addD.addEventListener('click', () => { actions.mod.classList.remove('hidden'); actions.mod.style.display = 'flex'; });
+    if (actions.close) actions.close.addEventListener('click', () => { actions.mod.classList.add('hidden'); actions.mod.style.display = 'none'; });
+
+    // 🔙 In-page back buttons → always go to dashboard
+    document.getElementById('btn-back-add')?.addEventListener('click',     () => show('dash'));
+    document.getElementById('btn-back-profile')?.addEventListener('click', () => show('dash'));
+    document.getElementById('btn-back-history')?.addEventListener('click', () => show('dash'));
+
+    // Enable hour selection
+    document.querySelectorAll('.hour-btn').forEach(btn => {
+        btn.onclick = function() { this.classList.toggle('selected'); };
+    });
+
+    populateDashboard();
+
+    // Initial fast fetch — loads history on page open
+    const _u = JSON.parse(localStorage.getItem('user'));
+    if (_u && _u.email) fetchAttendance(_u.email);
 });
 
 async function fetchAttendance(email) {
     if (!email) return;
     try {
-        const user   = JSON.parse(localStorage.getItem('user'));
-        const rollNo = user ? user.reg_num : '';
-        const ctrl   = new AbortController();
-        const timer  = setTimeout(() => ctrl.abort(), 10000);
-        const res    = await fetch(
-            `${API_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`,
+        const user    = JSON.parse(localStorage.getItem('user'));
+        const rollNo  = user ? user.reg_num : '';
+        const ctrl    = new AbortController();
+        const timer   = setTimeout(() => ctrl.abort(), 8000); // 8s hard timeout
+        const res     = await fetch(
+            `${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(rollNo)}&t=${Date.now()}`,
             { signal: ctrl.signal }
         );
         clearTimeout(timer);
         const data = await res.json();
+        
         if (data.status === "success" && data.student) {
             localStorage.setItem('user', JSON.stringify(data.student));
             if (data.history) {
@@ -202,110 +147,59 @@ async function fetchAttendance(email) {
             }
             populateDashboard(data.student);
         }
-    } catch (e) { console.warn("Fetch error:", e.name); }
+    } catch (e) { console.warn("Sync delay:", e.name); }
 }
 
 async function populateDashboard(freshStudentData) {
     const user = freshStudentData || JSON.parse(localStorage.getItem('user'));
-    
-    // 🛑 STOP: If no user, only redirect if NOT already on login.html
     if (!user) { 
-        const isLoginPage = window.location.pathname.includes('login.html');
-        if (!isLoginPage) {
-            window.location.replace('login.html?v=refreshed'); 
+        if(!location.pathname.includes('login.html')) {
+            window.location.href = 'login.html?v=refreshed'; 
         }
         return; 
     }
-
-    // 🛑 STOP: If user is logged in but stuck on login.html, push to dash
-    if (window.location.pathname.includes('login.html')) {
-        window.location.replace('index.html?v=dashboard');
-        return;
-    }
-
-    const fill = (id, v, fallback) => { 
-        const display = v || fallback || '--';
+    
+    const fill = (id, v) => { 
         document.querySelectorAll(`[id^="${id}"]`).forEach(el => {
-            if (el.innerText !== display) el.innerText = display;
+            if (el.innerText !== (v || '0')) el.innerText = v || '0';
         }); 
     };
-
-    // 👤 FILL STUDENT PROFILE DATA (Mobile & Desktop)
-    const name = user.name || user.indresh_s || "Student";
+    
+    const name = user.indresh_s || user.name || "Student"; 
     fill('p-name', name);
     fill('p-mail', user.email);
-    fill('p-reg',  user.reg_num || user.roll_num || user.roll_no);
+    fill('p-reg', user.reg_num);
     fill('p-dept', user.department);
     fill('p-year', user.year);
     fill('p-mobile', user.mobile);
     fill('p-domain', user.domain);
     fill('p-mentor', user.mentor_name);
 
-    // 🤒 Absent Days (0.5 per session: 1-4 morning, 5-7 afternoon)
-    const dateMap = {}; // date -> { morning: bool, afternoon: bool }
-    const entries = window.ATTENDANCE_HISTORY || [];
-    
-    entries.forEach(entry => {
-        const d = entry.date;
-        if (!d || !entry.hours) return;
-        if (!dateMap[d]) dateMap[d] = { morning: false, afternoon: false };
-        
-        const hrs = entry.hours.toString().split(',').map(h => parseInt(h.trim(), 10));
-        hrs.forEach(h => {
-            if (h >= 1 && h <= 4) dateMap[d].morning = true;
-            if (h >= 5 && h <= 7) dateMap[d].afternoon = true;
-        });
-    });
-
-    let totalAbsentDays = 0;
-    Object.values(dateMap).forEach(session => {
-        if (session.morning) totalAbsentDays += 0.5;
-        if (session.afternoon) totalAbsentDays += 0.5;
-    });
-
-    // ⏰ Today's Hours (Fixed definition)
-    const todayISO = new Date().toISOString().split('T')[0];
-    const todaySum = entries
-        .filter(entry => entry.date === todayISO)
-        .reduce((sum, entry) => {
-            const hrs = entry.hours.toString().split(',').length;
-            return sum + hrs;
-        }, 0);
-        
-    // Update Dashboard Metrics IDs 
-    fill('p-today-hours', todaySum + " Hours Today");
-    fill('p-absent', totalAbsentDays);
-
-    // 🗓️ Fill today's date in attendance forms (RE-SYNCHRONIZED)
+    // 🗓️ Fill today's date in attendance forms
     const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const dateElMob   = document.getElementById('p-date-mobile');
     const dateElModal = document.getElementById('p-date-modal');
     if (dateElMob)   dateElMob.innerText   = todayStr;
     if (dateElModal) dateElModal.innerHTML = `<span>${todayStr}</span><i data-lucide="calendar" style="width:16px;color:var(--text-secondary);"></i>`;
 
-    // 🎯 Greeting logic (RE-SYNCHRONIZED)
-    const firstName = name.toString().split(' ')[0].toUpperCase();
-    
-    document.querySelectorAll('[id^="greeting-"]').forEach(el => {
-        // Handle desktop 'greeting-desk' and mobile 'greeting-mob'
-        const isMobile = el.id.includes('mob');
-        el.innerText = `Hey ${firstName}${isMobile ? ' 👋' : '!'}`;
-    });
+    // Greeting
+    const firstName = name.split(' ')[0].toUpperCase();
+    const gMob = document.getElementById('greeting-mob');
+    const gDesk = document.getElementById('greeting-desk');
+    if (gMob) gMob.innerText = `Hey ${firstName} 👋`;
+    if (gDesk) gDesk.innerText = `Hey ${firstName}!`;
 
-    // 🔍 Social Links
+    // Social Links
     const setLink = (type, url) => {
         document.querySelectorAll(`[id*="${type}"]`).forEach(el => {
             if (el.tagName !== 'A') return;
             let cleanUrl = (url || "").toString().trim();
-            if (cleanUrl.length > 5) {
+            if (cleanUrl.length > 5) { 
                 if (!cleanUrl.startsWith('http')) cleanUrl = 'https://' + cleanUrl;
                 el.href = cleanUrl;
-                el.target = "_blank";
-                el.style.opacity = "1";
-                el.style.pointerEvents = "auto";
+                el.target = "_blank"; el.style.opacity = "1"; el.style.pointerEvents = "auto";
             } else {
-                el.style.opacity = "0.3";
-                el.style.pointerEvents = "none";
+                el.style.opacity = "0.3"; el.style.pointerEvents = "none";
             }
         });
     };
@@ -316,7 +210,7 @@ async function populateDashboard(freshStudentData) {
 // 🎯 CUSTOM TOAST POPUP LOGIC (Now completely dynamic & global)
 function showToast(type, title, message) {
     let overlay = document.getElementById('custom-toast-overlay');
-
+    
     // Auto-inject HTML if it doesn't exist (e.g. on login page)
     if (!overlay) {
         overlay = document.createElement('div');
@@ -366,7 +260,7 @@ function showToast(type, title, message) {
     }
 
     if (window.lucide) window.lucide.createIcons();
-
+    
     btn.onclick = () => {
         overlay.style.opacity = '0';
         card.style.transform = 'scale(0.95)';
@@ -378,91 +272,52 @@ function showToast(type, title, message) {
 [document.getElementById('btn-submit-mobile'), document.getElementById('submit-btn-universal')].forEach(btn => {
     btn?.addEventListener('click', async () => {
         const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || !user.email) {
-            return showToast('error', 'Not Logged In', 'Please log in again and try submitting.');
-        }
-
-        const prefix   = btn.id.includes('mobile') ? 'mobile' : 'desktop';
-        const task     = (document.getElementById(`${prefix}-task-desc`)?.value || '').trim();
+        const prefix = btn.id.includes('mobile') ? 'mobile' : 'desktop';
+        const task = document.getElementById(`${prefix}-task-desc`)?.value;
         const selector = btn.id.includes('mobile') ? 'hour-selector-mobile' : 'hour-selector-desktop';
-        const hours    = Array.from(document.querySelectorAll(`#${selector} .hour-btn.selected`))
-                             .map(h => h.dataset.hour).join(',');
+        const hours = Array.from(document.querySelectorAll(`#${selector} .hour-btn.selected`)).map(h => h.dataset.hour).join(',');
 
-        // Today's date in IST (UTC+5:30)
-        const nowIST    = new Date(Date.now() + (5.5 * 60 * 60 * 1000));
-        const todayStr  = nowIST.toISOString().split('T')[0]; // YYYY-MM-DD
-        const hourIST   = nowIST.getUTCHours(); // On shifted date this gives IST Hour
-
-        // RESTRICTED SUBMISSION AFTER 8 PM IST
-        if (hourIST >= 20) {
-            return showToast('error', 'Deadline Missed', 'Submissions for today closed at 8:00 PM. Please contact your mentor.');
+        // 🎯 1. Check Deadline (Midnight strict)
+        const currentHour = new Date().getHours();
+        if (currentHour >= 24) {
+            return showToast('error', 'Deadline Crossed', 'You cannot submit for the day after 8:00 PM. Please contact the admin with a signed letter for late entries.');
         }
 
-        // Already submitted check
-        const hasSubmittedToday = (window.ATTENDANCE_HISTORY || []).some(h => {
-            return (h.date || '').trim().split('T')[0] === todayStr;
-        });
+        // 🎯 2. Single Submission per day check
+        const todayStr = new Date().toISOString().split('T')[0];
+        const hasSubmittedToday = (window.ATTENDANCE_HISTORY || []).some(h => h.date === todayStr);
         if (hasSubmittedToday) {
-            return showToast('error', 'Already Submitted', 'Attendance for today is already recorded. You can only submit once per day.');
+            return showToast('error', 'Already Submitted', 'You can submit attendance only once per day. Your attendance for today is already recorded.');
         }
 
-        // Validate fields
-        if (!hours) return showToast('error', 'No Hours Selected', 'Please tap on the hour buttons to select which hours you were absent.');
-        if (!task)  return showToast('error', 'Reason Required', 'Please enter a reason or task description before submitting.');
+        if(!task || !hours) return showToast('error', 'Missing Information', 'Please select your hours and provide a valid reason or task description.');
 
-        // --- OPTIMISTIC UI (Immediate Feedback) ---
-        showToast('success', 'Submission Sent! 🎉', 'Your hours are being synced in the background. You can continue.');
-        
-        // Immediate Form Clear & Navigation
-        const descField = document.getElementById(`${prefix}-task-desc`);
-        if (descField) descField.value = '';
-        document.querySelectorAll('.hour-btn.selected').forEach(b => b.classList.remove('selected'));
-        
-        if (prefix === 'mobile') {
-            document.getElementById('mobile-add')?.classList.add('hidden');
-            document.getElementById('mobile-dashboard')?.classList.remove('hidden');
-            document.querySelectorAll('.btn-nav').forEach(n => n.classList.remove('active'));
-            document.getElementById('nav-dash-mobile')?.classList.add('active');
-        } else {
-            const deskMod = document.getElementById('modal-container');
-            if (deskMod) { deskMod.style.display = 'none'; deskMod.classList.add('hidden'); }
-        }
-
-        // Optimistic local update to prevent double-submit and update metrics instantly
-        if (!window.ATTENDANCE_HISTORY) window.ATTENDANCE_HISTORY = [];
-        window.ATTENDANCE_HISTORY.push({
-            date: todayStr,
-            hours: hours,
-            reason: task,
-            status: 'Syncing...'
-        });
-        renderHistory(); // Update UI instantly
-
-        // --- BACKGROUND SYNC (Non-blocking) ---
-        fetch(API_URL, {
-            method : 'POST',
-            body   : JSON.stringify({
-                date  : todayStr,
-                rollNo: user.reg_num,
-                name  : user.name || user.indresh_s || '',
-                email : user.email,
-                hours : hours,
-                reason: task
-            })
-        }).then(res => res.json()).then(result => {
-            if (result.status === 'success') {
-                // Background refresh to get finalized data after a short stagger
-                setTimeout(() => fetchAttendance(user.email), 2000);
-            } else {
-                showToast('error', 'Sync Failed', result.message || 'Background sync failed. Please check your connection.');
+        btn.innerText = 'Syncing...';
+        try {
+            const res = await fetch(API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    date: todayStr, 
+                    rollNo: user.reg_num, name: (user.name || user.indresh_s), email: user.email, hours, reason: task 
+                }) 
+            });
+            const result = await res.json();
+            if(result.status === "success") {
+                showToast('success', 'Attendance Recorded Successfully!', 'Soon everyone in the community will know about your work!');
+                await fetchAttendance(user.email);
+                document.getElementById(`${prefix}-task-desc`).value = '';
+                document.querySelectorAll('.hour-btn.selected').forEach(b => b.classList.remove('selected'));
+                if (prefix === 'mobile') {
+                    document.getElementById('mobile-add').classList.add('hidden');
+                    document.getElementById('mobile-dashboard').classList.remove('hidden');
+                } else {
+                    document.getElementById('modal-container').style.display = 'none';
+                }
             }
-        }).catch(err => {
-            console.warn("Background fetch error:", err);
-            showToast('error', 'Connection Warning', 'Submission might have failed. Please check history later.');
-        });
+        } catch (e) { showToast('error', 'Sync Queued', 'Network delay detected. It will be recorded soon.'); }
+        btn.innerText = 'Submit Attendance';
     });
 });
-
 
 function renderHistory() {
     const dashboardList = document.getElementById('dashboard-recent-history');
@@ -485,18 +340,27 @@ function renderHistory() {
             hArr = rawHours.toString().split(',').map(h => h.trim());
         }
         
-        const reason = item.reason || item.Reason || "No details";
+        const reason = item.reason || item.Reason || "Sync complete";
 
         if (!acc[key]) {
             acc[key] = { ...item, date: key, hours: hArr, reason: reason };
         } else {
-            acc[key].hours = [...new Set([...acc[key].hours, ...hArr])].sort((a, b) => a - b);
+            acc[key].hours = [...new Set([...acc[key].hours, ...hArr])].sort((a,b) => a-b);
         }
         return acc;
     }, {});
 
     const sortedGroupedItems = Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
     const historyItems = sortedGroupedItems.slice(0, 5);
+
+    const calcDailyLeave = (hours) => {
+        const hArr = hours.map(h => parseInt(h));
+        const morning = hArr.some(h => h >= 1 && h <= 4);
+        const afternoon = hArr.some(h => h >= 5 && h <= 7);
+        if (morning && afternoon) return "1.0 Day";
+        if (morning || afternoon) return "0.5 Day";
+        return "0 Day";
+    };
 
     const generateHourBubbles = (hours) => {
         return `<div style="display: flex; gap: 6px; justify-content: center;">
@@ -507,10 +371,10 @@ function renderHistory() {
     if (dashboardList) {
         dashboardList.innerHTML = historyItems.map(i => `
             <tr style="border-bottom: 1px solid #f2f4f7;">
-                <td style="padding: 1.25rem; font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${formatDate(i.date)}</td>
+                <td style="padding: 1.25rem; font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${i.date}</td>
                 <td style="padding: 1.25rem; color: var(--text-secondary); font-size: 0.9rem;">${i.reason}</td>
                 <td style="padding: 1.25rem; text-align: center;">${generateHourBubbles(i.hours)}</td>
-                <td style="padding: 1.25rem; text-align: right;"><a href="#" style="color: var(--accent-teal); font-weight: 700; text-decoration: none; font-size: 0.85rem;">View</a></td>
+                <td style="padding: 1.25rem; text-align: right;"><span style="color: #EF4444; font-weight: 800; font-size: 0.85rem;">-${calcDailyLeave(i.hours)}</span></td>
             </tr>
         `).join('');
     }
@@ -518,10 +382,10 @@ function renderHistory() {
     if (fullHistoryList) {
         fullHistoryList.innerHTML = sortedGroupedItems.map(i => `
             <tr style="border-bottom: 1px solid #f2f4f7;">
-                <td style="padding: 1.25rem; font-weight: 600;">${formatDate(i.date)}</td>
+                <td style="padding: 1.25rem; font-weight: 600;">${i.date}</td>
                 <td style="padding: 1.25rem;">${i.reason}</td>
                 <td style="padding: 1.25rem; text-align: center;">${generateHourBubbles(i.hours)}</td>
-                <td style="padding: 1.25rem; text-align: center;"><span style="background:#f0fff4; color:#276749; padding:4px 12px; border-radius:12px; font-size: 0.75rem; font-weight: 700;">Logged</span></td>
+                <td style="padding: 1.25rem; text-align: center;"><span style="background:#FEF2F2; color:#EF4444; padding:4px 12px; border-radius:12px; font-size: 0.75rem; font-weight: 800;">-${calcDailyLeave(i.hours)}</span></td>
             </tr>
         `).join('');
     }
@@ -532,8 +396,8 @@ function renderHistory() {
             ${sortedGroupedItems.map(i => `
                 <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-weight: 800; color: var(--text-primary);">${formatDate(i.date)}</span>
-                        <a href="#" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-teal); text-decoration: none;">View</a>
+                        <span style="font-weight: 800; color: var(--text-primary);">${i.date}</span>
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #EF4444; background: #FEF2F2; padding: 2px 8px; border-radius: 6px;">-${calcDailyLeave(i.hours)}</span>
                     </div>
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${i.reason}</p>
                     <div style="display: flex; gap: 8px;">
@@ -553,7 +417,8 @@ function renderHistory() {
             ${historyItems.map(i => `
                 <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">${formatDate(i.date)}</span>
+                        <span style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">${i.date}</span>
+                        <span style="font-size: 0.7rem; font-weight: 800; color: #EF4444; background: #FEF2F2; padding: 2px 6px; border-radius: 4px;">-${calcDailyLeave(i.hours)}</span>
                     </div>
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">${i.reason}</p>
                     <div style="display: flex; gap: 8px;">
@@ -566,7 +431,25 @@ function renderHistory() {
 
     // Force hide mobile nav on desktop fallback
     const bottomNav = document.querySelector('.bottom-nav-mobile');
-    if (bottomNav) bottomNav.style.display = window.innerWidth > 1024 ? 'none' : 'flex';
+    if(bottomNav) bottomNav.style.display = window.innerWidth > 1024 ? 'none' : 'flex';
+
+    // 🎯 ABSENT CALCULATION LOGIC
+    let totalAbsentDays = 0;
+    const groupedList = Object.values(grouped);
+
+    groupedList.forEach(day => {
+        const hArr = (day.hours || []).map(h => parseInt(h));
+        const morning = hArr.some(h => h >= 1 && h <= 4);
+        const afternoon = hArr.some(h => h >= 5 && h <= 7);
+        
+        if (morning && afternoon) totalAbsentDays += 1.0;
+        else if (morning || afternoon) totalAbsentDays += 0.5;
+    });
+
+    const absentMob = document.getElementById('p-absent-mobile');
+    const absentDesk = document.getElementById('p-absent-desktop');
+    if (absentMob) absentMob.innerText = `${totalAbsentDays.toFixed(1)} Days`;
+    if (absentDesk) absentDesk.innerHTML = `${totalAbsentDays.toFixed(1)} <span style="font-size: 1rem; color: var(--text-secondary); font-weight: 400;">Days</span>`;
 
     let totalHrsToday = 0;
     const today = new Date().toISOString().split('T')[0];
@@ -575,22 +458,6 @@ function renderHistory() {
     }
     const stat = document.getElementById('p-today-hours'); 
     if (stat) stat.innerText = `${totalHrsToday} Hours Today`;
-
-    // 🔥 CALCULATE TOTAL LEAVE UNITS
-    const totalLeaveUnits = Object.values(grouped).reduce((sum, i) => {
-        const hArr = i.hours.map(h => parseInt(h));
-        const morning = hArr.some(h => h >= 1 && h <= 4);
-        const afternoon = hArr.some(h => h >= 5 && h <= 7);
-        if (morning && afternoon) return sum + 1.0;
-        if (morning || afternoon) return sum + 0.5;
-        return sum;
-    }, 0);
-
-    const absentMob = document.getElementById('p-absent-mobile');
-    if (absentMob) absentMob.innerText = totalLeaveUnits.toFixed(1);
-    const absentDsk = document.getElementById('p-absent-desktop');
-    if (absentDsk) absentDsk.innerText = totalLeaveUnits.toFixed(1);
-
     lucide.createIcons();
 
     // Force hydrate embedded Desktop Calendar instantly when history data resolves
@@ -610,10 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const calCard = document.getElementById('calendar-card');
     const btnOpenCal = document.getElementById('btn-open-calendar');
     const btnCloseCal = document.getElementById('btn-close-calendar');
-
+    
     if (btnOpenCal) {
         btnOpenCal.onclick = () => {
-            if (!calModal) return;
+            if(!calModal) return;
             calModal.classList.remove('hidden');
             calModal.style.display = 'flex';
             setTimeout(() => {
@@ -623,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCalendar(currentMonth, currentYear, false);
         };
     }
-
+    
     if (btnCloseCal) {
         btnCloseCal.onclick = () => {
             calCard.style.transform = 'translateY(100%)';
@@ -638,20 +505,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mobile Navigation
     document.getElementById('btn-prev-month')?.addEventListener('click', () => {
         currentMonth--;
-        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        if(currentMonth < 0) { currentMonth = 11; currentYear--; }
         renderCalendar(currentMonth, currentYear, false);
     });
 
     document.getElementById('btn-next-month')?.addEventListener('click', () => {
         currentMonth++;
-        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        if(currentMonth > 11) { currentMonth = 0; currentYear++; }
         renderCalendar(currentMonth, currentYear, false);
     });
 
     // Desktop Navigation
     const deskCalBtn = document.getElementById('btn-open-desktop-calendar');
     const deskCalDropdown = document.getElementById('desktop-calendar-dropdown');
-
+    
     if (deskCalBtn && deskCalDropdown) {
         deskCalBtn.onclick = (e) => {
             e.stopPropagation();
@@ -660,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCalendar(currentMonth, currentYear, true);
             }
         };
-
+        
         document.addEventListener('click', (e) => {
             if (!deskCalBtn.contains(e.target) && !deskCalDropdown.contains(e.target)) {
                 deskCalDropdown.classList.add('hidden');
@@ -670,13 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-prev-month-desk')?.addEventListener('click', () => {
         currentMonth--;
-        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        if(currentMonth < 0) { currentMonth = 11; currentYear--; }
         renderCalendar(currentMonth, currentYear, true);
     });
 
     document.getElementById('btn-next-month-desk')?.addEventListener('click', () => {
         currentMonth++;
-        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        if(currentMonth > 11) { currentMonth = 0; currentYear++; }
         renderCalendar(currentMonth, currentYear, true);
     });
 });
@@ -693,7 +560,7 @@ function renderCalendar(month, year, isDesktop = false) {
     monthYearText.innerText = `${months[month]} ${year}`;
 
     grid.innerHTML = '';
-
+    
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -709,7 +576,7 @@ function renderCalendar(month, year, isDesktop = false) {
     const groupedData = entries.reduce((acc, item) => {
         if (!acc[item.date]) acc[item.date] = { ...item, hours: [] };
         const newHours = item.hours.toString().split(',').map(h => h.trim());
-        acc[item.date].hours = [...new Set([...acc[item.date].hours, ...newHours])].sort((a, b) => a - b);
+        acc[item.date].hours = [...new Set([...acc[item.date].hours, ...newHours])].sort((a,b) => a-b);
         acc[item.date].reason = item.reason;
         return acc;
     }, {});
@@ -733,13 +600,13 @@ function renderCalendar(month, year, isDesktop = false) {
         dayCell.onclick = () => {
             document.querySelectorAll(`#${prefix}-grid .cal-day`).forEach(el => el.classList.remove('selected'));
             dayCell.classList.add('selected');
-
+            
             if (groupedData[dateStr]) {
                 const log = groupedData[dateStr];
                 const hourBubbles = log.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #f0fdfa; color: #0d9488; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #ccfbf1;">${h}</span>`).join('');
                 document.getElementById(`${prefix}-day-content`).innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">${formatDate(dateStr)}</span>
+                        <span style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">${dateStr}</span>
                     </div>
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5;">${log.reason}</p>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">${hourBubbles}</div>
