@@ -7,8 +7,8 @@ const formatDate = (dateStr) => {
         const d = new Date(dateStr);
         if (isNaN(d.getTime())) return dateStr;
         const day = String(d.getDate()).padStart(2, '0');
-        const monthRaw = d.toLocaleString('en-IN', { month: 'short' });
-        const month = monthRaw.charAt(0).toUpperCase() + monthRaw.slice(1).toLowerCase();
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[d.getMonth()];
         const year = d.getFullYear();
         return `${day} ${month} ${year}`;
     } catch(e) { return dateStr; }
@@ -224,9 +224,9 @@ async function populateDashboard(freshStudentData) {
     }
 
     const fill = (id, v, fallback) => { 
-        const display = v || fallback || '--';
+        const display = (v !== undefined && v !== null && v !== "") ? v : (fallback || '--');
         document.querySelectorAll(`[id^="${id}"]`).forEach(el => {
-            if (el.innerText !== display) el.innerText = display;
+            if (el.innerText != display) el.innerText = display;
         }); 
     };
 
@@ -241,16 +241,17 @@ async function populateDashboard(freshStudentData) {
     fill('p-domain', user.domain);
     fill('p-mentor', user.mentor_name);
 
-    // 🤒 Absent Days (0.5 per session: 1-4 morning, 5-7 afternoon)
-    const dateMap = {}; // date -> { morning: bool, afternoon: bool }
     const entries = window.ATTENDANCE_HISTORY || [];
+    const dateMap = {}; 
     
     entries.forEach(entry => {
-        const d = entry.date;
-        if (!d || !entry.hours) return;
+        const d = entry.date || entry.Date;
+        const rawHours = entry.hours || entry.Hours;
+        if (!d || !rawHours) return;
+
         if (!dateMap[d]) dateMap[d] = { morning: false, afternoon: false };
         
-        const hrs = entry.hours.toString().split(',').map(h => parseInt(h.trim(), 10));
+        const hrs = rawHours.toString().split(',').map(h => parseInt(h.trim(), 10));
         hrs.forEach(h => {
             if (h >= 1 && h <= 4) dateMap[d].morning = true;
             if (h >= 5 && h <= 7) dateMap[d].afternoon = true;
@@ -273,7 +274,7 @@ async function populateDashboard(freshStudentData) {
         }, 0);
         
     // Update Dashboard Metrics IDs 
-    fill('p-today-hours', todaySum + " Hours Today");
+    fill('p-today-hours', todaySum + " Hours");
     fill('p-absent', totalAbsentDays);
 
     // 🗓️ Fill today's date in attendance forms (RE-SYNCHRONIZED)
