@@ -114,6 +114,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🛡️ SECURITY & STABILITY: Only run dashboard logic if NOT on login page
     const IS_LOGIN_PAGE = window.location.pathname.includes('login.html');
+    const userLoggedIn = JSON.parse(localStorage.getItem('user'));
+
+    // 🛡️ SECURITY: Redirect to login if not authenticated and not on login page
+    if (!IS_LOGIN_PAGE && (!userLoggedIn || !userLoggedIn.email)) {
+        window.location.replace('login.html?v=' + Date.now());
+        return; // Stop execution
+    }
 
     if (!IS_LOGIN_PAGE) {
         // Track current screen for back-button handling
