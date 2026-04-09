@@ -95,12 +95,17 @@ window.ATTENDANCE_HISTORY = [];
 document.addEventListener('DOMContentLoaded', () => {
     // 🔍 FIX: Map screen names exactly to your IDs
     const screens = {
-        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), profile: document.getElementById('mobile-profile') },
-        dsk: { dash: document.getElementById('desktop-dashboard'), history: document.getElementById('desktop-history'), profile: document.getElementById('desktop-profile') }
+        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), profile: document.getElementById('mobile-profile') },
+        dsk: { 
+            dash: document.getElementById('desktop-dashboard'), 
+            history: document.getElementById('desktop-history'), 
+            'work-log': document.getElementById('desktop-work-log'),
+            profile: document.getElementById('desktop-profile') 
+        }
     };
     const navB = {
-        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), profile: document.getElementById('nav-profile-mobile') },
-        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), profile: document.getElementById('nav-profile-desktop') }
+        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile') },
+        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop') }
     };
     const actions = {
         addM: document.getElementById('btn-add-mobile'), addD: document.getElementById('btn-add-desktop'),
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Track current screen for back-button handling
         let currentScreen = 'dash';
 
-        function show(scr, pushHistory = true) {
+        window.show = function(scr, pushHistory = true) {
             const isD = window.innerWidth > 1024;
             currentScreen = scr;
 
@@ -129,7 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Toggle active states on buttons
             Object.keys(navB.mob).forEach(k => {
                 if (navB.mob[k]) {
-                    const isActive = (k === scr) || (k === 'update' && scr === 'add');
+                    // FIX: When adding attendance, keep the marker on the 'History/Attendance' icon
+                    const isActive = (k === scr) || (k === 'history' && scr === 'add');
                     navB.mob[k].classList.toggle('active', isActive);
                 }
             });
@@ -139,41 +145,179 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isD && pushHistory) {
                 history.pushState({ screen: scr }, '', '#' + scr);
             }
+            
+            // Ensure bottom nav is always visible when navigating
+            const bottomNav = document.querySelector('.bottom-nav-mobile');
+            const fab = document.getElementById('mobile-fab-container');
+            if (bottomNav) bottomNav.classList.remove('bottom-nav-hidden');
+            if (fab) fab.style.transform = 'translateX(-50%) translateY(0)';
 
             lucide.createIcons();
         }
 
-        // 🔙 Handle browser back button — navigate within app, never exit
-        window.addEventListener('popstate', (e) => {
-            if (window.innerWidth > 1024) return; // Desktop: let browser handle
-            const scr = (e.state && e.state.screen) ? e.state.screen : 'dash';
-            if (scr === 'dash') {
-                // Already at home — push a new state so next back doesn't exit
-                history.pushState({ screen: 'dash' }, '', '#dash');
+        // 🔙 Browser Back Button Handling (Global)
+        window.onpopstate = (event) => {
+            // Close any open modals first
+            const calModal = document.getElementById('calendar-modal');
+            const calCard = document.getElementById('calendar-card');
+            const attendanceModal = document.getElementById('modal-container');
+
+            if (calModal && !calModal.classList.contains('hidden')) {
+                // Close calendar with animation
+                if (calCard) calCard.style.transform = 'translateY(100%)';
+                calModal.style.opacity = '0';
+                setTimeout(() => {
+                    calModal.classList.add('hidden');
+                    calModal.style.display = 'none';
+                }, 300);
+                return;
             }
-            show(scr, false); // don't push again when handling popstate
-        });
+
+            if (attendanceModal && !attendanceModal.classList.contains('hidden')) {
+                attendanceModal.classList.add('hidden');
+                return;
+            }
+
+            if (event.state && event.state.screen) {
+                window.show(event.state.screen, false);
+            }
+        };
 
         // Seed initial history entry so first back press is caught
         history.replaceState({ screen: 'dash' }, '', '#dash');
 
-        Object.keys(navB.mob).forEach(k => navB.mob[k]?.addEventListener('click', () => show(k === 'update' ? 'add' : k)));
-        Object.keys(navB.dsk).forEach(k => navB.dsk[k]?.addEventListener('click', () => show(k)));
-        if (actions.addM) actions.addM.addEventListener('click', () => show('add'));
-        if (actions.addD) actions.addD.addEventListener('click', () => { actions.mod.classList.remove('hidden'); actions.mod.style.display = 'flex'; });
+        Object.keys(navB.mob).forEach(k => navB.mob[k]?.addEventListener('click', () => window.show(k === 'update' ? 'add' : k)));
+        Object.keys(navB.dsk).forEach(k => navB.dsk[k]?.addEventListener('click', () => window.show(k)));
+        
+        // --- MOBILE NAV HIDE ON SCROLL LOGIC ---
+        let lastScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+        const scrollThreshold = 5; // Very sensitive
+        
+        window.addEventListener('scroll', () => {
+            const bottomNav = document.querySelector('.bottom-nav-mobile');
+            const fab = document.getElementById('mobile-fab-container');
+            const currentScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (!bottomNav) return;
+
+            const delta = currentScrollY - lastScrollY;
+            
+            // Ignore tiny scrolls
+            if (Math.abs(delta) < scrollThreshold) return;
+            
+            if (delta > 0 && currentScrollY > 20) {
+                // Scrolling down -> Hide
+                bottomNav.classList.add('bottom-nav-hidden');
+                if (fab) fab.style.transform = 'translateX(-50%) translateY(100px)';
+            } else {
+                // Scrolling up OR at the very top -> Show
+                bottomNav.classList.remove('bottom-nav-hidden');
+                if (fab) fab.style.transform = 'translateX(-50%) translateY(0)';
+            }
+            
+            lastScrollY = Math.max(0, currentScrollY);
+        }, { passive: true });
+
+        // --- TOUCH SENSITIVITY FEEDBACK ---
+        document.querySelectorAll('.btn-nav').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.style.transition = 'transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                this.style.transform = 'scale(0.85) translateY(-5px)';
+            }, { passive: true });
+            
+            btn.addEventListener('touchend', function() {
+                this.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                this.style.transform = '';
+            }, { passive: true });
+        });
+
         if (actions.close) actions.close.addEventListener('click', () => { actions.mod.classList.add('hidden'); actions.mod.style.display = 'none'; });
+        
+        // Re-binding the desktop add button consistently
+        const deskAddBtn = document.getElementById('btn-add-desktop');
+        if (deskAddBtn) {
+            deskAddBtn.addEventListener('click', () => {
+                actions.mod.classList.remove('hidden');
+                actions.mod.style.display = 'flex';
+            });
+        }
 
-        // 🔙 In-page back buttons → always go to dashboard
-        document.getElementById('btn-back-add')?.addEventListener('click',     () => show('dash'));
-        document.getElementById('btn-back-profile')?.addEventListener('click', () => show('dash'));
-        document.getElementById('btn-back-history')?.addEventListener('click', () => show('dash'));
 
-        // Enable hour selection
-        document.querySelectorAll('.hour-btn').forEach(btn => {
-            btn.onclick = function () { this.classList.toggle('selected'); };
+        // --- DASHBOARD INTERACTIVITY (Search, Filter, Profile) ---
+        const mainSearch = document.querySelector('.top-bar .search-box input');
+        const historySearch = document.getElementById('history-search-input');
+        const filterBtn = document.querySelector('.top-bar-actions .badge-pill');
+        const historyAddBtn = document.getElementById('btn-add-history-view');
+
+        const handleSearch = (e) => {
+            if (e.key === 'Enter') e.preventDefault();
+            const term = e.target.value.toLowerCase();
+            // SYNC both inputs for a seamless experience
+            if (mainSearch) mainSearch.value = e.target.value;
+            if (historySearch) historySearch.value = e.target.value;
+            renderHistory(term);
+        };
+
+        if (mainSearch) {
+            mainSearch.addEventListener('input', handleSearch);
+            mainSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+        }
+        if (historySearch) {
+            historySearch.addEventListener('input', handleSearch);
+            historySearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+        }
+
+        if (filterBtn) {
+            filterBtn.addEventListener('click', () => {
+                const isWeek = filterBtn.querySelector('span').innerText === 'This Week';
+                filterBtn.querySelector('span').innerText = isWeek ? 'All Logs' : 'This Week';
+                const term = (mainSearch?.value || historySearch?.value || '').toLowerCase();
+                renderHistory(term);
+            });
+        }
+
+        if (historyAddBtn) {
+            historyAddBtn.addEventListener('click', () => {
+                actions.mod.classList.remove('hidden');
+                actions.mod.style.display = 'flex';
+            });
+        }
+
+        // --- SMART FORM VALIDATION LOGIC ---
+        const taskDesc = document.getElementById('desktop-task-desc');
+        const submitBtn = document.getElementById('submit-btn-universal');
+        const hourBtns = document.querySelectorAll('.hour-btn');
+
+        const validateForm = () => {
+             const hasHours = document.querySelectorAll('.hour-btn.selected').length > 0;
+             const hasTask = taskDesc?.value.trim().length > 3; // Minimum 4 characters
+             
+             if (hasHours && hasTask) {
+                  submitBtn.disabled = false;
+                  submitBtn.style.opacity = "1";
+                  submitBtn.style.cursor = "pointer";
+                  submitBtn.style.background = "var(--primary-gradient)";
+                  submitBtn.style.boxShadow = "0 10px 25px rgba(59, 130, 246, 0.3)";
+             } else {
+                  submitBtn.disabled = true;
+                  submitBtn.style.opacity = "0.5";
+                  submitBtn.style.cursor = "not-allowed";
+                  submitBtn.style.background = "#94A3B8";
+                  submitBtn.style.boxShadow = "none";
+             }
+        };
+
+        if (taskDesc) taskDesc.addEventListener('input', validateForm);
+        hourBtns.forEach(btn => {
+             btn.onclick = function () { 
+                  this.classList.toggle('selected');
+                  validateForm();
+             };
         });
 
         populateDashboard();
+        // Force refresh icons for new elements
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         // Fetch once on load — fast (cache-backed from GAS)
         const _initUser = JSON.parse(localStorage.getItem('user'));
         if (_initUser && _initUser.email) fetchAttendance(_initUser.email);
@@ -310,17 +454,103 @@ async function populateDashboard(freshStudentData) {
                 el.style.opacity = "1";
                 el.style.pointerEvents = "auto";
             } else {
-                el.style.opacity = "0.3";
+                el.href = "javascript:void(0)";
+                el.style.opacity = "1";
                 el.style.pointerEvents = "none";
+                el.style.cursor = "default";
             }
         });
     };
     setLink('linkedin', user.linkedin);
     setLink('github', user.github);
+    
+    // Initialize Chart
+    initAttendanceChart();
 }
 
+function initAttendanceChart() {
+    const ctx = document.getElementById('attendanceChart');
+    if (!ctx) return;
+
+    // Data Processing: Get last 7 days including today
+    const labels = [];
+    const dataPoints = [];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().split('T')[0];
+        labels.push(`${d.getDate()} ${months[d.getMonth()]}`);
+        
+        // Sum hours for this day
+        const dayHours = (window.ATTENDANCE_HISTORY || [])
+            .filter(h => (h.date || h.Date || '').startsWith(iso))
+            .reduce((sum, h) => sum + (h.hours || h.Hours || "").toString().split(',').length, 0);
+        dataPoints.push(dayHours);
+    }
+
+    if (window.myChart) window.myChart.destroy();
+
+    window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Actual Hours',
+                    data: dataPoints,
+                    backgroundColor: '#60A5FA', // Milky Blue
+                    borderRadius: 8,
+                    barThickness: 24,
+                },
+                {
+                    label: 'Target (7h)',
+                    data: labels.map(() => 7),
+                    backgroundColor: 'rgba(96, 165, 250, 0.2)',
+                    borderRadius: 8,
+                    barThickness: 24,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { 
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: { size: 11, weight: '700', family: 'Outfit' }
+                    }
+                } 
+            },
+            scales: {
+                y: { 
+                    stacked: true,
+                    beginAtZero: true, 
+                    max: 10, 
+                    grid: { color: 'rgba(0, 0, 0, 0.03)', drawBorder: false }, 
+                    ticks: { font: { weight: '600' } } 
+                },
+                x: { 
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { font: { weight: '600' } }
+                }
+            }
+        }
+    });
+}
+
+
+
 // 🎯 CUSTOM TOAST POPUP LOGIC (Now completely dynamic & global)
-function showToast(type, title, message) {
+function showToast(type, title, message, callback = null) {
     let overlay = document.getElementById('custom-toast-overlay');
 
     // Auto-inject HTML if it doesn't exist (e.g. on login page)
@@ -376,7 +606,10 @@ function showToast(type, title, message) {
     btn.onclick = () => {
         overlay.style.opacity = '0';
         card.style.transform = 'scale(0.95)';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        setTimeout(() => { 
+            overlay.style.display = 'none'; 
+            if (callback && typeof callback === 'function') callback();
+        }, 300);
     };
 }
 
@@ -401,7 +634,7 @@ function showToast(type, title, message) {
 
         // RESTRICTED SUBMISSION AFTER 8 PM IST
         if (hourIST >= 20) {
-            return showToast('error', 'Deadline Missed', 'Submissions for today closed at 8:00 PM. Please contact your mentor.');
+            return showToast('error', 'Deadline Missed', 'Submissions for today closed at 8:00 PM. Please contact your mentor.', () => window.show('history'));
         }
 
         // Already submitted check
@@ -409,7 +642,7 @@ function showToast(type, title, message) {
             return (h.date || '').trim().split('T')[0] === todayStr;
         });
         if (hasSubmittedToday) {
-            return showToast('error', 'Already Submitted', 'Attendance for today is already recorded. You can only submit once per day.');
+            return showToast('error', 'Already Submitted', 'Attendance for today is already recorded. You can only submit once per day.', () => window.show('history'));
         }
 
         // Validate fields
@@ -417,7 +650,7 @@ function showToast(type, title, message) {
         if (!task)  return showToast('error', 'Reason Required', 'Please enter a reason or task description before submitting.');
 
         // --- OPTIMISTIC UI (Immediate Feedback) ---
-        showToast('success', 'Submission Sent! 🎉', 'Your hours are being synced in the background. You can continue.');
+        showToast('success', 'Submission Sent! 🎉', 'Your hours are being synced in the background. You can continue.', () => window.show('history'));
         
         // Immediate Form Clear & Navigation
         const descField = document.getElementById(`${prefix}-task-desc`);
@@ -425,10 +658,7 @@ function showToast(type, title, message) {
         document.querySelectorAll('.hour-btn.selected').forEach(b => b.classList.remove('selected'));
         
         if (prefix === 'mobile') {
-            document.getElementById('mobile-add')?.classList.add('hidden');
-            document.getElementById('mobile-dashboard')?.classList.remove('hidden');
-            document.querySelectorAll('.btn-nav').forEach(n => n.classList.remove('active'));
-            document.getElementById('nav-dash-mobile')?.classList.add('active');
+            window.show('history');
         } else {
             const deskMod = document.getElementById('modal-container');
             if (deskMod) { deskMod.style.display = 'none'; deskMod.classList.add('hidden'); }
@@ -470,13 +700,19 @@ function showToast(type, title, message) {
 });
 
 
-function renderHistory() {
+function renderHistory(searchTerm = '') {
     const dashboardList = document.getElementById('dashboard-recent-history');
     const fullHistoryList = document.getElementById('full-history-table');
     const mobileHistoryList = document.getElementById('mobile-history-list');
+    
+    const filterBtn = document.querySelector('.top-bar-actions .badge-pill span');
+    const isThisWeekOnly = filterBtn && filterBtn.innerText.trim() === 'This Week';
 
-    // 🎯 MERGE LOGIC: Group entries by Date + Reason to show single line per day
+    console.log("[DEBUG] Rendering History. Search:", searchTerm, "Filter (IsWeek):", isThisWeekOnly);
+
+    // 🎯 MERGE LOGIC: Group entries by Date + Reason
     const entries = window.ATTENDANCE_HISTORY || [];
+    console.log("[DEBUG] Total Entries fetched:", entries.length);
     const grouped = entries.reduce((acc, item) => {
         // Handle case-insensitive property names from API
         const key = item.date || item.Date;
@@ -502,51 +738,78 @@ function renderHistory() {
     }, {});
 
     const sortedGroupedItems = Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
-    const historyItems = sortedGroupedItems.slice(0, 5);
+    
+    // Apply Filtering
+    let filteredItems = sortedGroupedItems.filter(i => {
+        const dateStr = formatDate(i.date).toLowerCase();
+        const reasonStr = (i.reason || "").toLowerCase();
+        const hoursStr = (i.hours || []).join(',').toLowerCase();
+        
+        const matchesSearch = dateStr.includes(searchTerm) || 
+                             reasonStr.includes(searchTerm) || 
+                             hoursStr.includes(searchTerm);
+                             
+        if (!isThisWeekOnly) return matchesSearch;
+        
+        const itemDate = new Date(i.date);
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 is Sun, 1 is Mon...
+        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Start with Monday
+        const startOfWeek = new Date(now.setDate(diff));
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        return matchesSearch && itemDate >= startOfWeek;
+    });
+
+
+    const historyItems = filteredItems.slice(0, 5); // Just for Dashboard Recent view
 
     const generateHourBubbles = (hours) => {
-        return `<div style="display: flex; gap: 6px; justify-content: center;">
-            ${hours.map(h => `<span style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #f0fdfa; color: #0d9488; border-radius: 50%; font-size: 0.75rem; font-weight: 600; border: 1.5px solid #ccfbf1;">${h}</span>`).join('')}
+        return `<div style="display: flex; gap: 8px; justify-content: flex-start; align-items: center; flex-wrap: nowrap;">
+            ${hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #EFF6FF; color: #1E4ED8; border-radius: 50%; font-size: 0.8rem; font-weight: 800; border: 2px solid #BFDBFE; box-shadow: 0 2px 4px rgba(30, 78, 216, 0.05);">${h}</span>`).join('')}
         </div>`;
     };
 
     if (dashboardList) {
-        dashboardList.innerHTML = historyItems.map(i => `
+        dashboardList.innerHTML = historyItems.length > 0 ? historyItems.map(i => `
             <tr style="border-bottom: 1px solid #f2f4f7;">
-                <td style="padding: 1.25rem; font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${formatDate(i.date)}</td>
-                <td style="padding: 1.25rem; color: var(--text-secondary); font-size: 0.9rem;">${i.reason}</td>
-                <td style="padding: 1.25rem; text-align: center;">${generateHourBubbles(i.hours)}</td>
-                <td style="padding: 1.25rem; text-align: right;"><a href="#" style="color: var(--accent-teal); font-weight: 700; text-decoration: none; font-size: 0.85rem;">View</a></td>
+                <td style="padding: 1.25rem; font-weight: 600; color: var(--text-primary); font-size: 1.15rem;">${formatDate(i.date)}</td>
+                <td style="padding: 1.25rem; color: var(--text-secondary); font-size: 1.15rem;">${i.reason}</td>
+                <td style="padding: 1.25rem;">${generateHourBubbles(i.hours)}</td>
             </tr>
-        `).join('');
+        `).join('') : `<tr><td colspan="3" style="padding: 3rem; text-align: center; color: var(--text-secondary);">No recent activity logged.</td></tr>`;
     }
 
     if (fullHistoryList) {
-        fullHistoryList.innerHTML = sortedGroupedItems.map(i => `
+        fullHistoryList.innerHTML = filteredItems.length > 0 ? filteredItems.map(i => `
             <tr style="border-bottom: 1px solid #f2f4f7;">
-                <td style="padding: 1.25rem; font-weight: 600;">${formatDate(i.date)}</td>
-                <td style="padding: 1.25rem;">${i.reason}</td>
-                <td style="padding: 1.25rem; text-align: center;">${generateHourBubbles(i.hours)}</td>
-                <td style="padding: 1.25rem; text-align: center;"><span style="background:#f0fff4; color:#276749; padding:4px 12px; border-radius:12px; font-size: 0.75rem; font-weight: 700;">Logged</span></td>
+                <td style="padding: 1.25rem; font-weight: 600; font-size: 1.15rem;">${formatDate(i.date)}</td>
+                <td style="padding: 1.25rem; font-size: 1.15rem;">${i.reason}</td>
+                <td style="padding: 1.25rem; text-align: left;">${generateHourBubbles(i.hours)}</td>
+                <td style="padding: 1.25rem; text-align: center;"><span style="background:#f0fff4; color:#276749; padding:4px 12px; border-radius:12px; font-size: 0.95rem; font-weight: 700;">Logged</span></td>
+                <td style="padding: 1.25rem; text-align: center;"><input type="checkbox" class="modern-checkbox"></td>
             </tr>
-        `).join('');
+        `).join('') : `<tr><td colspan="4" style="padding: 5rem; text-align: center; color: var(--text-secondary);">
+                        <i data-lucide="folder-open" style="width: 48px; height: 48px; display: block; margin: 0 auto 1rem; opacity: 0.3;"></i>
+                        No logs found matching your criteria.
+                      </td></tr>`;
     }
 
     if (mobileHistoryList) {
         mobileHistoryList.innerHTML = `
-            <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.8rem; letter-spacing: 1.5px;">FULL ACTIVITY LOG</p>
-            ${sortedGroupedItems.map(i => `
-                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border: 1.5px solid #f1f5f9;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-weight: 800; color: var(--text-primary);">${formatDate(i.date)}</span>
-                        <a href="#" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-teal); text-decoration: none;">View</a>
+            <p style="font-weight: 700; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase;">HISTORY (${filteredItems.length})</p>
+            ${filteredItems.length > 0 ? filteredItems.map(i => `
+                <div class="card" style="padding: 1rem; margin-bottom: 0.75rem; border: 1.5px solid #f1f5f9; border-radius: 16px !important; transform: none !important; transition: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 800; color: var(--text-primary); font-size: 1.15rem;">${formatDate(i.date)}</span>
+                        <input type="checkbox" class="modern-checkbox">
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${i.reason}</p>
-                    <div style="display: flex; gap: 8px;">
-                        ${i.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #f0fdfa; color: #0d9488; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #ccfbf1;">${h}</span>`).join('')}
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4;">${i.reason}</p>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        ${i.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #EFF6FF; color: #1E4ED8; border-radius: 50%; font-size: 0.8rem; font-weight: 800; border: 2px solid #BFDBFE; box-shadow: 0 2px 4px rgba(30, 78, 216, 0.05);">${h}</span>`).join('')}
                     </div>
                 </div>
-            `).join('')}
+            `).join('') : `<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No logs to display.</div>`}
         `;
     }
 
@@ -562,8 +825,8 @@ function renderHistory() {
                         <span style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">${formatDate(i.date)}</span>
                     </div>
                     <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">${i.reason}</p>
-                    <div style="display: flex; gap: 8px;">
-                        ${i.hours.map(h => `<span style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: #f0fdfa; color: #0d9488; border-radius: 50%; font-size: 0.75rem; font-weight: 700; border: 1.5px solid #ccfbf1;">${h}</span>`).join('')}
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        ${i.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #EFF6FF; color: #1E4ED8; border-radius: 50%; font-size: 0.8rem; font-weight: 800; border: 2px solid #BFDBFE; box-shadow: 0 2px 4px rgba(30, 78, 216, 0.05);">${h}</span>`).join('')}
                     </div>
                 </div>
             `).join('')}
@@ -626,6 +889,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 calModal.style.opacity = '1';
                 calCard.style.transform = 'translateY(0)';
             }, 10);
+            
+            // Push state for back-button closure
+            if (window.innerWidth <= 1024) {
+                history.pushState({ modal: 'calendar' }, '', '#calendar');
+            }
+            
             renderCalendar(currentMonth, currentYear, false);
         };
     }
@@ -685,6 +954,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentMonth > 11) { currentMonth = 0; currentYear++; }
         renderCalendar(currentMonth, currentYear, true);
     });
+
+    // --- REAL-TIME FORM VALIDATION ---
+    const updateSubmitButtonState = () => {
+        const hours = document.querySelectorAll('#hour-selector-mobile .hour-btn.selected').length;
+        const task = document.getElementById('mobile-task-desc').value.trim();
+        const btn = document.getElementById('btn-submit-mobile');
+        
+        if (btn) {
+            const isValid = hours > 0 && task.length > 5;
+            btn.disabled = !isValid;
+            btn.style.opacity = isValid ? '1' : '0.4';
+            btn.style.filter = isValid ? 'none' : 'grayscale(0.5)';
+            btn.style.pointerEvents = isValid ? 'auto' : 'none';
+        }
+    };
+
+    document.getElementById('mobile-task-desc')?.addEventListener('input', updateSubmitButtonState);
+    document.querySelectorAll('#hour-selector-mobile .hour-btn').forEach(b => b.addEventListener('click', () => setTimeout(updateSubmitButtonState, 10)));
+    
+    // Initial state
+    updateSubmitButtonState();
 });
 
 function renderCalendar(month, year, isDesktop = false) {
@@ -735,6 +1025,14 @@ function renderCalendar(month, year, isDesktop = false) {
             dayCell.classList.add('logged');
         }
 
+        // Highlight Today
+        const isToday = dateStr === new Date().toISOString().split('T')[0];
+        if (isToday) {
+            dayCell.style.border = '2px solid var(--primary-teal)';
+            dayCell.style.fontWeight = '900';
+            dayCell.style.color = 'var(--primary-teal)';
+        }
+
         // Selected day style & View detail
         dayCell.onclick = () => {
             document.querySelectorAll(`#${prefix}-grid .cal-day`).forEach(el => el.classList.remove('selected'));
@@ -742,7 +1040,7 @@ function renderCalendar(month, year, isDesktop = false) {
 
             if (groupedData[dateStr]) {
                 const log = groupedData[dateStr];
-                const hourBubbles = log.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #f0fdfa; color: #0d9488; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #ccfbf1;">${h}</span>`).join('');
+                const hourBubbles = log.hours.map(h => `<span style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #EFF6FF; color: #2563EB; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid rgba(59, 130, 246, 0.2);">${h}</span>`).join('');
                 document.getElementById(`${prefix}-day-content`).innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <span style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">${formatDate(dateStr)}</span>

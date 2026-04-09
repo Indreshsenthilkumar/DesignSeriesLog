@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design Series | Login</title>
+    <title>Design Series</title>
+    <link rel="icon" type="image/png" href="logo-brand.png">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,51 +26,53 @@
     </div>
 
     <!-- ================== MOBILE LOGIN ================== -->
-    <!-- Mimics Image 2 with exact user feedback -->
-    <div class="login-mobile" style="background: var(--bg-light); min-height: 100vh; width: 100%; padding: 2.5rem 1.5rem; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-        <!-- Clean Theme Background -->
+    <div class="login-mobile" style="background: var(--header-gradient); min-height: 100vh; width: 100%; padding: 2.5rem 1.5rem; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+        <!-- Clean Theme Decorative Circles -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -80px; left: -40px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(255,255,255,0.05), transparent); border-radius: 50%;"></div>
         
         <!-- Logo & Header Text -->
-        <div class="login-header animate-slide-up" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 2rem;">
-            <div style="width: 76px; height: 76px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; background: white; overflow: hidden; border: 2px solid white;">
+        <div class="login-header animate-slide-up" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 2rem; position: relative; z-index: 10;">
+            <div style="width: 68px; height: 68px; border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: center; background: white; overflow: hidden;">
                 <img src="logo-brand.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-            <h2 style="color: var(--text-secondary); font-size: 1.15rem; font-weight: 500; margin-bottom: 4px;">Welcome to</h2>
-            <h1 style="color: var(--accent-teal); font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0;">Design Series</h1>
+            <h2 style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Welcome to</h2>
+            <h1 style="color: white; font-size: 2.4rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0;">Design Series</h1>
         </div>
 
-        <div class="login-content animate-slide-up" style="width: 100%; max-width: 340px; background: transparent; backdrop-filter: none; box-shadow: none; padding: 0; animation-delay: 0.1s;">
+        <!-- White Login Card -->
+        <div class="login-content animate-slide-up" style="width: 100%; max-width: 360px; background: white; border-radius: 24px; padding: 2rem 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.15); position: relative; z-index: 10; animation-delay: 0.1s;">
             
             <!-- Inputs Container -->
             <div class="input-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
                 <!-- Email Input -->
                 <div style="position: relative; display: flex; align-items: center;">
-                    <i data-lucide="mail" style="position: absolute; left: 1rem; color: #94A3B8; width: 20px;"></i>
-                    <input type="text" id="manual-email-mobile" class="input-field" placeholder="User ID" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" style="width: 100%; padding-left: 3.25rem; background: #EEF2FF; border: 1.5px solid transparent; border-radius: 12px; height: 56px; font-weight: 600; color: var(--text-primary); transition: 0.3s; margin: 0;" onfocus="this.style.borderColor='var(--accent-teal)'" onblur="this.style.borderColor='transparent'">
+                    <i data-lucide="mail" style="position: absolute; left: 1.2rem; color: #64748B; width: 18px;"></i>
+                    <input type="text" id="manual-email-mobile" class="input-field" placeholder="User ID" autocomplete="off" spellcheck="false" style="width: 100%; padding-left: 3rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; height: 52px; font-weight: 500; font-size: 0.95rem; color: var(--text-primary); transition: 0.2s; margin: 0; outline: none;" onfocus="this.style.borderColor='var(--primary-teal)'; this.style.background='white';" onblur="this.style.borderColor='#E2E8F0'; this.style.background='#F8FAFC';">
                 </div>
                 <!-- Password Input -->
                 <div style="position: relative; display: flex; align-items: center;">
-                    <i data-lucide="lock" style="position: absolute; left: 1rem; color: #94A3B8; width: 20px;"></i>
-                    <input type="password" id="manual-password-mobile" class="input-field" placeholder="Password" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" style="width: 100%; padding-left: 3.25rem; padding-right: 3.25rem; background: #EEF2FF; border: 1.5px solid transparent; border-radius: 12px; height: 56px; font-weight: 600; color: var(--text-primary); transition: 0.3s; margin: 0;" onfocus="this.style.borderColor='var(--accent-teal)'" onblur="this.style.borderColor='transparent'">
-                    <i data-lucide="eye-off" style="position: absolute; right: 1rem; color: #94A3B8; width: 20px; cursor: pointer;"></i>
+                    <i data-lucide="lock" style="position: absolute; left: 1.2rem; color: #64748B; width: 18px;"></i>
+                    <input type="password" id="manual-password-mobile" class="input-field" placeholder="Password" autocomplete="new-password" spellcheck="false" style="width: 100%; padding-left: 3rem; padding-right: 3rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; height: 52px; font-weight: 500; font-size: 0.95rem; color: var(--text-primary); transition: 0.2s; margin: 0; outline: none;" onfocus="this.style.borderColor='var(--primary-teal)'; this.style.background='white';" onblur="this.style.borderColor='#E2E8F0'; this.style.background='#F8FAFC';">
+                    <i data-lucide="eye-off" style="position: absolute; right: 1.2rem; color: #64748B; width: 18px; cursor: pointer;"></i>
                 </div>
             </div>
 
             <!-- Login Button -->
-            <button class="btn btn-primary" id="btn-login-manual-mobile" onclick="handleManualLogin('mobile')" style="width: 100%; height: 56px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; background: #6F9B96; border: none; box-shadow: 0 6px 20px rgba(111, 155, 150, 0.3); margin-bottom: 2rem;">Log in</button>
+            <button class="btn btn-primary" id="btn-login-manual-mobile" onclick="handleManualLogin('mobile')" style="width: 100%; height: 52px; font-size: 1rem; border-radius: 12px; margin-bottom: 2rem; letter-spacing: 0.5px;">Log in</button>
 
             <!-- OR divider -->
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem; width: 100%;">
                 <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
-                <span style="font-size: 0.85rem; color: #94A3B8; font-weight: 500;">or</span>
+                <span style="font-size: 0.8rem; color: #94A3B8; font-weight: 600; text-transform: uppercase;">or</span>
                 <hr style="flex: 1; border: none; border-top: 1px solid rgba(0,0,0,0.06);">
             </div>
 
-            <!-- 🎯 Google Sign in (Moved to Bottom) -->
+            <!-- Google Sign in -->
             <div style="text-align: center; margin-bottom: 1rem;">
-                <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">(login with your bitsathymail id)</p>
+                <p style="color: #64748B; font-size: 0.8rem; font-weight: 500;">(Login with your BITSathy ID)</p>
             </div>
-            <div style="display: flex; justify-content: center; margin-top: 0.5rem; width: 100%;">
+            <div style="display: flex; justify-content: center; width: 100%;">
                 <div class="g_id_signin"
                      data-type="standard"
                      data-shape="pill"
@@ -153,6 +156,41 @@
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+
+        // Login Button State Management
+        function validateLoginFields(type) {
+            const idInput = document.getElementById('manual-email-' + type);
+            const passInput = document.getElementById('manual-password-' + type);
+            const loginBtn = document.getElementById('btn-login-manual-' + type);
+            
+            if (idInput && passInput && loginBtn) {
+                if (idInput.value.trim().length > 0 && passInput.value.length > 0) {
+                    loginBtn.style.opacity = '1';
+                    loginBtn.style.pointerEvents = 'auto';
+                    loginBtn.style.transition = 'all 0.3s ease';
+                } else {
+                    loginBtn.style.opacity = '0.5';
+                    loginBtn.style.pointerEvents = 'none';
+                    loginBtn.style.transition = 'all 0.3s ease';
+                }
+            }
+        }
+
+        // Attach listeners (Mobile)
+        ['manual-email-mobile', 'manual-password-mobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => validateLoginFields('mobile'));
+        });
+
+        // Attach listeners (Desktop)
+        ['manual-email-desktop', 'manual-password-desktop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => validateLoginFields('desktop'));
+        });
+
+        // Run initially to set disabled state
+        validateLoginFields('mobile');
+        validateLoginFields('desktop');
     </script>
 </body>
 </html>
