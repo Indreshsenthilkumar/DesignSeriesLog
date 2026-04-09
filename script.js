@@ -1,4 +1,6 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwaeDUaUeulNc7qhDFMw4mrhzywo7SO-gbwWlboc1CNmGV3oaTvQqia4SXz_k7xlSTC/exec";
+const REWARD_API_URL = "https://script.google.com/macros/s/AKfycbxP7Sm0TPV-GlLTnmFumjUxjsrQfTSFkwUc5aagplPf3cAWiMIzhaXShLEZGOxliMS4/exec";
+
 
 // --- HELPERS ---
 const formatDate = (dateStr) => {
@@ -22,20 +24,27 @@ const formatDate = (dateStr) => {
 const showLoadingOverlay = () => {
     const overlay = document.createElement('div');
     overlay.className = 'loading-overlay';
-    // Style the overlay as a dashboard skeleton!
     overlay.innerHTML = `
-        <div style="width: 100%; height: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="skeleton" style="width: 180px; height: 35px; border-radius: 12px;"></div>
-                <div class="skeleton" style="width: 52px; height: 52px; border-radius: 16px;"></div>
+        <div style="width: 100%; height: 100%; max-width: 450px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; overflow: hidden; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="skeleton" style="width: 140px; height: 30px; border-radius: 8px;"></div>
+                <div class="skeleton" style="width: 50px; height: 50px; border-radius: 50%;"></div>
             </div>
-            <div style="width: 100%; height: 180px; border-radius: 28px;" class="skeleton"></div>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
-                <div style="height: 110px; border-radius: 24px;" class="skeleton"></div>
-                <div style="height: 110px; border-radius: 24px;" class="skeleton"></div>
+            
+            <div class="skeleton" style="width: 100%; height: 160px; border-radius: 24px; margin-bottom: 1rem;"></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="skeleton" style="height: 100px; border-radius: 20px;"></div>
+                <div class="skeleton" style="height: 100px; border-radius: 20px;"></div>
             </div>
-            <div style="width: 100%; height: 260px; border-radius: 24px;" class="skeleton"></div>
-            <p class="loading-text" style="text-align: center; margin-top: 1rem;">SECURELY SYNCING YOUR ACCOUNT...</p>
+            
+            <div class="skeleton" style="width: 100%; height: 200px; border-radius: 20px;"></div>
+            
+            <div style="margin-top: 2rem; text-align: center;">
+                <p style="font-weight: 800; font-size: 0.9rem; color: var(--text-secondary); letter-spacing: 0.5px; opacity: 0.7;">
+                    AUTHENTICATING...
+                </p>
+            </div>
         </div>
     `;
     document.body.appendChild(overlay);
@@ -327,7 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof lucide !== 'undefined') lucide.createIcons();
         // Fetch once on load — fast (cache-backed from GAS)
         const _initUser = JSON.parse(localStorage.getItem('user'));
-        if (_initUser && _initUser.email) fetchAttendance(_initUser.email);
+        if (_initUser && _initUser.email) {
+            fetchAttendance(_initUser.email);
+            fetchRewardPoints(_initUser.email);
+        }
     } else {
         // If on login page and already have user, push to dashboard
         const _initUser = JSON.parse(localStorage.getItem('user'));
@@ -361,8 +373,50 @@ async function fetchAttendance(email) {
     } catch (e) { console.warn("Fetch error:", e.name); }
 }
 
+async function fetchRewardPoints(emailOrReg) {
+    if (!emailOrReg) return;
+    console.log("[Rewards] Fetching points for:", emailOrReg);
+    try {
+        const res = await fetch(`${REWARD_API_URL}?email=${encodeURIComponent(emailOrReg)}&t=${Date.now()}`);
+        const data = await res.json();
+        
+        if (data.status === "success" && data.student) {
+            const s = data.student;
+            // Map values from updated GAS logic
+            const earned = s.earned_points || "0";
+            const used   = s.used_points   || "0";
+            const balance = s.balance_points || "0";
+
+            console.log(`[Rewards] Sync Success: E:${earned} U:${used} B:${balance}`);
+
+            document.querySelectorAll('#p-reward-earned').forEach(el => {
+                el.innerText = earned;
+                el.classList.remove('skeleton-text');
+            });
+            document.querySelectorAll('#p-reward-used').forEach(el => {
+                el.innerText = used;
+                el.classList.remove('skeleton-text');
+            });
+            document.querySelectorAll('#p-reward-balance').forEach(el => {
+                el.innerText = balance;
+                el.classList.remove('skeleton-text');
+                el.classList.add('animate-pulse');
+                setTimeout(() => el.classList.remove('animate-pulse'), 2000);
+            });
+        } else {
+            console.warn("[Rewards] API Response:", data.message);
+        }
+    } catch (e) { console.warn("Reward points fetch error:", e); }
+}
+
 async function populateDashboard(freshStudentData) {
     const user = freshStudentData || JSON.parse(localStorage.getItem('user'));
+    
+    // Refresh rewards using Reg Num if available, otherwise email
+    if (user) {
+        const searchId = user.reg_num || user.roll_num || user.roll_no || user.email;
+        if (searchId) fetchRewardPoints(searchId);
+    }
     
     // 🛑 STOP: If no user, only redirect if NOT already on login.html
     if (!user) { 
