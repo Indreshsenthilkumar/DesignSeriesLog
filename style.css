@@ -141,6 +141,24 @@ body {
     border-color: var(--border-color) !important;
 }
 
+.card.with-indicator {
+    padding-left: 2rem !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.card.with-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%; /* Increased length */
+    bottom: 10%; /* Increased length */
+    width: 4px; /* Reduced breadth */
+    background: var(--primary-purple); 
+    border-radius: 0 100px 100px 0;
+    box-shadow: 1px 0 8px rgba(99, 102, 241, 0.2);
+}
+
 .gradient-bg {
     background: var(--primary-gradient) !important;
     color: white !important;
@@ -231,10 +249,12 @@ body {
 .mobile-view {
     display: flex;
     flex-direction: column;
-    max-width: 500px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     min-height: 100vh;
-    padding-bottom: 80px; /* For bottom CTA/Nav */
+    padding-bottom: 90px;
+    background: var(--bg-light);
+    overflow-x: hidden;
 }
 
 .screen {
@@ -389,6 +409,76 @@ body {
     border: 1px solid var(--border-color);
     font-family: inherit;
     resize: none;
+}
+
+.input-field {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    background: white;
+}
+
+/* --- PROGRESS PILLS --- */
+.p-pill {
+    padding: 6px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 8px; text-transform: capitalize;
+}
+.p-completed { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+.p-ongoing   { background: #FFEDD5; color: #9A3412; border: 1px solid #FED7AA; }
+.p-pending   { background: #DBEAFE; color: #1E40AF; border: 1px solid #BFDBFE; }
+.p-absent    { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.p-od        { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+.p-default   { background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0; }
+
+.progress-selector {
+    position: relative;
+    width: 100%;
+}
+
+.progress-trigger {
+    background: #F8FAFC;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    min-height: 52px;
+}
+
+.progress-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+    z-index: 100;
+    display: none;
+    margin-bottom: 8px;
+    overflow: hidden;
+    padding: 8px;
+    animation: slideUp 0.3s var(--transition);
+}
+
+.progress-dropdown.show {
+    display: block;
+}
+
+.progress-option {
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.progress-option:hover {
+    background: #F1F5F9;
 }
 
 /* --- Desktop Styles --- */
@@ -970,7 +1060,7 @@ tbody tr:hover {
     display: none;
     align-items: center;
     justify-content: space-around;
-    z-index: 1000;
+    z-index: 100000; /* Force above all modals */
     border-top: 1px solid rgba(255, 255, 255, 0.3); /* Premium glass border */
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.08);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
@@ -1021,8 +1111,9 @@ tbody tr:hover {
 /* Nav State Mapping via Modern CSS */
 .bottom-nav-mobile:has(#nav-dash-mobile.active) .nav-indicator-mover { transform: translateX(0%); }
 .bottom-nav-mobile:has(#nav-history-mobile.active) .nav-indicator-mover { transform: translateX(100%); }
-.bottom-nav-mobile:has(#nav-work-log-mobile.active) .nav-indicator-mover { transform: translateX(200%); }
-.bottom-nav-mobile:has(#nav-profile-mobile.active) .nav-indicator-mover { transform: translateX(300%); }
+.bottom-nav-mobile:has(#nav-add-center-mobile.active) .nav-indicator-mover { transform: translateX(200%); }
+.bottom-nav-mobile:has(#nav-work-log-mobile.active) .nav-indicator-mover { transform: translateX(300%); }
+.bottom-nav-mobile:has(#nav-profile-mobile.active) .nav-indicator-mover { transform: translateX(400%); }
 
 /* 🎯 MOBILE ONLY VIEW - FORCE DISPLAY */
 @media (max-width: 1024px) {
@@ -1283,4 +1374,150 @@ tbody tr:hover {
     height: 10px;
     border: solid white;
     border-width: 0 2.5px 2.5px 0;
+}
+
+.with-indicator {
+    position: relative;
+    overflow: hidden;
+}
+
+.with-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary-teal);
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+/* --- PROGRESS PILLS & DROP-DOWN --- */
+.p-pill {
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+.p-completed { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+.p-ongoing   { background: #FFEDD5; color: #9A3412; border: 1px solid #FED7AA; }
+.p-pending   { background: #DBEAFE; color: #1E40AF; border: 1px solid #BFDBFE; }
+.p-absent    { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.p-od        { background: #F3E8FF; color: #6B21A8; border: 1px solid #E9D5FF; }
+
+.worklog-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .worklog-modal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.progress-selector {
+    position: relative;
+    width: 100%;
+}
+
+.progress-trigger {
+    background: #F8FAFC;
+    border: 1.5px solid rgba(226, 232, 240, 0.8);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.progress-trigger:hover {
+    border-color: var(--primary-teal);
+    background: white;
+}
+
+.progress-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    padding: 10px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    backdrop-filter: blur(15px);
+}
+
+.progress-dropdown.show {
+    display: flex;
+    animation: dropdownPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes dropdownPop {
+    from { opacity: 0; transform: translateY(-12px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.progress-option {
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.progress-option:hover {
+    background: #F8FAFC;
+    transform: translateX(4px);
+}
+
+.progress-option .p-pill {
+    width: 100%;
+    justify-content: center;
+}
+
+/* --- GLOBAL FORM FIELDS --- */
+.input-field, .textarea-field {
+    width: 100%;
+    padding: 12px 16px;
+    background: #F8FAFC;
+    border: 1.5px solid rgba(226, 232, 240, 0.8);
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-field:focus, .textarea-field:focus {
+    background: white;
+    border-color: var(--primary-teal);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.textarea-field {
+    resize: none;
+    line-height: 1.5;
+}
+
+.input-field::placeholder, .textarea-field::placeholder {
+    color: #94A3B8;
+    font-weight: 500;
 }
