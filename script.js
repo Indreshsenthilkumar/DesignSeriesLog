@@ -208,8 +208,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Seed initial history entry so first back press is caught
-        history.replaceState({ screen: 'dash' }, '', '#dash');
+        // 🟢 FIX: Handle deep-linking on page refresh
+        const initialHash = window.location.hash.replace('#', '');
+        const validScreens = [...Object.keys(screens.mob), ...Object.keys(screens.dsk)];
+        const startScreen = initialHash && validScreens.includes(initialHash) ? initialHash : 'dash';
+
+        // Seed initial history entry with the detected screen
+        history.replaceState({ screen: startScreen }, '', '#' + startScreen);
+        
+        // Show the correct screen immediately
+        window.show(startScreen, false);
 
         Object.keys(navB.mob).forEach(k => navB.mob[k]?.addEventListener('click', () => window.show(k === 'update' ? 'add' : k)));
         Object.keys(navB.dsk).forEach(k => navB.dsk[k]?.addEventListener('click', () => window.show(k)));
