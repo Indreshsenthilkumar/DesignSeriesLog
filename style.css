@@ -1111,9 +1111,8 @@ tbody tr:hover {
 /* Nav State Mapping via Modern CSS */
 .bottom-nav-mobile:has(#nav-dash-mobile.active) .nav-indicator-mover { transform: translateX(0%); }
 .bottom-nav-mobile:has(#nav-history-mobile.active) .nav-indicator-mover { transform: translateX(100%); }
-.bottom-nav-mobile:has(#nav-add-center-mobile.active) .nav-indicator-mover { transform: translateX(200%); }
-.bottom-nav-mobile:has(#nav-work-log-mobile.active) .nav-indicator-mover { transform: translateX(300%); }
-.bottom-nav-mobile:has(#nav-profile-mobile.active) .nav-indicator-mover { transform: translateX(400%); }
+.bottom-nav-mobile:has(#nav-work-log-mobile.active) .nav-indicator-mover { transform: translateX(200%); }
+.bottom-nav-mobile:has(#nav-profile-mobile.active) .nav-indicator-mover { transform: translateX(300%); }
 
 /* 🎯 MOBILE ONLY VIEW - FORCE DISPLAY */
 @media (max-width: 1024px) {

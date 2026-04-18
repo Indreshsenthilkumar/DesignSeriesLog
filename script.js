@@ -107,7 +107,7 @@ window.ATTENDANCE_HISTORY = [];
 document.addEventListener('DOMContentLoaded', () => {
     // 🔍 FIX: Map screen names exactly to your IDs
     const screens = {
-        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), profile: document.getElementById('mobile-profile') },
+        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile') },
         dsk: { 
             dash: document.getElementById('desktop-dashboard'), 
             history: document.getElementById('desktop-history'), 
@@ -159,8 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Toggle active states on buttons
             Object.keys(navB.mob).forEach(k => {
                 if (navB.mob[k]) {
-                    // FIX: When adding attendance, keep the marker on the 'History/Attendance' icon
-                    const isActive = (k === scr) || (k === 'history' && scr === 'add');
+                    // FIX: Keeping correct navigation tab active for sub-pages
+                    const isActive = (k === scr) || (k === 'history' && scr === 'add') || (k === 'work-log' && scr === 'log-work');
                     navB.mob[k].classList.toggle('active', isActive);
                 }
             });
@@ -941,7 +941,6 @@ function renderHistory(searchTerm = '') {
     if (absentMob) absentMob.innerText = totalLeaveUnits.toFixed(1);
     const absentDsk = document.getElementById('p-absent-desktop');
     if (absentDsk) absentDsk.innerText = totalLeaveUnits.toFixed(1);
-
     lucide.createIcons();
 
     // Force hydrate embedded Desktop Calendar instantly when history data resolves
@@ -952,45 +951,86 @@ function renderHistory(searchTerm = '') {
 
 // --- WORKLOG MODAL & LOGIC ---
 window.openWorklogModal = function(editDateStr = null) {
+    const isMobile = window.innerWidth <= 1024;
     const modal = document.getElementById('worklog-modal-container');
     const card = document.getElementById('worklog-modal-card');
-    const datePicker = document.getElementById('worklog-modal-date-picker');
-    const titleEl = document.getElementById('worklog-modal-title');
-    const editHidden = document.getElementById('worklog-modal-edit-date');
+    const datePicker = document.getElementById(isMobile ? 'mobile-log-work-date-picker' : 'worklog-modal-date-picker');
+    const deadlinePicker = document.getElementById(isMobile ? 'mobile-log-work-deadline-picker' : 'worklog-modal-deadline-picker');
+    const titleEl = document.getElementById(isMobile ? 'mobile-log-work-title' : 'worklog-modal-title');
+    const editHidden = document.getElementById(isMobile ? 'mobile-log-work-edit-date' : 'worklog-modal-edit-date');
+    const descInput = document.getElementById(isMobile ? 'mobile-log-work-desc' : 'worklog-modal-desc');
+    const titleInput = document.getElementById(isMobile ? 'mobile-log-work-title-input' : 'worklog-modal-title-input');
+    const progressElId = isMobile ? 'mobile-log-work-progress-value' : 'worklog-modal-progress-value';
+    const progressDropdownId = isMobile ? 'mobile-log-work-progress-dropdown' : 'worklog-modal-progress-dropdown';
+    
+    // (Removed Name Pre-fill)
     
     if (editDateStr) {
-        titleEl.textContent = 'Edit Work Log';
-        editHidden.value = editDateStr;
+        titleEl.textContent = isMobile ? 'Edit Activity' : 'Edit Work Log';
+        if (editHidden) editHidden.value = editDateStr;
         if (datePicker) datePicker.value = editDateStr;
         
         const entry = (window.WORKLOG_HISTORY || []).find(i => i.date === editDateStr);
         if (entry) {
-            document.getElementById('worklog-modal-desc').value = entry.worklog || entry.description || '';
-            document.getElementById('worklog-modal-title-input').value = entry.title || '';
+            if (descInput) descInput.value = entry.worklog || entry.description || '';
+            if (titleInput) titleInput.value = entry.title || '';
+            if (deadlinePicker) deadlinePicker.value = entry.deadline || '';
             
-            const pVal = entry.progress || 'On going';
-            const colors = {'Completed':'p-completed','On going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'};
-            setProgressValue('worklog-modal-progress-value', pVal, colors[pVal] || 'p-ongoing', 'worklog-modal-progress-dropdown');
+            const pVal = entry.progress || 'On Going';
+            const colors = {'Completed':'p-completed','On Going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'};
+            setProgressValue(progressElId, pVal, colors[pVal] || 'p-ongoing', progressDropdownId);
         }
     } else {
         const todayStr = new Date().toISOString().split('T')[0];
-        titleEl.textContent = 'Log Work';
-        editHidden.value = '';
+        titleEl.textContent = isMobile ? 'Log Activity' : 'Log Work';
+        if (editHidden) editHidden.value = '';
         if (datePicker) datePicker.value = todayStr;
-        document.getElementById('worklog-modal-desc').value = '';
-        document.getElementById('worklog-modal-title-input').value = '';
-        setProgressValue('worklog-modal-progress-value', 'On going', 'p-ongoing', 'worklog-modal-progress-dropdown');
+        if (deadlinePicker) deadlinePicker.value = '';
+        if (descInput) descInput.value = '';
+        if (titleInput) titleInput.value = '';
+        setProgressValue(progressElId, 'On Going', 'p-ongoing', progressDropdownId);
     }
 
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    setTimeout(() => {
-        modal.style.opacity = '1';
-        card.style.transform = 'scale(1)';
-    }, 10);
+    if (isMobile) {
+        window.validateWorklogForm();
+        window.show('log-work');
+    } else {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+        }, 10);
+    }
+};
+
+window.validateWorklogForm = function() {
+    const isMobile = window.innerWidth <= 1024;
+    if (!isMobile) return;
+
+    const date = document.getElementById('mobile-log-work-date-picker')?.value;
+    const btn = document.getElementById('btn-submit-mobile-log-work');
+
+    if (!btn) return;
+
+    if (date) {
+        btn.style.background = '#2563EB';
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        btn.style.boxShadow = '0 10px 30px rgba(37, 99, 235, 0.2)';
+    } else {
+        btn.style.background = '#94A3B8';
+        btn.style.opacity = '0.6';
+        btn.style.pointerEvents = 'none';
+        btn.style.boxShadow = 'none';
+    }
 };
 
 window.closeWorklogModal = function() {
+    if (window.innerWidth <= 1024) {
+        window.show('work-log');
+        return;
+    }
     const modal = document.getElementById('worklog-modal-container');
     const card = document.getElementById('worklog-modal-card');
     if (modal) {
@@ -1013,31 +1053,50 @@ window.toggleProgressDropdown = function(dropdownId) {
 window.setProgressValue = function(displayTextId, value, pillClass, dropdownId) {
     const displayEl = document.getElementById(displayTextId);
     if (!displayEl) return;
+    
     displayEl.className = `p-pill ${pillClass}`;
-    displayEl.innerText = value;
+    
+    // Find or create span to avoid wiping icons
+    let span = displayEl.querySelector('span');
+    if (span) {
+        span.innerText = value;
+    } else {
+        displayEl.innerText = value;
+    }
+    
     if (dropdownId) document.getElementById(dropdownId)?.classList.remove('show');
 };
 
-document.getElementById('btn-submit-worklog-modal')?.addEventListener('click', async () => {
+// --- WORKLOG SUBMIT LOGIC (Unified) ---
+const handleWorklogSubmit = async (btnId) => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
     
-    const title = document.getElementById('worklog-modal-title-input')?.value.trim();
-    const desc = document.getElementById('worklog-modal-desc')?.value.trim();
-    const pickerDate = document.getElementById('worklog-modal-date-picker')?.value;
-    const progress = document.getElementById('worklog-modal-progress-value')?.innerText.trim() || 'On going';
-    const originalDate = document.getElementById('worklog-modal-edit-date')?.value;
+    const isMobile = btnId.includes('mobile');
+    const titleId = isMobile ? 'mobile-log-work-title-input' : 'worklog-modal-title-input';
+    const descId = isMobile ? 'mobile-log-work-desc' : 'worklog-modal-desc';
+    const dateId = isMobile ? 'mobile-log-work-date-picker' : 'worklog-modal-date-picker';
+    const deadId = isMobile ? 'mobile-log-work-deadline-picker' : 'worklog-modal-deadline-picker';
+    const progId = isMobile ? 'mobile-log-work-progress-value' : 'worklog-modal-progress-value';
+    const editId = isMobile ? 'mobile-log-work-edit-date' : 'worklog-modal-edit-date';
+
+    const title = document.getElementById(titleId)?.value.trim();
+    const desc = document.getElementById(descId)?.value.trim();
+    const pickerDate = document.getElementById(dateId)?.value;
+    const deadline = document.getElementById(deadId)?.value;
+    const progress = document.getElementById(progId)?.innerText.trim() || 'On Going';
+    const originalDate = document.getElementById(editId)?.value;
     
-    if (!title || !desc || !pickerDate) {
-         return showToast('error', 'Missing Details', "Please fill in Title, Description, and Date.");
+    if (!pickerDate) {
+         return showToast('error', 'Missing Date', "Please select an activity date.");
     }
     
-    const btn = document.getElementById('btn-submit-worklog-modal');
+    const btn = document.getElementById(btnId);
+    const oldText = btn.innerText;
     btn.innerText = "Syncing...";
     btn.style.opacity = '0.7';
     btn.style.pointerEvents = 'none';
 
-    // If we're editing, we technically want to overwrite/update for the PICKER date
     const payloadDate = pickerDate;
     const oldDateToDelete = (originalDate && originalDate !== pickerDate) ? originalDate : null;
 
@@ -1049,7 +1108,7 @@ document.getElementById('btn-submit-worklog-modal')?.addEventListener('click', a
             title   : title,
             worklog : desc,
             progress: progress,
-            oldDate : oldDateToDelete, // Backend helper if swapping dates
+            oldDate : oldDateToDelete,
             batch   : user.batch || user.section || "N/A"
         };
 
@@ -1060,8 +1119,9 @@ document.getElementById('btn-submit-worklog-modal')?.addEventListener('click', a
         const data = await res.json();
         
         if (data.status === 'success') {
-            closeWorklogModal();
-            // Stagger reload
+            if (isMobile) window.show('work-log');
+            else closeWorklogModal();
+            
             showToast('success', 'Work Log Saved', 'Your progress has been synced successfully.');
             setTimeout(() => fetchAttendance(user.email), 1000); 
         } else {
@@ -1070,11 +1130,14 @@ document.getElementById('btn-submit-worklog-modal')?.addEventListener('click', a
     } catch (err) {
         showToast('error', 'Connection Error', "Your data wasn't saved. Please check your internet.");
     } finally {
-        btn.innerText = "Save Work Log";
+        btn.innerText = oldText;
         btn.style.opacity = '1';
         btn.style.pointerEvents = 'auto';
     }
-});
+};
+
+document.getElementById('btn-submit-worklog-modal')?.addEventListener('click', () => handleWorklogSubmit('btn-submit-worklog-modal'));
+document.getElementById('btn-submit-mobile-log-work')?.addEventListener('click', () => handleWorklogSubmit('btn-submit-mobile-log-work'));
 
 // --- WORKLOG RENDERING ---
 window.renderWorklogHistory = function(searchTerm = '') {
@@ -1098,10 +1161,14 @@ window.renderWorklogHistory = function(searchTerm = '') {
 
     // 📱 Mobile Render
     const mobEl = document.getElementById('mobile-worklog-history');
+    const mobCountEl = document.getElementById('mobile-worklog-count-label');
+    
+    if (mobCountEl) mobCountEl.innerText = `HISTORY TRACKER (${filtered.length})`;
+
     if (mobEl) {
         if (filtered.length === 0) {
              mobEl.innerHTML = `
-                <div class="card" style="padding: 4rem 2rem; text-align: center; background: white; border: 1.5px solid rgba(226, 232, 240, 0.5); border-radius: 24px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+                <div class="card" style="padding: 4rem 2rem; text-align: center; background: white; border: 1.5px solid rgba(226, 232, 240, 0.5); border-radius: 24px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 10px;">
                     <div style="background: #F1F5F9; width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #94A3B8;">
                         <i data-lucide="clipboard-list" style="width: 32px; height: 32px;"></i>
                     </div>
@@ -1110,37 +1177,36 @@ window.renderWorklogHistory = function(searchTerm = '') {
                 </div>`;
         } else {
              mobEl.innerHTML = filtered.map(i => {
-                  const pl = i.progress || 'On going';
-                  const cls = {'Completed':'p-completed','On going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'}[pl] || 'p-ongoing';
+                  const pl = i.progress || 'On Going';
+                  const cls = {'Completed':'p-completed','On Going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'}[pl] || 'p-ongoing';
                   return `
-                  <div class="card with-indicator" style="padding:1.5rem 1.5rem 1.5rem 2.4rem; border-radius:24px !important; margin-bottom:16px; border:1px solid rgba(226, 232, 240, 0.6); box-shadow: 0 8px 30px rgba(0,0,0,0.03); background: white;">
+                  <div class="card with-indicator" style="padding:1.5rem 1.25rem 1.5rem 2rem; border-radius:24px !important; margin-bottom:12px; border:1px solid rgba(226, 232, 240, 0.6); box-shadow: 0 8px 30px rgba(0,0,0,0.03); background: white;">
                       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                           <div style="flex: 1;">
-                              <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-primary); margin-bottom:4px; letter-spacing:-0.5px;">${formatDate(i.date || i.Date)}</h3>
-                              <p style="font-size:0.95rem; color:#64748B; font-weight:600; margin-bottom:12px;">${i.title || 'General Work'}</p>
-                              
-                              <!-- Status Bubbles (Decorative / Step Indicator) -->
-                              <div style="display:flex; gap:6px; margin-bottom:14px;">
-                                  ${['P','W','R','C'].map(step => `<div style="width:28px; height:28px; border-radius:50%; border:1.5px solid #DBEAFE; color:#3B82F6; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; background: ${pl.startsWith(step) ? '#DBEAFE' : 'transparent'}">${step}</div>`).join('')}
+                              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                  <span style="font-size: 0.7rem; font-weight: 800; color: #3B82F6; background: rgba(59, 130, 246, 0.1); padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${i.title || 'Work Log'}</span>
                               </div>
-
-                              <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6; font-weight: 500;">${(i.worklog||'').substring(0,80)}${(i.worklog||'').length>80?'...':''}</p>
+                              <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-primary); margin-bottom:12px; letter-spacing:-0.5px;">${formatDate(i.date || i.Date)}</h3>
+                              
+                              <p style="font-size:0.9rem; color:var(--text-secondary); line-height:1.6; font-weight: 500; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 4.8rem;">${(i.worklog||'No description provided.')}</p>
+                              
+                              <!-- Progress Indicator -->
+                              <div style="display: flex; align-items: center; gap: 10px;">
+                                  <span class="p-pill ${cls}" style="font-size:0.75rem; padding:6px 14px; border-radius:10px;">${pl}</span>
+                                  ${i.deadline ? `<span style="font-size:0.7rem; color:#94A3B8; font-weight:700; text-transform: uppercase;">• Due ${formatDate(i.deadline)}</span>` : ''}
+                              </div>
                           </div>
-                          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px;">
-                              <div style="width:22px; height:22px; border-radius:6px; border:2px solid #E2E8F0; opacity: 0.6;"></div>
-                              <button onclick="openWorklogModal('${i.date || i.Date}')" class="btn-icon" style="background:#F1F5F9; color:var(--text-primary); border-radius:12px; width:44px; height:44px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                                  <i data-lucide="edit-3" style="width:18px;"></i>
+                          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px; margin-left: 10px;">
+                              <button onclick="openWorklogModal('${i.date || i.Date}')" class="btn-icon" style="background:#F1F5F9; color:var(--text-primary); border-radius:14px; width:48px; height:48px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); border: 1.5px solid #E2E8F0;">
+                                  <i data-lucide="edit-3" style="width:20px;"></i>
                               </button>
                           </div>
-                      </div>
-                      <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
-                          <span class="p-pill ${cls}" style="font-size:0.7rem; padding:4px 12px; border-radius:8px;">${pl}</span>
-                          <span style="font-size:0.75rem; color:#94A3B8; font-weight:700;">${i.deadline ? 'UNTIL ' + formatDate(i.deadline).toUpperCase() : ''}</span>
                       </div>
                   </div>`;
              }).join('');
         }
     }
+    if (window.lucide) lucide.createIcons();
 
     // 💻 Desktop Render
     const deskEl = document.getElementById('desktop-worklog-history');
@@ -1149,8 +1215,8 @@ window.renderWorklogHistory = function(searchTerm = '') {
               deskEl.innerHTML = `<tr><td colspan="6" style="padding:4rem;text-align:center;color:var(--text-secondary);">No work logs found.</td></tr>`;
          } else {
               deskEl.innerHTML = filtered.map(i => {
-                   const pl = i.progress || 'On going';
-                   const cls = {'Completed':'p-completed','On going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'}[pl] || 'p-ongoing';
+                   const pl = i.progress || 'On Going';
+                   const cls = {'Completed':'p-completed','On Going':'p-ongoing','Review Pending':'p-pending','Absent':'p-absent','OD':'p-od'}[pl] || 'p-ongoing';
                    
                    return `
                    <tr style="border-bottom:1px solid #E2E8F0;transition:background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
@@ -1278,7 +1344,7 @@ function renderWorklogCalendar(month, year) {
                     <div style="padding: 0.75rem 0; border-bottom: 1px dashed #E2E8F0;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                             <span style="font-weight:800; color:var(--text-primary); font-size:1rem;">${log.title || 'Work Log'}</span>
-                            <span style="font-size:0.65rem; font-weight:700; color:${progressColor}; background:${progressColor}18; padding:4px 10px; border-radius:99px;">${log.progress || 'On going'}</span>
+                            <span style="font-size:0.65rem; font-weight:700; color:${progressColor}; background:${progressColor}18; padding:4px 10px; border-radius:99px;">${log.progress || 'On Going'}</span>
                         </div>
                         <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">${log.worklog || ''}</p>
                     </div>`;
@@ -1432,10 +1498,12 @@ function renderCalendar(month, year, isDesktop = false) {
     // Merge logic for quick lookups
     const entries = window.ATTENDANCE_HISTORY || [];
     const groupedData = entries.reduce((acc, item) => {
-        if (!acc[item.date]) acc[item.date] = { ...item, hours: [] };
-        const newHours = item.hours.toString().split(',').map(h => h.trim());
-        acc[item.date].hours = [...new Set([...acc[item.date].hours, ...newHours])].sort((a, b) => a - b);
-        acc[item.date].reason = item.reason;
+        const dateKey = item.date || item.Date || '';
+        if (!dateKey) return acc;
+        if (!acc[dateKey]) acc[dateKey] = { ...item, date: dateKey, hours: [] };
+        const newHours = (item.hours || item.Hours || "").toString().split(',').map(h => h.trim()).filter(h => h);
+        acc[dateKey].hours = [...new Set([...acc[dateKey].hours, ...newHours])].sort((a, b) => a - b);
+        acc[dateKey].reason = item.reason || item.Reason || "";
         return acc;
     }, {});
 

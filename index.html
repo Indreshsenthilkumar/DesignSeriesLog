@@ -406,40 +406,113 @@
 
         <!-- Worklog Screen (Mobile) -->
         <div id="mobile-work-log" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 0 !important; margin: 0 !important; overflow-x: hidden; position: relative; z-index: 100;">
-            <!-- Premium Header (Aligned with Reference UI) -->
-            <div style="padding: 2rem 1.25rem 2.5rem; background: white; margin: 0 !important; position: relative;">
-                <div style="display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
+            <!-- Premium Header (Aligned with Dashboard UI) -->
+            <div style="padding: 2.5rem 1.5rem 4rem; background: var(--primary-gradient); border-bottom-left-radius: 32px !important; border-bottom-right-radius: 32px !important; position: relative; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15); overflow: hidden;">
+                <!-- Clean Decorative Patterns -->
+                <div style="position: absolute; top: -30px; right: -30px; width: 180px; height: 180px; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); border-radius: 50%;"></div>
+                <div style="position: absolute; bottom: 0px; left: -20px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(255,255,255,0.08), transparent); border-radius: 50%;"></div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 10;">
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        <button class="btn-icon" style="background: white; border: 1px solid #E2E8F0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.03);" onclick="document.getElementById('nav-dash-mobile').click();">
-                            <i data-lucide="chevron-left" style="color: var(--text-primary); width: 22px;"></i>
+                        <button class="btn-icon" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; backdrop-filter: blur(10px);" onclick="document.getElementById('nav-dash-mobile').click();">
+                            <i data-lucide="chevron-left" style="color: white; width: 22px;"></i>
                         </button>
-                        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px;">Work Log</h2>
+                        <h2 style="font-size: 1.8rem; font-weight: 800; color: white; letter-spacing: -0.5px;">Work Log</h2>
                     </div>
-                    <button class="btn-icon" id="btn-open-worklog-calendar" style="background: white; border: 1px solid #E2E8F0; border-radius: 14px; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
-                        <i data-lucide="calendar" style="color: var(--primary-teal); width: 22px;"></i>
+                    <button class="btn-icon" id="btn-open-worklog-calendar" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 14px; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                        <i data-lucide="calendar" style="color: white; width: 22px;"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Content Container -->
-            <div style="padding: 0 1.25rem; margin-top: 5px; position: relative; z-index: 10;">
-                <div style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
-                    <span id="mobile-worklog-count-label" style="font-size: 0.75rem; font-weight: 800; color: #64748B; letter-spacing: 1px; text-transform: uppercase;">HISTORY (0)</span>
+            <div style="padding: 0 1.25rem; margin-top: -20px; position: relative; z-index: 20;">
+                <div style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; background: white; padding: 12px 16px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                    <span id="mobile-worklog-count-label" style="font-size: 0.75rem; font-weight: 800; color: #64748B; letter-spacing: 1px; text-transform: uppercase;">HISTORY TRACKER</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: #22C55E; animation: pulse 2s infinite;"></div>
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #22C55E;">SYNC LIVE</span>
+                    </div>
                 </div>
 
-            <!-- Worklog History List Container -->
-            <div id="mobile-worklog-history" style="display:flex;flex-direction:column;gap:12px;">
-                <!-- Populated via JS -->
-            </div>
+                <div id="mobile-worklog-history" style="display:flex;flex-direction:column;gap:12px; padding-bottom: 120px;">
+                    <!-- Populated via JS -->
+                    <div class="skeleton" style="height: 120px; border-radius: 20px;"></div>
+                    <div class="skeleton" style="height: 120px; border-radius: 20px;"></div>
+                </div>
 
-            <!-- Floating Action Button for Logging Work -->
-            <button onclick="openWorklogModal()" style="position: fixed; bottom: 105px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); border: none; cursor: pointer; z-index: 99000;">
-                <i data-lucide="plus" style="width: 32px; height: 32px; stroke-width: 3px;"></i>
-            </button>
+                <!-- Floating Action Button for Logging Work -->
+                <button id="btn-add-worklog-mobile" style="position: fixed; bottom: 105px; right: 20px; width: 64px; height: 64px; border-radius: 22px; background: var(--primary-gradient); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(37, 99, 235, 0.35); border: none; cursor: pointer; z-index: 99999; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">
+                    <i data-lucide="plus" style="width: 32px; height: 32px; stroke-width: 3px;"></i>
+                </button>
             </div>
         </div>
 
-        <!-- Hidden proxy button for FAB trigger routing safely -->
+        <!-- Log Work Screen (Mobile - Dedicated Page) -->
+        <div id="mobile-log-work" class="screen hidden" style="background: white; min-height: 100vh; padding: 0 !important; margin: 0 !important; overflow-x: hidden; position: relative; z-index: 150; display: flex; flex-direction: column;">
+            <!-- Premium Header -->
+            <div style="padding: 1.5rem 1.25rem; background: white; border-bottom: none; display: flex; align-items: center; justify-content: center; position: relative;">
+                <button class="btn-icon" style="background: #F1F5F9; border: none; width: 48px; height: 48px; border-radius: 16px; position: absolute; left: 1.25rem;" onclick="window.show('work-log');">
+                    <i data-lucide="chevron-left" style="color: #1E293B; width: 22px;"></i>
+                </button>
+                <h2 id="mobile-log-work-title" style="font-size: 1.5rem; font-weight: 800; color: #1E293B; letter-spacing: -0.5px;">Log Activity</h2>
+            </div>
+
+            <!-- Form Body -->
+            <div style="padding: 1rem 1.25rem 2.5rem; flex: 1; overflow-y: auto;">
+                <input type="hidden" id="mobile-log-work-edit-date">
+                
+                <!-- Date Selector Display -->
+                <div style="margin-bottom: 1.5rem; position: relative;">
+                    <label style="font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: block;">Activity Date <span style="color: #EF4444;">*</span></label>
+                    <div style="background: #F8FAFC; border: 1.5px solid #F1F5F9; border-radius: 16px; height: 64px; display: flex; align-items: center; padding: 0 1.25rem; gap: 12px; cursor: pointer;">
+                        <input type="date" id="mobile-log-work-date-picker" style="border: none; background: transparent; font-size: 1.1rem; font-weight: 700; color: #1E293B; font-family: inherit; width: 100%; outline: none;" oninput="window.validateWorklogForm()">
+                    </div>
+                </div>
+
+                <!-- Fields -->
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: block;">Task / Log Title</label>
+                    <input type="text" id="mobile-log-work-title-input" class="input-field" placeholder="E.g., Component Design, Web Dev Phase 1..." style="height: 60px; border-radius: 16px; border: 1.5px solid #E2E8F0; background: white; padding: 0 1.25rem; font-size: 1rem; font-weight: 500;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: block;">Detailed Description</label>
+                    <textarea id="mobile-log-work-desc" class="textarea-field" rows="4" placeholder="Briefly describe the work completed..." style="border-radius: 16px; border: 1.5px solid #E2E8F0; background: white; padding: 1.25rem; font-size: 1rem; font-weight: 500; min-height: 120px;"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 12px; display: block;">Deadline</label>
+                    <div style="position: relative;">
+                        <input type="date" id="mobile-log-work-deadline-picker" class="input-field" style="height: 60px; border-radius: 16px; border: 1.5px solid #E2E8F0; background: white; padding: 0 1.25rem; font-size: 1rem; font-weight: 700; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: block;">Progress Status <span style="color: #EF4444;">*</span></label>
+                    <div class="progress-selector" style="position: relative;">
+                        <div id="mobile-log-work-progress-value" class="p-pill p-ongoing" style="height: 64px; width: 100%; display: flex; align-items: center; justify-content: space-between; border-radius: 16px; cursor: pointer; font-weight: 700; padding: 0 1.25rem; border: 1.5px solid #E2E8F0; background: white;" onclick="window.toggleProgressDropdown('mobile-log-work-progress-dropdown')">
+                            <span>On Going</span>
+                            <i data-lucide="chevron-down" style="color: #64748B; width: 20px;"></i>
+                        </div>
+                        <div id="mobile-log-work-progress-dropdown" class="progress-dropdown" style="top: 70px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); border: 1px solid #E2E8F0; background: white;">
+                            <div class="progress-option" onclick="window.setProgressValue('mobile-log-work-progress-value', 'Completed', 'p-completed', 'mobile-log-work-progress-dropdown')"><span class="p-pill p-completed">Completed</span></div>
+                            <div class="progress-option" onclick="window.setProgressValue('mobile-log-work-progress-value', 'On Going', 'p-ongoing', 'mobile-log-work-progress-dropdown')"><span class="p-pill p-ongoing">On Going</span></div>
+                            <div class="progress-option" onclick="window.setProgressValue('mobile-log-work-progress-value', 'Review Pending', 'p-pending', 'mobile-log-work-progress-dropdown')"><span class="p-pill p-pending">Review Pending</span></div>
+                            <div class="progress-option" onclick="window.setProgressValue('mobile-log-work-progress-value', 'Absent', 'p-absent', 'mobile-log-work-progress-dropdown')"><span class="p-pill p-absent">Absent</span></div>
+                            <div class="progress-option" onclick="window.setProgressValue('mobile-log-work-progress-value', 'OD', 'p-od', 'mobile-log-work-progress-dropdown')"><span class="p-pill p-od">OD</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2.5rem;">
+                    <button class="btn btn-primary" id="btn-submit-mobile-log-work" style="width: 100%; border-radius: 20px; height: 64px; font-weight: 800; font-size: 1.25rem; background: #94A3B8; border: none; color: white; transition: all 0.3s ease; opacity: 0.6; pointer-events: none;">
+                        Save Work Log
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <button id="nav-update-mobile" style="display: none;"></button>
 
         <!-- Mobile Nav (Persistent for Dashboard/History) -->
@@ -737,18 +810,38 @@
 
             <!-- Desktop Worklog Screen -->
             <div id="desktop-work-log" class="desktop-screen hidden" style="padding: 2.5rem;">
-                <div style="margin-bottom: 2rem;">
-                    <h2 style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -1px; margin: 0 0 8px;">Work Log</h2>
+                <!-- Premium Header Banner -->
+                <div class="desktop-banner" style="background: var(--header-gradient); border-radius: var(--radius-xl); padding: 3.5rem; position: relative; overflow: hidden; box-shadow: 0 25px 60px rgba(59, 130, 246, 0.2); margin-bottom: 3rem; color: white; display: flex; align-items: center; justify-content: space-between;">
+                    <!-- Decorative Shapes -->
+                    <div style="position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -100px; right: -50px; filter: blur(30px);"></div>
+                    <div style="position: absolute; width: 200px; height: 200px; background: rgba(0,0,0,0.05); border-radius: 50%; bottom: -50px; left: 10%; filter: blur(50px);"></div>
+                    
+                    <div style="position: relative; z-index: 2;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; background: rgba(255,255,255,0.15); width: fit-content; padding: 6px 14px; border-radius: 10px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);">
+                             <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;">DEVELOPMENT PROGRESS</span>
+                        </div>
+                        <h2 style="font-size: 3.2rem; font-weight: 800; margin-bottom: 0.75rem; letter-spacing: -1.2px; line-height: 1;">Work Log Tracker</h2>
+                        <p style="opacity: 0.95; font-size: 1.15rem; font-weight: 500; max-width: 580px; line-height: 1.6;">Maintain a detailed record of your daily progress, tasks completed, and upcoming milestones.</p>
+                    </div>
+
+                    <div style="position: relative; z-index: 2; text-align: right;">
+                        <button onclick="openWorklogModal()" class="btn-primary" style="background: white; color: var(--accent-teal); border: none; width: auto; padding: 0 2.5rem; height: 64px; border-radius: 18px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+                            <i data-lucide="plus-circle" style="width: 24px; margin-right: 10px;"></i>
+                            New Work Log
+                        </button>
+                    </div>
                 </div>
 
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;">
-                    <div style="display:flex;align-items:center;gap:1.25rem;">
-                        <button onclick="openWorklogModal()" class="btn-primary" style="display:flex;align-items:center;gap:8px;height:50px;padding:0 2rem;border-radius:var(--radius-lg);font-size:0.95rem; width: auto !important;">
-                            <i data-lucide="plus-circle" style="width:20px;margin-right:2px;"></i> Log Work
-                        </button>
-                        <div class="search-box" style="width:280px;height:50px;background:white;border:1.5px solid #f1f5f9;border-radius:var(--radius-lg);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem; background: white; padding: 1.5rem 2rem; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+                    <div style="display:flex;align-items:center;gap:1.5rem;">
+                        <div class="search-box" style="width:380px;height:52px;background:#F8FAFC;border:1.5px solid #F1F5F9;border-radius:var(--radius-lg);">
                             <i data-lucide="search" style="width:18px;color:#94A3B8;"></i>
-                            <input type="text" id="worklog-search-input" placeholder="Search work logs..." style="font-size:0.9rem;font-weight:600;">
+                            <input type="text" id="worklog-search-input" placeholder="Filter logs by date, title or task..." style="font-size:0.95rem;font-weight:600; background: transparent;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #F0FDF4; color: #166534; border-radius: 12px; font-weight: 700; font-size: 0.85rem; border: 1px solid #DCFCE7;">
+                            <i data-lucide="check-circle" style="width: 16px;"></i> Verified Progress
                         </div>
                     </div>
                 </div>
@@ -902,8 +995,8 @@
             </div>
 
             <!-- Editable Date Context -->
+            <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Activity Date <span style="color:#EF4444">*</span></label>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:2rem;background:#F8FAFC;padding:12px 18px;border-radius:14px;width:fit-content;border:1.5px solid rgba(226, 232, 240, 0.6);">
-                <i data-lucide="calendar" style="width:20px; color:var(--primary-teal);"></i>
                 <input type="date" id="worklog-modal-date-picker" style="font-weight:700; color:var(--text-primary); font-size:1rem; border:none; background:transparent; outline:none; font-family:inherit;">
             </div>
 
@@ -911,31 +1004,31 @@
 
             <div class="worklog-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
                 <div>
-                    <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Task / Log Title <span style="color:#EF4444">*</span></label>
+                    <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Task / Log Title</label>
                     <input type="text" id="worklog-modal-title-input" class="input-field" placeholder="E.g., Component Design, Web Dev Phase 1...">
                 </div>
                 <div>
-                    <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Detailed Description <span style="color:#EF4444">*</span></label>
+                    <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Detailed Description</label>
                     <textarea id="worklog-modal-desc" class="textarea-field" rows="4" placeholder="Briefly describe the work completed..."></textarea>
                 </div>
                 <div class="worklog-modal-grid">
                     <div>
-                        <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Deadline (Optional)</label>
+                        <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Deadline</label>
                         <input type="date" id="worklog-modal-deadline" class="input-field" style="color:var(--text-primary);">
                     </div>
                     <div>
                         <label style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Progress Status <span style="color:#EF4444">*</span></label>
-                        <div class="progress-selector">
-                            <div class="progress-trigger" id="worklog-modal-progress-trigger" onclick="toggleProgressDropdown('worklog-modal-progress-dropdown')">
-                                <span class="p-pill p-ongoing" id="worklog-modal-progress-value">On going</span>
-                                <i data-lucide="chevron-down" style="color:#64748B; width: 16px;"></i>
+                        <div class="progress-selector" style="position: relative;">
+                            <div id="worklog-modal-progress-value" class="p-pill p-ongoing" style="height: 52px; width: 100%; display: flex; align-items: center; justify-content: space-between; border-radius: 14px; cursor: pointer; font-weight: 700; padding: 0 1.25rem; border: 1.5px solid #E2E8F0; background: white;" onclick="window.toggleProgressDropdown('worklog-modal-progress-dropdown')">
+                                <span>On Going</span>
+                                <i data-lucide="chevron-down" style="color: #64748B; width: 18px;"></i>
                             </div>
-                            <div class="progress-dropdown" id="worklog-modal-progress-dropdown">
-                                <div class="progress-option" onclick="setProgressValue('worklog-modal-progress-value','Completed','p-completed','worklog-modal-progress-dropdown')"><span class="p-pill p-completed">Completed</span></div>
-                                <div class="progress-option" onclick="setProgressValue('worklog-modal-progress-value','On going','p-ongoing','worklog-modal-progress-dropdown')"><span class="p-pill p-ongoing">On going</span></div>
-                                <div class="progress-option" onclick="setProgressValue('worklog-modal-progress-value','Review Pending','p-pending','worklog-modal-progress-dropdown')"><span class="p-pill p-pending">Review Pending</span></div>
-                                <div class="progress-option" onclick="setProgressValue('worklog-modal-progress-value','Absent','p-absent','worklog-modal-progress-dropdown')"><span class="p-pill p-absent">Absent</span></div>
-                                <div class="progress-option" onclick="setProgressValue('worklog-modal-progress-value','OD','p-od','worklog-modal-progress-dropdown')"><span class="p-pill p-od">OD</span></div>
+                            <div id="worklog-modal-progress-dropdown" class="progress-dropdown" style="top: 58px; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid #E2E8F0; background: white; width: 100%;">
+                                <div class="progress-option" onclick="window.setProgressValue('worklog-modal-progress-value', 'Completed', 'p-completed', 'worklog-modal-progress-dropdown')"><span class="p-pill p-completed">Completed</span></div>
+                                <div class="progress-option" onclick="window.setProgressValue('worklog-modal-progress-value', 'On Going', 'p-ongoing', 'worklog-modal-progress-dropdown')"><span class="p-pill p-ongoing">On Going</span></div>
+                                <div class="progress-option" onclick="window.setProgressValue('worklog-modal-progress-value', 'Review Pending', 'p-pending', 'worklog-modal-progress-dropdown')"><span class="p-pill p-pending">Review Pending</span></div>
+                                <div class="progress-option" onclick="window.setProgressValue('worklog-modal-progress-value', 'Absent', 'p-absent', 'worklog-modal-progress-dropdown')"><span class="p-pill p-absent">Absent</span></div>
+                                <div class="progress-option" onclick="window.setProgressValue('worklog-modal-progress-value', 'OD', 'p-od', 'worklog-modal-progress-dropdown')"><span class="p-pill p-od">OD</span></div>
                             </div>
                         </div>
                     </div>
