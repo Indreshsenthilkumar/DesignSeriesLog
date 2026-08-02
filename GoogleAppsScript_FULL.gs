@@ -73,7 +73,8 @@ function doGet(e) {
       return respondJSON(getAllExtensions());
     }
     if (params.email) {
-      return respondJSON(getStudentData(params.email));
+      const bypass = params.bypassCache === "true" || params.force === "true";
+      return respondJSON(getStudentData(params.email, bypass));
     }
     
     return respondJSON({ status: "error", message: "No valid GET action or insufficient permissions." });
@@ -129,6 +130,7 @@ function doPost(e) {
       if (body.action === "deleteUser") return respondJSON(deleteUser(body.targetEmail));
       if (body.action === "addUser")    return respondJSON(addUser(body.userData));
       if (body.action === "updateRole") return respondJSON(updateUserRole(body.targetEmail, body.newRole));
+      if (body.action === "updateAdminPermission") return respondJSON(updateAdminPermission(body.targetEmail, body.moduleId, body.isAllowed));
       if (body.action === "approveExtension") return respondJSON(approveExtension(body.requestId, body.newDeadline));
       if (body.action === "rejectExtension") return respondJSON(rejectExtension(body.requestId));
     }
@@ -181,12 +183,14 @@ function getAllAnalytics(startRow, limit) {
   return { status: "success", history: history, hasMore: (start + actualLimit <= totalRows) };
 }
 
-function getStudentData(email) {
+function getStudentData(email, bypassCache) {
   const emailLower = email.toLowerCase().trim();
   const cacheKey = "student_data_" + emailLower.replace(/[^a-zA-Z0-9]/g, "_");
-  const cachedVal = getFromCache(cacheKey);
-  if (cachedVal) {
-    return cachedVal;
+  if (!bypassCache) {
+    const cachedVal = getFromCache(cacheKey);
+    if (cachedVal) {
+      return cachedVal;
+    }
   }
 
   const ss = getSpreadsheet();
@@ -353,6 +357,10 @@ function getAdminsOnly() {
 }
 
 function updateUserRole(targetEmail, newRole) {
+  const emailLower = targetEmail.toLowerCase().trim();
+  const cacheKey = "student_data_" + emailLower.replace(/[^a-zA-Z0-9]/g, "_");
+  clearFromCache(cacheKey);
+
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName(STUDENT_SHEET);
   const data = sheet.getDataRange().getValues();
@@ -366,11 +374,72 @@ function updateUserRole(targetEmail, newRole) {
     sheet.getRange(1, roleIdx + 1).setValue("Role");
   }
   
-  const searchMail = targetEmail.toLowerCase().trim();
+  const searchMail = emailLower;
   for (let i = 1; i < data.length; i++) {
     if ((data[i][emailIdx] || "").toString().toLowerCase().trim() === searchMail) {
       sheet.getRange(i + 1, roleIdx + 1).setValue(newRole);
       return { status: "success", message: `Role updated to ${newRole}` };
+    }
+  }
+  return { status: "error", message: "User not found." };
+}
+
+function checkAdminPermission(email, moduleId) {
+  if (!email) return false;
+  const emailLower = email.toLowerCase().trim();
+  if (emailLower === SUPER_ADMIN.toLowerCase()) return true;
+  
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName(STUDENT_SHEET);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().toLowerCase().trim());
+  
+  const emailIdx = headers.findIndex(h => h.includes("email"));
+  const roleIdx = headers.findIndex(h => h.includes("role"));
+  
+  if (emailIdx === -1 || roleIdx === -1) return false;
+  
+  const targetHeader = moduleId.toLowerCase().trim();
+  const permIdx = headers.indexOf(targetHeader);
+  
+  for (let i = 1; i < data.length; i++) {
+    if ((data[i][emailIdx] || "").toString().toLowerCase().trim() === emailLower) {
+      const isRoleAdmin = (data[i][roleIdx] || "").toString().toLowerCase().trim() === "admin";
+      if (!isRoleAdmin) return false;
+      if (permIdx === -1) return false;
+      const val = data[i][permIdx];
+      return val === true || val === "TRUE" || val === "true" || val === 1 || val === "1";
+    }
+  }
+  return false;
+}
+
+function updateAdminPermission(targetEmail, moduleId, isAllowed) {
+  const emailLower = targetEmail.toLowerCase().trim();
+  const cacheKey = "student_data_" + emailLower.replace(/[^a-zA-Z0-9]/g, "_");
+  clearFromCache(cacheKey);
+
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName(STUDENT_SHEET);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().toLowerCase().trim());
+  
+  const emailIdx = headers.findIndex(h => h.includes("email"));
+  if (emailIdx === -1) return { status: "error", message: "Email column not found in student sheet." };
+  
+  const targetHeader = moduleId.toLowerCase().trim();
+  let permIdx = headers.indexOf(targetHeader);
+  
+  if (permIdx === -1) {
+    permIdx = headers.length;
+    sheet.getRange(1, permIdx + 1).setValue(moduleId);
+  }
+  
+  const searchMail = emailLower;
+  for (let i = 1; i < data.length; i++) {
+    if ((data[i][emailIdx] || "").toString().toLowerCase().trim() === searchMail) {
+      sheet.getRange(i + 1, permIdx + 1).setValue(isAllowed ? "TRUE" : "FALSE");
+      return { status: "success", message: `Permission updated successfully` };
     }
   }
   return { status: "error", message: "User not found." };

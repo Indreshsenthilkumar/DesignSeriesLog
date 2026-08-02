@@ -1370,7 +1370,7 @@ window.handleManualLogin = async function (type) {
     }
 
     try {
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&bypassCache=true&t=${Date.now()}`);
         const data = await res.json();
 
         if (data.status === "success" && data.student) {
@@ -1635,6 +1635,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.loadAdmins === 'function') window.loadAdmins(false);
         if (typeof window.loadAnalyticsData === 'function') window.loadAnalyticsData();
         if (typeof window.loadAdminDashboardStats === 'function') window.loadAdminDashboardStats();
+        if (typeof window.checkModuleAccessAndHideNav === 'function') window.checkModuleAccessAndHideNav();
     }
 
     if (!IS_LOGIN_PAGE) {
@@ -2031,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Fetch student data to sync potential status/blocked updates quietly
-                    const studentRes = await fetch(`${API_URL}?email=${encodeURIComponent(userEmail)}&t=${Date.now()}`);
+                    const studentRes = await fetch(`${API_URL}?email=${encodeURIComponent(userEmail)}&bypassCache=true&t=${Date.now()}`);
                     const studentData = await studentRes.json();
                     if (studentData.status === 'success' && studentData.student) {
                         const status = (studentData.student.system_status || "").toLowerCase();
@@ -2329,7 +2330,7 @@ async function fetchAttendance(email) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 30000);
         const res = await fetch(
-            `${API_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`,
+            `${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`,
             { signal: ctrl.signal }
         );
         clearTimeout(timer);
@@ -5144,6 +5145,31 @@ window.loadAdminData = async function (force = false) {
             window.renderAdminUserList(data.users);
             if (window.initNotifTargetFilters) window.initNotifTargetFilters();
             if (window.buildUserTrie) window.buildUserTrie(data.users);
+
+            // Sync current logged in user's permissions to localStorage
+            const myEmail = (user.email || user.email_id || "").toLowerCase().trim();
+            const meObj = data.users.find(u => (u.email || u.email_id || "").toLowerCase().trim() === myEmail);
+            if (meObj) {
+                const currentUser = JSON.parse(localStorage.getItem("user")) || {};
+                const permissionKeys = [
+                    'user_management',
+                    'admin_database',
+                    'scan_student_qr',
+                    'notifications',
+                    'mentor_tasks',
+                    'attendance_logs',
+                    'worklogs',
+                    'extension_requests',
+                    'linkedin_tracker'
+                ];
+                permissionKeys.forEach(key => {
+                    if (key in meObj) {
+                        currentUser[key] = meObj[key];
+                    }
+                });
+                localStorage.setItem("user", JSON.stringify(currentUser));
+                if (typeof window.checkModuleAccessAndHideNav === 'function') window.checkModuleAccessAndHideNav();
+            }
         } else {
             const err = `<p style="color:#EF4444; text-align:center; padding:2rem; grid-column:1/-1;">Error: ${data.message}</p>`;
             if (document.getElementById('admin-user-list-desktop')) document.getElementById('admin-user-list-desktop').innerHTML = err;
@@ -5471,27 +5497,64 @@ window.renderAdminList = function (admins, d, m) {
         return;
     }
 
+    const AVAILABLE_MODULES = [
+        { id: 'user-list', name: 'User Management' },
+        { id: 'admin-list', name: 'Admin Database' },
+        { id: 'scan-qr', name: 'Scan Student QR' },
+        { id: 'notifications', name: 'Notifications' },
+        { id: 'tasks', name: 'Mentor Tasks' },
+        { id: 'attendance-logs', name: 'Attendance Logs' },
+        { id: 'worklogs', name: 'Worklogs' },
+        { id: 'extension-requests', name: 'Extension Requests' },
+        { id: 'linkedin-tracker', name: 'LinkedIn Tracker' }
+    ];
+
     admins.forEach(u => {
         const name = u.name || "Administrator";
         const email = u.email || u.email_id || "";
         const isSuper = email.toLowerCase().trim() === "indreshs.it24@bitsathy.ac.in";
 
         const cardHTML = `
-            <div class="card" style="padding:1.25rem; margin-bottom: 0.75rem; border-radius:14px !important; background:white; border:1.5px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important; display:flex; align-items:center; gap:16px;">
-                <div style="width:48px; height:48px; border-radius:12px; background: ${isSuper ? '#FFFBEB' : '#EFF6FF'}; color: ${isSuper ? '#D97706' : '#2563EB'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                    <i data-lucide="${isSuper ? 'crown' : 'shield-check'}" style="width:22px;"></i>
-                </div>
-                <div style="overflow:hidden; flex:1; min-width: 0;">
-                    <div style="font-weight:800; color:var(--text-primary); font-size:1.05rem; letter-spacing:-0.3px; margin-bottom:2px; display:flex; align-items:center; gap:6px;">
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+            <div class="card" style="padding:1.25rem; margin-bottom: 0.75rem; border-radius:14px !important; background:white; border:1.5px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important; display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <div style="width:48px; height:48px; border-radius:12px; background: ${isSuper ? '#FFFBEB' : '#EFF6FF'}; color: ${isSuper ? '#D97706' : '#2563EB'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i data-lucide="${isSuper ? 'crown' : 'shield-check'}" style="width:22px;"></i>
                     </div>
-                    <div style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); opacity:0.8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${email}</div>
+                    <div style="overflow:hidden; flex:1; min-width: 0;">
+                        <div style="font-weight:800; color:var(--text-primary); font-size:1.05rem; letter-spacing:-0.3px; margin-bottom:2px; display:flex; align-items:center; gap:6px;">
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+                        </div>
+                        <div style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); opacity:0.8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${email}</div>
+                    </div>
+                    ${!isSuper ? `
+                    <button onclick="window.updateUserRole('${email}', 'Student')" style="width:36px; height:36px; border-radius:10px; background:#FEF2F2; color:#EF4444; border:1.5px solid #FEE2E2; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;" title="Remove Admin Access">
+                        <i data-lucide="shield-off" style="width:16px;"></i>
+                    </button>
+                    ` : '<div style="background: #EFF6FF; color: #2563EB; padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; border: 1.5px solid #DBEAFE;">PRIMARY</div>'}
                 </div>
-                ${!isSuper ? `
-                <button onclick="window.updateUserRole('${email}', 'Student')" style="width:36px; height:36px; border-radius:10px; background:#FEF2F2; color:#EF4444; border:1.5px solid #FEE2E2; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;" title="Remove Admin Access">
-                    <i data-lucide="shield-off" style="width:16px;"></i>
-                </button>
-                ` : '<div style="background: #EFF6FF; color: #2563EB; padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; border: 1.5px solid #DBEAFE;">PRIMARY</div>'}
+                
+                <!-- Permissions Section -->
+                <div style="border-top:1px solid #F1F5F9; padding-top:10px;">
+                    <div style="font-size:0.75rem; font-weight:800; color:#64748B; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Module Access</div>
+                    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+                        ${AVAILABLE_MODULES.map(mod => {
+                            const key = mod.name.toLowerCase().replace(/\s+/g, '_');
+                            const hasAccess = isSuper || (u[key] === true || u[key] === 'TRUE' || u[key] === 'true' || u[key] === 1 || u[key] === '1');
+                            return `
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: #F8FAFC; border: 1px solid #F1F5F9;">
+                                    <span style="font-size: 0.78rem; font-weight: 700; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">${mod.name}</span>
+                                    <label style="position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; margin-left: 8px;">
+                                        <input type="checkbox" class="perm-toggle-input"
+                                            ${hasAccess ? 'checked' : ''} 
+                                            ${isSuper ? 'disabled' : ''} 
+                                            onchange="window.toggleAdminModuleAccess('${email}', '${mod.name}', this.checked, this)">
+                                        <span class="perm-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
             </div>
         `;
         const de = document.createElement('div'); de.innerHTML = cardHTML;
@@ -5500,6 +5563,54 @@ window.renderAdminList = function (admins, d, m) {
         m.appendChild(me.firstElementChild);
     });
     lucide.createIcons();
+};
+
+window.toggleAdminModuleAccess = async function (targetEmail, moduleId, isAllowed, checkboxEl) {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) return;
+    const adminEmail = user.email || user.email_id;
+
+    if (checkboxEl) checkboxEl.disabled = true;
+
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                adminEmail: adminEmail,
+                action: 'updateAdminPermission',
+                targetEmail: targetEmail,
+                moduleId: moduleId,
+                isAllowed: isAllowed
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            // Update local cache
+            if (window.cachedAdminsList) {
+                const adminObj = window.cachedAdminsList.find(a => (a.email || a.email_id || '').toLowerCase().trim() === targetEmail.toLowerCase().trim());
+                if (adminObj) {
+                    const key = moduleId.toLowerCase().replace(/\s+/g, '_');
+                    adminObj[key] = isAllowed ? 'TRUE' : 'FALSE';
+                }
+            }
+            if (targetEmail.toLowerCase().trim() === adminEmail.toLowerCase().trim()) {
+                const currentUser = JSON.parse(localStorage.getItem("user"));
+                const key = moduleId.toLowerCase().replace(/\s+/g, '_');
+                currentUser[key] = isAllowed ? 'TRUE' : 'FALSE';
+                localStorage.setItem("user", JSON.stringify(currentUser));
+                if (typeof window.checkModuleAccessAndHideNav === 'function') window.checkModuleAccessAndHideNav();
+            }
+        } else {
+            alert("Failed to update permission: " + data.message);
+            if (checkboxEl) checkboxEl.checked = !isAllowed;
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Network error updating permission.");
+        if (checkboxEl) checkboxEl.checked = !isAllowed;
+    } finally {
+        if (checkboxEl) checkboxEl.disabled = false;
+    }
 };
 
 window.updateUserRole = async function (targetEmail, newRole) {
@@ -5684,6 +5795,34 @@ window.confirmDeleteUser = async function (email) {
 };
 
 window.toggleAdminSubView = function (viewId) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (viewId !== 'menu' && user) {
+        const email = (user.email || user.email_id || "").toLowerCase().trim();
+        const isSuper = email === "indreshs.it24@bitsathy.ac.in";
+        if (!isSuper) {
+            const viewToHeaderKey = {
+                'user-list': 'user_management',
+                'admin-list': 'admin_database',
+                'scan-qr': 'scan_student_qr',
+                'notifications': 'notifications',
+                'tasks': 'mentor_tasks',
+                'attendance-logs': 'attendance_logs',
+                'worklogs': 'worklogs',
+                'extension-requests': 'extension_requests',
+                'linkedin-tracker': 'linkedin_tracker'
+            };
+            const permKey = viewToHeaderKey[viewId];
+            if (permKey) {
+                const val = user[permKey];
+                const hasAccess = val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1';
+                if (!hasAccess) {
+                    alert("Access Denied: You do not have permission to access this module.");
+                    viewId = 'menu';
+                }
+            }
+        }
+    }
+
     localStorage.setItem('lastAdminView', viewId);
     const desktopMenu = document.getElementById('admin-menu-desktop');
     const mobileMenu = document.getElementById('admin-menu-mobile');
@@ -5831,6 +5970,7 @@ window.toggleAdminSubView = function (viewId) {
     } else if (viewId === 'menu') {
         if (desktopMenu) desktopMenu.classList.remove('hidden');
         if (mobileMenu) mobileMenu.classList.remove('hidden');
+        if (typeof window.checkModuleAccessAndHideNav === 'function') window.checkModuleAccessAndHideNav();
     }
 };
 
@@ -7529,6 +7669,20 @@ let html5QrScanner = null;
 let isScannerProcessing = false;
 
 window.openScanner = async function () {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+        const email = (user.email || user.email_id || "").toLowerCase().trim();
+        const isSuper = email === "indreshs.it24@bitsathy.ac.in";
+        if (!isSuper) {
+            const val = user['scan_student_qr'];
+            const hasAccess = val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1';
+            if (!hasAccess) {
+                alert("Access Denied: You do not have permission to use the QR scanner.");
+                return;
+            }
+        }
+    }
+
     const modal = document.getElementById('admin-scanner-modal');
     if (!modal) return;
     isScannerProcessing = false; // Reset state for new scan session
@@ -12584,4 +12738,62 @@ window.openNotificationInModal = function(timestamp) {
             }, 2000);
         }
     }, 400);
+};
+
+window.checkModuleAccessAndHideNav = function() {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) return;
+    const email = user.email || user.email_id || "";
+    const isSuper = email.toLowerCase().trim() === "indreshs.it24@bitsathy.ac.in";
+
+    // Find all cards inside desktop and mobile menus
+    const desktopCards = document.querySelectorAll('#admin-menu-desktop .card');
+    const mobileCards = document.querySelectorAll('#admin-menu-mobile .card');
+
+    const checkAccess = (onclickStr) => {
+        if (!onclickStr) return true;
+        let subviewId = null;
+        if (onclickStr.includes('openScanner')) {
+            subviewId = 'scan-qr';
+        } else {
+            const match = onclickStr.match(/toggleAdminSubView\(['"]([^'"]+)['"]\)/);
+            if (match) subviewId = match[1];
+        }
+        if (!subviewId || subviewId === 'menu') return true;
+
+        if (isSuper) return true;
+
+        const viewToHeaderKey = {
+            'user-list': 'user_management',
+            'admin-list': 'admin_database',
+            'scan-qr': 'scan_student_qr',
+            'notifications': 'notifications',
+            'tasks': 'mentor_tasks',
+            'attendance-logs': 'attendance_logs',
+            'worklogs': 'worklogs',
+            'extension-requests': 'extension_requests',
+            'linkedin-tracker': 'linkedin_tracker'
+        };
+        const permKey = viewToHeaderKey[subviewId];
+        if (!permKey) return true;
+
+        const val = user[permKey];
+        return val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1';
+    };
+
+    desktopCards.forEach(card => {
+        const onclickAttr = card.getAttribute('onclick');
+        if (onclickAttr) {
+            const hasAccess = checkAccess(onclickAttr);
+            card.style.display = hasAccess ? 'flex' : 'none';
+        }
+    });
+
+    mobileCards.forEach(card => {
+        const onclickAttr = card.getAttribute('onclick');
+        if (onclickAttr) {
+            const hasAccess = checkAccess(onclickAttr);
+            card.style.display = hasAccess ? 'flex' : 'none';
+        }
+    });
 };
