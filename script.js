@@ -509,6 +509,35 @@ window.WORKLOG_HISTORY = [];
 
 
 // --- HELPERS ---
+const getStudentRoll = (user) => {
+    if (!user) return "";
+    const rollKeys = ['rollnumber', 'registernumber', 'rollno', 'regno', 'roll', 'reg', 'rollnum', 'regnum', 'roll_num', 'reg_num', 'roll_no', 'reg_no'];
+    const exactKey = Object.keys(user).find(k => {
+        const kl = k.toLowerCase().replace(/[\s_]/g, '').trim();
+        return rollKeys.includes(kl);
+    });
+    if (exactKey) return user[exactKey];
+    const fuzzyKey = Object.keys(user).find(k => {
+        const kl = k.toLowerCase().replace(/[\s_]/g, '');
+        return kl.includes('roll') || kl.includes('reg') || kl.includes('register');
+    });
+    return fuzzyKey ? user[fuzzyKey] : "";
+};
+
+const getStudentEmail = (user) => {
+    if (!user) return "";
+    const emailKeys = ['email', 'email_id', 'mail', 'mailid', 'mail_id', 'studentemail', 'student_email'];
+    const exactKey = Object.keys(user).find(k => {
+        const kl = k.toLowerCase().replace(/[\s_]/g, '').trim();
+        return emailKeys.includes(kl);
+    });
+    if (exactKey) return user[exactKey];
+    const fuzzyKey = Object.keys(user).find(k => {
+        const kl = k.toLowerCase().replace(/[\s_]/g, '');
+        return (kl.includes('email') || kl.includes('mail') || kl === 'id') && !kl.includes('mentor');
+    });
+    return fuzzyKey ? user[fuzzyKey] : "";
+};
 const formatDate = (dateStr) => {
     if (!dateStr) return '--';
     try {
@@ -1698,6 +1727,17 @@ document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
         }
 
+        let lastIsD = window.innerWidth > 1024;
+        window.addEventListener('resize', () => {
+            const isD = window.innerWidth > 1024;
+            if (isD !== lastIsD) {
+                lastIsD = isD;
+                if (currentScreen) {
+                    window.show(currentScreen, false);
+                }
+            }
+        });
+
         // 🔙 Browser Back Button Handling (Global)
         const handlePopState = (event) => {
             // Close modals in reverse priority (Top-most first)
@@ -2236,6 +2276,10 @@ async function fetchAttendance(email) {
             if (typeof window.fetchAndRenderStudentNotifications === 'function') {
                 window.fetchAndRenderStudentNotifications(cached.student, cached.extensions || []);
             }
+            if (WORKLOG_API_URL && !WORKLOG_API_URL.includes("YOUR_WORKLOG_APPS_SCRIPT_WEB_APP_URL")) {
+                const cachedRoll = getStudentRoll(cached.student);
+                if (cachedRoll) fetchWorklogs(email, cachedRoll);
+            }
         }
     } else {
         // Inject loading spinner states only if no cache exists
@@ -2281,8 +2325,7 @@ async function fetchAttendance(email) {
     }
 
     try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const rollNo = user ? (user.reg_num || user.roll_num || user.roll_no || user.reg_no || user.roll || user.reg || '') : '';
+        const rollNo = cachedUser ? getStudentRoll(cachedUser) : '';
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 30000);
         const res = await fetch(
@@ -2311,7 +2354,7 @@ async function fetchAttendance(email) {
                     window.renderWorklogHistory();
                 }
             }
-            const activeRoll = data.student.reg_num || data.student.roll_num || data.student.roll_no || data.student.reg_no || data.student.roll || data.student.reg || rollNo;
+            const activeRoll = getStudentRoll(data.student) || rollNo;
             fetchWorklogs(email, activeRoll);
 
             // Always call rendering to handle empty/loading states
@@ -2446,12 +2489,47 @@ async function fetchRewardPoints(emailOrReg) {
             }
         }
     } catch (e) {
-        console.warn("[Rewards] Direct CSV lookup failed or blocked by CORS, falling back to Apps Script Web App:", e);
+        console.warn("[Rewards] Direct CSV lookup failed or blocked by CORS:", e);
     }
 
-    // Fallback to Apps Script web app API
+    // Try main API_URL with action=getRewardPoints first (proxy fetch to bypass CORS)
     try {
-        console.log("[Rewards] Falling back to Apps Script API endpoint...");
+        console.log("[Rewards] Fetching via main API getRewardPoints...");
+        const res = await fetch(`${API_URL}?action=getRewardPoints&email=${encodeURIComponent(emailOrReg)}&t=${Date.now()}`);
+        const data = await res.json();
+        if (data.status === "success" && data.student) {
+            const s = data.student;
+            const earned = s.earned_points || s.earned || s.points_earned || s.total_points || s.points || "0";
+            const used = s.used_points || s.used || s.points_used || "0";
+            const balance = s.balance_points || s.balance || s.points_balance || s.reward_points || "0";
+
+            console.log(`[Rewards] Sync Success via Main GAS: E:${earned} U:${used} B:${balance}`);
+
+            document.querySelectorAll('[id^="p-reward-earned"]').forEach(el => {
+                el.innerText = earned;
+                el.classList.remove('skeleton-text');
+            });
+            document.querySelectorAll('[id^="p-reward-used"]').forEach(el => {
+                el.innerText = used;
+                el.classList.remove('skeleton-text');
+            });
+            document.querySelectorAll('[id^="p-reward-balance"]').forEach(el => {
+                el.innerText = balance;
+                el.classList.remove('skeleton-text');
+                el.classList.add('animate-pulse');
+                setTimeout(() => el.classList.remove('animate-pulse'), 2000);
+            });
+
+            if (window.updateRewardProgressDesk) window.updateRewardProgressDesk();
+            return;
+        }
+    } catch (e) {
+        console.warn("[Rewards] Main API getRewardPoints failed, falling back to separate Rewards API:", e);
+    }
+
+    // Fallback to separate REWARD_API_URL web app API
+    try {
+        console.log("[Rewards] Falling back to separate Rewards API endpoint...");
         const res = await fetch(`${REWARD_API_URL}?email=${encodeURIComponent(emailOrReg)}&t=${Date.now()}`);
         const data = await res.json();
 
@@ -5628,7 +5706,14 @@ window.toggleAdminSubView = function (viewId) {
     if (typeof window.closeUserDetailModal === 'function') window.closeUserDetailModal();
 
     // Hide all
-    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, document.getElementById('mgmt-tab-history'), document.getElementById('mgmt-tab-extensions'), document.getElementById('mgmt-tab-linkedin'), document.getElementById('notif-mgmt-tab-history'), document.getElementById('notif-mgmt-tab-extensions'), document.getElementById('notif-mgmt-tab-history-mobile'), document.getElementById('notif-mgmt-tab-extensions-mobile')].forEach(el => el?.classList.add('hidden'));
+    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, 
+     document.getElementById('admin-analytics-attendance-container'),
+     document.getElementById('admin-analytics-attendance-container-mobile'),
+     document.getElementById('admin-analytics-worklog-container'),
+     document.getElementById('admin-analytics-worklog-container-mobile'),
+     document.getElementById('mgmt-tab-history'), document.getElementById('mgmt-tab-extensions'), document.getElementById('mgmt-tab-linkedin'), 
+     document.getElementById('notif-mgmt-tab-history'), document.getElementById('notif-mgmt-tab-extensions'), 
+     document.getElementById('notif-mgmt-tab-history-mobile'), document.getElementById('notif-mgmt-tab-extensions-mobile')].forEach(el => el?.classList.add('hidden'));
 
     // Handle Mobile Main Header visibility
     if (mobileMainHeader) {
@@ -5656,15 +5741,93 @@ window.toggleAdminSubView = function (viewId) {
         if (dTasks) dTasks.classList.remove('hidden');
         if (mTasks) mTasks.classList.remove('hidden');
         if (window.initNotifTargetFilters) window.initNotifTargetFilters();
-    } else if (viewId === 'analytics') {
+    } else if (viewId === 'analytics' || viewId === 'attendance-logs' || viewId === 'worklogs' || viewId === 'extension-requests' || viewId === 'linkedin-tracker') {
         if (dAnalytics) dAnalytics.classList.remove('hidden');
         if (mAnalytics) mAnalytics.classList.remove('hidden');
-        window.switchAnalyticsTab(window.currentAnalyticsTab || 'attendance');
-        if (typeof window.loadAnalyticsData === 'function') window.loadAnalyticsData(false);
-    } else if (viewId === 'linkedin-post-tracker') {
-        window.toggleAdminSubView('analytics');
-        window.switchAnalyticsTab('linkedin');
-        if (window.loadLinkedinPostTracker) window.loadLinkedinPostTracker(false);
+
+        // Hide all section containers first
+        const attendanceCont = document.getElementById('admin-analytics-attendance-container');
+        const worklogCont = document.getElementById('admin-analytics-worklog-container');
+        const historyCont = document.getElementById('mgmt-tab-history');
+        const extensionsCont = document.getElementById('mgmt-tab-extensions');
+        const linkedinCont = document.getElementById('mgmt-tab-linkedin');
+
+        const attendanceContMob = document.getElementById('admin-analytics-attendance-container-mobile');
+        const worklogContMob = document.getElementById('admin-analytics-worklog-container-mobile');
+        const historyContMob = document.getElementById('mgmt-tab-history-mobile');
+        const extensionsContMob = document.getElementById('mgmt-tab-extensions-mobile');
+        const linkedinContMob = document.getElementById('mgmt-tab-linkedin-mobile');
+
+        [attendanceCont, worklogCont, historyCont, extensionsCont, linkedinCont,
+         attendanceContMob, worklogContMob, historyContMob, extensionsContMob, linkedinContMob].forEach(el => el?.classList.add('hidden'));
+
+        // Hide desktop tab selector in analytics since they are now separate main menu options
+        const tabSelector = document.querySelector('#admin-subview-analytics div[style*="display: flex; gap: 8px"]');
+        if (tabSelector) tabSelector.style.display = 'none';
+
+        // Toggle custom attendance filter row display
+        const attFilterRow = document.getElementById('attendance-filter-row');
+        if (attFilterRow) {
+            attFilterRow.style.display = (viewId === 'attendance-logs' || viewId === 'analytics') ? 'flex' : 'none';
+        }
+
+        // Toggle custom worklog filter row display
+        const wlFilterRow = document.getElementById('worklog-filter-row');
+        if (wlFilterRow) {
+            wlFilterRow.style.display = (viewId === 'worklogs') ? 'flex' : 'none';
+        }
+
+        let subviewTitle = "Daily Analytics";
+        let subviewDesc = "Live view of attendance logs and worklogs";
+
+        if (viewId === 'attendance-logs' || viewId === 'analytics') {
+            subviewTitle = "Attendance Logs";
+            subviewDesc = "Review real-time student attendance submissions and logged hours.";
+            if (attendanceCont) attendanceCont.classList.remove('hidden');
+            if (attendanceContMob) attendanceContMob.classList.remove('hidden');
+            if (typeof window.loadAnalyticsData === 'function') window.loadAnalyticsData(false);
+            if (typeof window.renderAdminAnalytics === 'function') window.renderAdminAnalytics();
+        } else if (viewId === 'worklogs') {
+            subviewTitle = "Worklog Analytics";
+            subviewDesc = "Review student progress, task descriptions, and work logs.";
+            if (worklogCont) worklogCont.classList.remove('hidden');
+            if (worklogContMob) worklogContMob.classList.remove('hidden');
+            if (typeof window.loadAnalyticsData === 'function') window.loadAnalyticsData(false);
+            if (typeof window.renderAdminAnalytics === 'function') window.renderAdminAnalytics();
+        } else if (viewId === 'extension-requests') {
+            subviewTitle = "Extension Requests";
+            subviewDesc = "Review pending deadline extension requests and approve/reject them.";
+            if (extensionsCont) {
+                extensionsCont.classList.remove('hidden');
+                dAnalytics.appendChild(extensionsCont);
+            }
+            if (extensionsContMob) {
+                extensionsContMob.classList.remove('hidden');
+                mAnalytics.appendChild(extensionsContMob);
+            }
+            if (typeof window.loadExtensionRequests === 'function') window.loadExtensionRequests();
+        } else if (viewId === 'linkedin-tracker') {
+            subviewTitle = "LinkedIn Tracker";
+            subviewDesc = "Track student LinkedIn posts, links, validation status, and reach metrics.";
+            if (linkedinCont) {
+                linkedinCont.classList.remove('hidden');
+                dAnalytics.appendChild(linkedinCont);
+            }
+            if (linkedinContMob) {
+                linkedinContMob.classList.remove('hidden');
+                mAnalytics.appendChild(linkedinContMob);
+            }
+            if (typeof window.loadLinkedinPostTracker === 'function') window.loadLinkedinPostTracker(false);
+        }
+
+        // Dynamically update subview headers
+        const headerTitle = document.querySelector('#admin-subview-analytics h1');
+        const headerDesc = document.querySelector('#admin-subview-analytics p');
+        if (headerTitle) headerTitle.innerText = subviewTitle;
+        if (headerDesc) headerDesc.innerText = subviewDesc;
+
+        const headerTitleMob = document.querySelector('#admin-subview-analytics-mobile h2');
+        if (headerTitleMob) headerTitleMob.innerText = subviewTitle;
     } else if (viewId === 'menu') {
         if (desktopMenu) desktopMenu.classList.remove('hidden');
         if (mobileMenu) mobileMenu.classList.remove('hidden');
@@ -5712,54 +5875,33 @@ window.switchAnalyticsTab = function (tab) {
         if (btn) btn.style.cssText = inactiveStyleMob;
     });
 
-    document.getElementById('admin-analytics-attendance-container')?.classList.add('hidden');
-    document.getElementById('admin-analytics-worklog-container')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-history')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-extensions')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-linkedin')?.classList.add('hidden');
-
-    document.getElementById('admin-analytics-attendance-container-mobile')?.classList.add('hidden');
-    document.getElementById('admin-analytics-worklog-container-mobile')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-history-mobile')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-extensions-mobile')?.classList.add('hidden');
-    document.getElementById('mgmt-tab-linkedin-mobile')?.classList.add('hidden');
-
     if (tab === 'attendance') {
         if (btnAttendanceDesk) btnAttendanceDesk.style.cssText = activeStyle;
         if (btnAttendanceMob) btnAttendanceMob.style.cssText = activeStyleMob;
-
-        document.getElementById('admin-analytics-attendance-container')?.classList.remove('hidden');
-        document.getElementById('admin-analytics-attendance-container-mobile')?.classList.remove('hidden');
+        document.getElementById('admin-analytics-attendance-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('admin-analytics-attendance-container-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (tab === 'worklog') {
         if (btnWorklogDesk) btnWorklogDesk.style.cssText = activeStyle;
         if (btnWorklogMob) btnWorklogMob.style.cssText = activeStyleMob;
-
-        document.getElementById('admin-analytics-worklog-container')?.classList.remove('hidden');
-        document.getElementById('admin-analytics-worklog-container-mobile')?.classList.remove('hidden');
+        document.getElementById('admin-analytics-worklog-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('admin-analytics-worklog-container-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (tab === 'history') {
         if (btnHistoryDesk) btnHistoryDesk.style.cssText = activeStyle;
         if (btnHistoryMob) btnHistoryMob.style.cssText = activeStyleMob;
-
-        document.getElementById('mgmt-tab-history')?.classList.remove('hidden');
-        document.getElementById('mgmt-tab-history-mobile')?.classList.remove('hidden');
-        window.loadNotifications();
+        document.getElementById('mgmt-tab-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mgmt-tab-history-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (tab === 'extensions') {
         if (btnExtensionsDesk) btnExtensionsDesk.style.cssText = activeStyle;
         if (btnExtensionsMob) btnExtensionsMob.style.cssText = activeStyleMob;
-
-        document.getElementById('mgmt-tab-extensions')?.classList.remove('hidden');
-        document.getElementById('mgmt-tab-extensions-mobile')?.classList.remove('hidden');
-        window.loadExtensionRequests();
+        document.getElementById('mgmt-tab-extensions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mgmt-tab-extensions-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (tab === 'linkedin') {
         if (btnLinkedinDesk) btnLinkedinDesk.style.cssText = activeStyle;
         if (btnLinkedinMob) btnLinkedinMob.style.cssText = activeStyleMob;
-
-        document.getElementById('mgmt-tab-linkedin')?.classList.remove('hidden');
-        document.getElementById('mgmt-tab-linkedin-mobile')?.classList.remove('hidden');
-        if (typeof window.loadLinkedinPostTracker === 'function') window.loadLinkedinPostTracker();
+        document.getElementById('mgmt-tab-linkedin')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mgmt-tab-linkedin-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    window.renderAdminAnalytics();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
@@ -5786,28 +5928,58 @@ window.loadAnalyticsData = async function (force = false) {
     if (wlDesk) wlDesk.innerHTML = `<tr><td colspan="100" style="text-align: center;">${loadingHtml}</td></tr>`;
     if (wlMob) wlMob.innerHTML = loadingHtml;
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const adminEmail = user?.email || user?.email_id;
+    let adminEmail = "";
+    try {
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        adminEmail = user?.email || user?.email_id || "";
+    } catch (e) {
+        console.warn("Failed to parse user from localStorage:", e);
+    }
 
     try {
-        const [attRes, wlRes] = await Promise.all([
-            fetch(`${API_URL}?adminAction=getAllAnalytics&adminEmail=${encodeURIComponent(adminEmail)}`),
-            fetch(`${WORKLOG_API_URL}?cmd=getAllWorklogs`)
+        const [attRes, wlRes, userRes] = await Promise.all([
+            fetch(`${API_URL}?adminAction=getAllAnalytics&adminEmail=${encodeURIComponent(adminEmail)}`).catch(e => {
+                console.warn("Attendance analytics fetch failed", e);
+                return null;
+            }),
+            fetch(`${WORKLOG_API_URL}?cmd=getAllWorklogs`).catch(e => {
+                console.warn("Worklog analytics fetch failed", e);
+                return null;
+            }),
+            window.cachedAdminData ? Promise.resolve(null) : fetch(`${API_URL}?adminAction=getAllUsers&adminEmail=${encodeURIComponent(adminEmail)}`).then(r => r.json()).catch(e => {
+                console.warn("User list fetch failed", e);
+                return null;
+            })
         ]);
 
-        const attData = await attRes.json();
-        const wlData = await wlRes.json();
-
-        if (attData.status === 'success') {
-            window.cachedAnalyticsData = attData.history || [];
-        } else {
-            console.warn("Analytics load error on attendance:", attData.message);
+        if (userRes && userRes.status === 'success') {
+            window.cachedAdminData = userRes.users || [];
         }
 
-        if (wlData.status === 'success') {
-            window.cachedWorklogData = wlData.history || [];
-        } else {
-            console.warn("Analytics load error on worklogs:", wlData.message);
+        if (attRes) {
+            try {
+                const attData = await attRes.json();
+                if (attData.status === 'success') {
+                    window.cachedAnalyticsData = attData.history || [];
+                } else {
+                    console.warn("Analytics load error on attendance:", attData.message);
+                }
+            } catch (e) {
+                console.warn("Failed to parse attendance JSON:", e);
+            }
+        }
+
+        if (wlRes) {
+            try {
+                const wlData = await wlRes.json();
+                if (wlData.status === 'success') {
+                    window.cachedWorklogData = wlData.history || [];
+                } else {
+                    console.warn("Analytics load error on worklogs:", wlData.message);
+                }
+            } catch (e) {
+                console.warn("Failed to parse worklog JSON:", e);
+            }
         }
 
         window.renderAdminAnalytics();
@@ -5827,36 +5999,44 @@ window.renderAdminAnalytics = function () {
     const wlListDesk = document.getElementById('admin-worklog-list-desktop');
     const wlListMob = document.getElementById('admin-worklog-list-mobile');
 
-    const searchDesk = document.getElementById('analytics-search-desktop')?.value.toLowerCase() || '';
+    const attendanceSearch = document.getElementById('attendance-search-input')?.value.toLowerCase() || '';
+    const attendanceDateFilter = document.getElementById('attendance-date-select')?.value || 'all';
+    const attendanceCustomDateVal = document.getElementById('attendance-custom-date')?.value || '';
+
+    const worklogSearch = document.getElementById('worklog-search-input')?.value.toLowerCase() || '';
+    const worklogDateFilter = document.getElementById('worklog-date-select')?.value || 'all';
+    const worklogCustomDateVal = document.getElementById('worklog-custom-date')?.value || '';
+    const worklogProgressFilter = document.getElementById('worklog-progress-select')?.value || 'all';
+    const worklogYearFilter = document.getElementById('worklog-year-select')?.value || 'all';
+
     const searchMob = document.getElementById('analytics-search-mobile')?.value.toLowerCase() || '';
-    const filterDesk = document.getElementById('analytics-filter-desktop')?.value || 'all';
     const filterMob = document.getElementById('analytics-filter-mobile')?.value || 'all';
 
     const isDesktop = window.innerWidth > 768;
-    const search = isDesktop ? searchDesk : searchMob;
-    const filter = isDesktop ? filterDesk : filterMob;
 
     const tab = window.currentAnalyticsTab || 'attendance';
 
     const formatDateStr = (dateStr) => {
         if (!dateStr) return '';
         try {
+            const strVal = String(dateStr);
             let d;
-            if (dateStr.includes('-') && dateStr.split('-')[0].length === 2) {
-                const parts = dateStr.split('-');
+            if (strVal.includes('-') && strVal.split('-')[0].length === 2) {
+                const parts = strVal.split('-');
                 d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
             } else {
-                d = new Date(dateStr);
+                d = new Date(strVal);
             }
-            if (isNaN(d.getTime())) return dateStr;
+            if (isNaN(d.getTime())) return strVal;
             return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        } catch (e) { return dateStr; }
+        } catch (e) { return String(dateStr); }
     };
 
     const formatLoggedTime = (tsStr) => {
         if (!tsStr) return '-';
         try {
-            const parts = tsStr.split(' ');
+            const strVal = String(tsStr);
+            const parts = strVal.split(' ');
             if (parts.length === 2) {
                 const dateParts = parts[0].split('-');
                 const timeParts = parts[1].split(':');
@@ -5892,19 +6072,34 @@ window.renderAdminAnalytics = function () {
     const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
     const yesterdayDStr = `${String(yesterday.getDate()).padStart(2, '0')}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${yesterday.getFullYear()}`;
 
-    if (tab === 'attendance') {
+    // 1. Attendance Rendering Block
+    {
         let logs = window.cachedAnalyticsData || [];
 
-        if (filter === 'today') {
-            logs = logs.filter(log => log.date === todayStr);
-        } else if (filter === 'yesterday') {
-            logs = logs.filter(log => log.date === yesterdayStr);
+        const activeSearch = attendanceSearch || searchMob;
+
+        if (isDesktop) {
+            if (attendanceDateFilter === 'today') {
+                logs = logs.filter(log => log.date === todayStr);
+            } else if (attendanceDateFilter === 'yesterday') {
+                logs = logs.filter(log => log.date === yesterdayStr);
+            } else if (attendanceDateFilter === 'custom' && attendanceCustomDateVal) {
+                logs = logs.filter(log => log.date === attendanceCustomDateVal);
+            }
+        } else {
+            if (filterMob === 'today') {
+                logs = logs.filter(log => log.date === todayStr);
+            } else if (filterMob === 'yesterday') {
+                logs = logs.filter(log => log.date === yesterdayStr);
+            }
         }
 
-        if (search) {
+        if (activeSearch) {
             logs = logs.filter(log =>
-                (log.name && log.name.toLowerCase().includes(search)) ||
-                (log.rollNo && log.rollNo.toLowerCase().includes(search))
+                (log.name && log.name.toLowerCase().includes(activeSearch)) ||
+                (log.rollNo && log.rollNo.toLowerCase().includes(activeSearch)) ||
+                (log.date && log.date.toLowerCase().includes(activeSearch)) ||
+                (formatDateStr(log.date) && formatDateStr(log.date).toLowerCase().includes(activeSearch))
             );
         }
 
@@ -5949,78 +6144,121 @@ window.renderAdminAnalytics = function () {
             if (listDesk) listDesk.innerHTML = emptyHtmlDesk;
             if (listMob) listMob.innerHTML = emptyHtmlMob;
             if (typeof lucide !== 'undefined') lucide.createIcons();
-            return;
-        }
+        } else {
+            if (listDesk) {
+                listDesk.innerHTML = finalLogs.map(log => {
+                    const hrsStr = log.hourList.sort((a, b) => a - b).join(', ');
+                    const formattedDate = formatDateStr(log.date);
+                    const formattedLogged = formatLoggedTime(log.timestamp);
+                    return `
+                    <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 600; vertical-align: middle;">
+                            ${formattedLogged}
+                        </td>
+                        <td style="padding: 1.1rem 1rem; vertical-align: middle;">
+                            <div style="font-weight: 700; color: #334155; font-size: 0.9rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${log.name || 'Unknown'}</div>
+                        </td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.85rem; color: #334155; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', sans-serif; vertical-align: middle;">
+                            ${log.rollNo || ''}
+                        </td>
+                        <td style="padding: 1.1rem 1rem; vertical-align: middle; white-space: nowrap;">
+                            <span style="background: #F1F5F9; color: #334155; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.78rem; border: 1px solid #E2E8F0; font-family: 'Google Sans', 'Google Sans Text', sans-serif; white-space: nowrap;">${formattedDate}</span>
+                        </td>
+                        <td style="padding: 1.1rem 1rem; vertical-align: middle;">
+                            <span style="background: #0D9488; color: white; padding: 5px 12px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; white-space: nowrap; font-family: 'Google Sans', 'Google Sans Text', sans-serif; display: inline-flex; align-items: center; justify-content: center;">Hr: ${hrsStr}</span>
+                        </td>
+                        <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; line-height: 1.5; font-family: 'Google Sans', 'Google Sans Text', sans-serif; vertical-align: middle; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(log.reason || '-').replace(/"/g, '&quot;')}">
+                            ${log.reason || '-'}
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
 
-        if (listDesk) {
-            listDesk.innerHTML = finalLogs.map(log => {
-                const hrsStr = log.hourList.sort((a, b) => a - b).join(', ');
-                const formattedDate = formatDateStr(log.date);
-                const formattedLogged = formatLoggedTime(log.timestamp);
-                return `
-                <tr style="border-bottom: 1px solid #E2E8F0; transition: background 0.2s;">
-                    <td style="padding: 1.25rem 1.5rem; color: #475569; font-size: 0.9rem;">
-                        ${formattedLogged}
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <div style="font-weight: 800; color: #000000; font-size: 0.95rem;">${log.name || 'Unknown'}</div>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem; font-size: 0.9rem; color: #000000; font-weight: 700; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
-                        ${log.rollNo || ''}
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <span style="background: #F1F5F9; color: #000000; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: 1px solid #CBD5E1;">${formattedDate}</span>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem; font-weight: 800; color: #047857;">
-                        <span style="background: #D1FAE5; padding: 4px 10px; border-radius: 8px; white-space: nowrap;">Hr: ${hrsStr}</span>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem; color: #000000; font-size: 0.9rem; line-height: 1.5;">
-                        <div style="font-weight: 500;">${log.reason || '-'}</div>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-
-        if (listMob) {
-            listMob.innerHTML = finalLogs.map(log => {
-                const hrsStr = log.hourList.sort((a, b) => a - b).join(', ');
-                const formattedDate = formatDateStr(log.date);
-                const formattedLogged = formatLoggedTime(log.timestamp);
-                return `
-                <div class="card" style="padding: 1rem; border-radius: 14px; background: white; border: 1.5px solid #E2E8F0; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 800; color: #000000; font-size: 1.05rem;">${log.name || 'Unknown'}</div>
-                            <div style="font-size: 0.85rem; color: #334155; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700;">${log.rollNo || ''}</span>
-                                <span style="background: #F1F5F9; color: #000000; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid #CBD5E1;">${formattedDate}</span>
+            if (listMob) {
+                listMob.innerHTML = finalLogs.map(log => {
+                    const hrsStr = log.hourList.sort((a, b) => a - b).join(', ');
+                    const formattedDate = formatDateStr(log.date);
+                    const formattedLogged = formatLoggedTime(log.timestamp);
+                    return `
+                    <div class="card" style="padding: 1rem; border-radius: 14px; background: white; border: 1.5px solid #E2E8F0; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 800; color: #000000; font-size: 1.05rem;">${log.name || 'Unknown'}</div>
+                                <div style="font-size: 0.85rem; color: #334155; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-weight: 700;">${log.rollNo || ''}</span>
+                                    <span style="background: #F1F5F9; color: #000000; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid #CBD5E1;">${formattedDate}</span>
+                                </div>
+                            </div>
+                            <div style="background: #D1FAE5; color: #047857; padding: 4px 8px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;">
+                                Hr: ${hrsStr}
                             </div>
                         </div>
-                        <div style="background: #D1FAE5; color: #047857; padding: 4px 8px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;">
-                            Hr: ${hrsStr}
+                        <div style="font-size: 0.85rem; color: #000000; margin-top: 4px; padding-top: 8px; border-top: 1px solid #E2E8F0; line-height: 1.5;">
+                            <div><strong style="color: #000000;">Logged:</strong> ${formattedLogged}</div>
+                            <div style="margin-top: 4px;"><strong style="color: #000000;">Reason:</strong> ${log.reason || '-'}</div>
                         </div>
-                    </div>
-                    <div style="font-size: 0.85rem; color: #000000; margin-top: 4px; padding-top: 8px; border-top: 1px solid #E2E8F0; line-height: 1.5;">
-                        <div><strong style="color: #000000;">Logged:</strong> ${formattedLogged}</div>
-                        <div style="margin-top: 4px;"><strong style="color: #000000;">Reason:</strong> ${log.reason || '-'}</div>
-                    </div>
-                </div>`;
-            }).join('');
+                    </div>`;
+                }).join('');
+            }
         }
-    } else {
+    }
+
+    // 2. Worklog Rendering Block
+    {
         let logs = window.cachedWorklogData || [];
 
-        if (filter === 'today') {
-            logs = logs.filter(log => log.date === todayDStr);
-        } else if (filter === 'yesterday') {
-            logs = logs.filter(log => log.date === yesterdayDStr);
+        if (isDesktop) {
+            if (worklogDateFilter === 'today') {
+                logs = logs.filter(log => log.date === todayDStr);
+            } else if (worklogDateFilter === 'yesterday') {
+                logs = logs.filter(log => log.date === yesterdayDStr);
+            } else if (worklogDateFilter === 'custom' && worklogCustomDateVal) {
+                const parts = worklogCustomDateVal.split('-');
+                if (parts.length === 3) {
+                    const customDStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    logs = logs.filter(log => log.date === customDStr);
+                }
+            }
+
+            if (worklogProgressFilter !== 'all') {
+                logs = logs.filter(log => {
+                    const prog = (log.progress || '').toLowerCase().trim();
+                    if (worklogProgressFilter === 'completed') {
+                        return prog.includes('completed') || prog === 'complete';
+                    } else if (worklogProgressFilter === 'ongoing') {
+                        return prog.includes('ongoing') || prog.includes('on going') || prog.includes('absent');
+                    } else if (worklogProgressFilter === 'pending') {
+                        return prog.includes('pending') || prog.includes('pendening');
+                    }
+                    return true;
+                });
+            }
+
+            if (worklogYearFilter !== 'all') {
+                logs = logs.filter(log => {
+                    const reqEmailSafe = (log.email || '').toLowerCase().trim();
+                    const studentObj = (window.cachedAdminData || []).find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafe);
+                    const studentYear = studentObj ? String(studentObj.year || '') : '';
+                    return studentYear.includes(worklogYearFilter);
+                });
+            }
+
+        } else {
+            if (filterMob === 'today') {
+                logs = logs.filter(log => log.date === todayDStr);
+            } else if (filterMob === 'yesterday') {
+                logs = logs.filter(log => log.date === yesterdayDStr);
+            }
         }
 
-        if (search) {
+        const activeSearch = worklogSearch || searchMob;
+        if (activeSearch) {
             logs = logs.filter(log =>
-                (log.name && log.name.toLowerCase().includes(search)) ||
-                (log.rollNo && log.rollNo.toLowerCase().includes(search)) ||
-                (log.worklog && log.worklog.toLowerCase().includes(search))
+                (log.name && log.name.toLowerCase().includes(activeSearch)) ||
+                (log.rollNo && log.rollNo.toLowerCase().includes(activeSearch)) ||
+                (log.date && log.date.toLowerCase().includes(activeSearch)) ||
+                (log.title && log.title.toLowerCase().includes(activeSearch)) ||
+                (log.worklog && log.worklog.toLowerCase().includes(activeSearch))
             );
         }
 
@@ -6067,24 +6305,45 @@ window.renderAdminAnalytics = function () {
                     badgeBg = '#FEF7E0'; badgeFg = '#B06000'; badgeBorder = '#FEEFC3';
                 }
 
+                let statusBg = '#0D9488'; // teal for completed
+                let statusColor = 'white';
+                if (lowerProg.includes('ongoing') || lowerProg.includes('on going') || lowerProg.includes('absent')) {
+                    statusBg = '#F59E0B'; // yellow/gold for ongoing
+                    statusColor = 'white';
+                } else if (lowerProg.includes('pending') || lowerProg.includes('pendening')) {
+                    statusBg = '#EF4444'; // red for pending
+                    statusColor = 'white';
+                }
+
                 return `
-                <tr style="border-bottom: 1px solid #E2E8F0; transition: background 0.2s;">
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <div style="font-weight: 800; color: #000000;">${log.name || 'Unknown'}</div>
-                        <div style="font-size: 0.8rem; color: #334155; font-weight: 600;">${log.rollNo || ''}</div>
+                <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                    <!-- Name -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                        <div style="font-weight: 700; color: #334155; font-size: 0.9rem;">${log.name || 'Unknown'}</div>
                     </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <span style="background: #F1F5F9; color: #000000; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: 1px solid #CBD5E1;">${formattedDate}</span>
-                        <div style="font-size: 0.8rem; font-weight: 800; color: #000000; margin-top:4px;">${log.title || ''}</div>
+                    <!-- Reg Number -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155; font-weight: 800;">
+                        ${log.rollNo || ''}
                     </td>
-                    <td style="padding: 1.25rem 1.5rem; color: #000000; font-size: 0.9rem; line-height: 1.5; max-width: 300px; word-break: break-word;">
+                    <!-- Date -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; white-space: nowrap;">
+                        <span style="background: #F1F5F9; color: #334155; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid #E2E8F0; white-space: nowrap;">${formattedDate}</span>
+                    </td>
+                    <!-- Title -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.82rem; font-weight: 800; color: #334155;">
+                        ${log.title || ''}
+                    </td>
+                    <!-- Worklog -->
+                    <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; line-height: 1.5; max-width: 280px; word-break: break-word; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                         ${log.worklog || '-'}
                     </td>
-                    <td style="padding: 1.25rem 1.5rem; color: #000000; font-size: 0.9rem; font-weight: 800;">
+                    <!-- Deadline -->
+                    <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; font-weight: 700; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                         ${log.deadline ? formatDateStr(log.deadline) : '-'}
                     </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <span style="background: ${badgeBg}; color: ${badgeFg}; border: 1px solid ${badgeBorder}; padding: 4px 12px; border-radius: 99px; font-weight: 700; font-size: 0.8rem; white-space: nowrap;">
+                    <!-- Progress -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                        <span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 12px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;">
                             ${log.progress || 'Ongoing'}
                         </span>
                     </td>
@@ -6129,6 +6388,73 @@ window.renderAdminAnalytics = function () {
             }).join('');
         }
     }
+};
+
+window.handleAttendanceDateFilterChange = function (val) {
+    const customPicker = document.getElementById('attendance-custom-date');
+    if (customPicker) {
+        if (val === 'custom') {
+            customPicker.style.display = 'inline-block';
+        } else {
+            customPicker.style.display = 'none';
+            customPicker.value = '';
+        }
+    }
+    window.renderAdminAnalytics();
+};
+
+window.clearAttendanceFilters = function () {
+    const searchInput = document.getElementById('attendance-search-input');
+    const dateSelect = document.getElementById('attendance-date-select');
+    const customPicker = document.getElementById('attendance-custom-date');
+
+    if (searchInput) searchInput.value = '';
+    if (dateSelect) dateSelect.value = 'all';
+    if (customPicker) {
+        customPicker.value = '';
+        customPicker.style.display = 'none';
+    }
+    window.renderAdminAnalytics();
+};
+
+window.refreshAttendanceTable = function () {
+    window.loadAnalyticsData(true);
+};
+
+window.handleWorklogDateFilterChange = function (val) {
+    const customPicker = document.getElementById('worklog-custom-date');
+    if (customPicker) {
+        if (val === 'custom') {
+            customPicker.style.display = 'inline-block';
+        } else {
+            customPicker.style.display = 'none';
+            customPicker.value = '';
+        }
+    }
+    window.renderAdminAnalytics();
+};
+
+window.clearWorklogFilters = function () {
+    const searchInput = document.getElementById('worklog-search-input');
+    const dateSelect = document.getElementById('worklog-date-select');
+    const customPicker = document.getElementById('worklog-custom-date');
+    const progressSelect = document.getElementById('worklog-progress-select');
+    const yearSelect = document.getElementById('worklog-year-select');
+
+    if (searchInput) searchInput.value = '';
+    if (dateSelect) dateSelect.value = 'all';
+    if (customPicker) {
+        customPicker.value = '';
+        customPicker.style.display = 'none';
+    }
+    if (progressSelect) progressSelect.value = 'all';
+    if (yearSelect) yearSelect.value = 'all';
+
+    window.renderAdminAnalytics();
+};
+
+window.refreshWorklogTableOnly = function () {
+    window.loadAnalyticsData(true);
 };
 
 
@@ -7638,7 +7964,7 @@ async function renderUserAttendance(email) {
 async function renderUserWorklogs(email) {
     const body = document.getElementById('user-detail-body');
     try {
-        const res = await fetch(`${API_URL}?action=getWorklogs&email=${email}`);
+        const res = await fetch(`${WORKLOG_API_URL}?email=${email}`);
         const data = await res.json();
         if (data.status === 'success' && data.worklogs.length > 0) {
             let html = '<div style="display:flex; flex-direction:column; gap:16px;">';
@@ -9864,52 +10190,52 @@ window.renderLinkedinPostTracker = function (usersToRender) {
 
         // Render Status
         const statusBadge = isSubmitted
-            ? `<span style="padding: 6px 12px; background: #DCFCE7; color: #16A34A; border-radius: 100px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="check-circle" style="width: 14px;"></i> Submitted</span>`
-            : `<span style="padding: 6px 12px; background: #FEE2E2; color: #EF4444; border-radius: 100px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="x-circle" style="width: 14px;"></i> Pending</span>`;
+            ? `<span style="padding: 5px 12px; background: #0D9488; color: white; border-radius: 100px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"><i data-lucide="check-circle" style="width: 14px;"></i> Submitted</span>`
+            : `<span style="padding: 5px 12px; background: #EF4444; color: white; border-radius: 100px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"><i data-lucide="x-circle" style="width: 14px;"></i> Pending</span>`;
 
         const actionHtml = isSubmitted
-            ? `<a href="${postLink}" target="_blank" style="padding: 8px 16px; background: #F5F3FF; color: #8B5CF6; border-radius: 8px; font-size: 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"><i data-lucide="external-link" style="width: 14px;"></i> View Post</a>`
-            : `<button onclick="window.nudgeStudent('${student['Email'] || ''}', 'LinkedIn Post Reminder')" style="padding: 8px 16px; background: white; border: 1.5px solid #E2E8F0; color: #64748B; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"><i data-lucide="bell" style="width: 14px;"></i> Nudge</button>`;
+            ? `<a href="${postLink}" target="_blank" style="padding: 6px 14px; border: 1.5px solid #E2E8F0; background: white; color: #4F46E5; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;"><i data-lucide="external-link" style="width: 14px;"></i> View Post</a>`
+            : `<button onclick="window.nudgeStudent('${student['Email'] || ''}', 'LinkedIn Post Reminder')" style="padding: 6px 14px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;"><i data-lucide="bell" style="width: 14px;"></i> Nudge</button>`;
 
         let linkedinProfile = student['linkedin'] || student['linkedin_profile'] || student['LinkedIn'] || '';
         if (linkedinProfile && !linkedinProfile.startsWith('http')) {
             linkedinProfile = 'https://linkedin.com/in/' + linkedinProfile;
         }
         const profileHtml = linkedinProfile
-            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><i data-lucide="linkedin" style="width: 14px;"></i> Profile</a>`
-            : `<span style="color: #94A3B8; font-size: 0.85rem;">-</span>`;
+            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><i data-lucide="linkedin" style="width: 14px;"></i> Profile</a>`
+            : `<span style="color: #94A3B8; font-size: 0.82rem;">-</span>`;
 
         const displayId = id === 'N/A' ? '' : id;
 
         // Desktop Row
         htmlDesktop += `
-            <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;">
-                <td style="padding: 1.25rem 1.5rem;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: #F1F5F9; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748B; font-size: 0.9rem;">
+            <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                    <div style="display: flex; align-items: center; gap: 12px; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: #F1F5F9; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                             ${name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <div style="font-weight: 700; color: #1E293B; font-size: 0.95rem;">${name}</div>
+                            <div style="font-weight: 700; color: #334155; font-size: 0.9rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${name}</div>
                         </div>
                     </div>
                 </td>
-                <td style="padding: 1.25rem 1.5rem; text-align: center;">
+                <td style="padding: 1.1rem 1rem; text-align: center; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                     ${profileHtml}
                 </td>
-                <td style="padding: 1.25rem 1.5rem;">
-                    <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${displayId || '-'}</div>
+                <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                    <div style="font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${displayId || '-'}</div>
                 </td>
-                <td style="padding: 1.25rem 1.5rem;">
-                    <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${year}</div>
+                <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                    <div style="font-weight: 600; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${year}</div>
                 </td>
-                <td style="padding: 1.25rem 1.5rem;">
-                    <div style="font-weight: 600; color: #64748B; font-size: 0.85rem;">${postDate}</div>
+                <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                    <div style="font-weight: 600; color: #334155; font-size: 0.82rem; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${postDate}</div>
                 </td>
-                <td style="padding: 1.25rem 1.5rem; text-align: center;">
+                <td style="padding: 1.1rem 1rem; text-align: center; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                     ${statusBadge}
                 </td>
-                <td style="padding: 1.25rem 1.5rem;">
+                <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
                     ${actionHtml}
                 </td>
             </tr>
@@ -10571,14 +10897,156 @@ window.loadExtensionRequests = async function (isSilent = false, force = false) 
     }
 };
 
+window.renderExtensions = function () {
+    window.renderExtensionsTable(
+        window.cachedAllExtensionsList || [],
+        window.cachedNotificationsList || [],
+        window.cachedUsersList || []
+    );
+};
+
+window.handleExtensionDateFilterChange = function (val) {
+    const customPicker = document.getElementById('extension-custom-date');
+    if (customPicker) {
+        if (val === 'custom') {
+            customPicker.style.display = 'inline-block';
+        } else {
+            customPicker.style.display = 'none';
+            customPicker.value = '';
+        }
+    }
+    window.renderExtensions();
+};
+
+window.clearExtensionFilters = function () {
+    const searchInput = document.getElementById('extension-search-input');
+    const dateSelect = document.getElementById('extension-date-select');
+    const customPicker = document.getElementById('extension-custom-date');
+    const statusSelect = document.getElementById('extension-status-select');
+    const yearSelect = document.getElementById('extension-year-select');
+
+    if (searchInput) searchInput.value = '';
+    if (dateSelect) dateSelect.value = 'all';
+    if (customPicker) {
+        customPicker.value = '';
+        customPicker.style.display = 'none';
+    }
+    if (statusSelect) statusSelect.value = 'all';
+    if (yearSelect) yearSelect.value = 'all';
+
+    window.renderExtensions();
+};
+
+window.refreshExtensionTableOnly = function () {
+    window.loadExtensionRequests(false, true);
+};
+
 window.renderExtensionsTable = function (list, notifications, users) {
     const tableBody = document.getElementById('extension-requests-table-body');
     const listMob = document.getElementById('extension-requests-list-mobile');
 
-    // Update stats
-    const total = list.length;
-    const approved = list.filter(e => e.status === 'Approved').length;
-    const pending = list.filter(e => e.status === 'Pending').length;
+    const searchVal = document.getElementById('extension-search-input')?.value.toLowerCase().trim() || '';
+    const dateFilter = document.getElementById('extension-date-select')?.value || 'all';
+    const customDateVal = document.getElementById('extension-custom-date')?.value || '';
+    const statusFilter = document.getElementById('extension-status-select')?.value || 'all';
+    const yearFilter = document.getElementById('extension-year-select')?.value || 'all';
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+    // Helper to get formatted date & time in DD.MM.YYYY hh:mm AM/PM format
+    const formatDotDateTime = (dateStr) => {
+        if (!dateStr || dateStr === '—') return '—';
+        try {
+            let d;
+            if (!isNaN(dateStr)) {
+                d = new Date(Number(dateStr));
+            } else {
+                const cleanStr = dateStr.toString().replace(/-/g, '/').replace('T', ' ');
+                d = new Date(cleanStr);
+                if (isNaN(d.getTime())) {
+                    d = new Date(dateStr);
+                }
+            }
+            if (isNaN(d.getTime())) return dateStr;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            let hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${day}.${month}.${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+        } catch (e) { return dateStr; }
+    };
+
+    // Filter the list
+    const filteredList = list.filter(req => {
+        const reqEmailSafe = (req.email || '').toLowerCase().trim();
+        const studentObj = users.find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafe);
+        const studentName = studentObj ? (studentObj.name || studentObj.student_name || 'Student') : 'N/A';
+        const fallbackId = reqEmailSafe ? reqEmailSafe.split('@')[0].toUpperCase() : 'N/A';
+        const studentId = studentObj ? (studentObj.rollno || studentObj.roll_no || studentObj.rollnum || studentObj.roll_num || studentObj.regno || studentObj.reg_no || fallbackId) : fallbackId;
+        const studentYear = studentObj ? String(studentObj.year || 'N/A') : 'N/A';
+        const notifObj = notifications.find(n => n && n.timestamp && req.notificationId && n.timestamp.toString() === req.notificationId.toString());
+        const notifTitle = notifObj ? notifObj.title.replace(/\+/g, ' ') : 'LinkedIn Submission';
+        const timestampText = formatDotDateTime(req.requestDate || req.timestamp);
+
+        // Status Filter
+        if (statusFilter !== 'all') {
+            if (statusFilter === 'Rejected') {
+                if (req.status !== 'Rejected' && req.status !== 'Declined') return false;
+            } else {
+                if (req.status !== statusFilter) return false;
+            }
+        }
+
+        // Year Filter
+        if (yearFilter !== 'all') {
+            if (!studentYear.includes(yearFilter)) return false;
+        }
+
+        // Date Filter
+        if (dateFilter !== 'all') {
+            let itemDateStr = "";
+            try {
+                const dateToParse = req.requestDate || req.timestamp;
+                if (dateToParse) {
+                    const d = new Date(dateToParse);
+                    if (!isNaN(d.getTime())) {
+                        itemDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }
+                }
+            } catch(e) {}
+
+            if (dateFilter === 'today' && itemDateStr !== todayStr) return false;
+            if (dateFilter === 'yesterday' && itemDateStr !== yesterdayStr) return false;
+            if (dateFilter === 'custom' && customDateVal && itemDateStr !== customDateVal) return false;
+        }
+
+        // Search Filter
+        if (searchVal) {
+            const matches = 
+                studentName.toLowerCase().includes(searchVal) ||
+                studentId.toLowerCase().includes(searchVal) ||
+                notifTitle.toLowerCase().includes(searchVal) ||
+                (req.reason || '').toLowerCase().includes(searchVal) ||
+                (req.requestId || '').toLowerCase().includes(searchVal) ||
+                timestampText.toLowerCase().includes(searchVal);
+            if (!matches) return false;
+        }
+
+        return true;
+    });
+
+    // Update stats using all-time or filtered list
+    const total = filteredList.length;
+    const approved = filteredList.filter(e => e.status === 'Approved').length;
+    const pending = filteredList.filter(e => e.status === 'Pending').length;
 
     const totalEl = document.getElementById('extension-stat-total');
     const approvedEl = document.getElementById('extension-stat-approved');
@@ -10620,32 +11088,9 @@ window.renderExtensionsTable = function (list, notifications, users) {
         } catch (e) { return dateStr; }
     };
 
-    // Helper to get formatted date & time in DD.MM.YYYY hh:mm AM/PM format
-    const formatDotDateTime = (dateStr) => {
-        if (!dateStr || dateStr === '—') return '—';
-        try {
-            let d;
-            if (!isNaN(dateStr)) {
-                d = new Date(Number(dateStr));
-            } else {
-                const cleanStr = dateStr.toString().replace(/-/g, '/').replace('T', ' ');
-                d = new Date(cleanStr);
-                if (isNaN(d.getTime())) {
-                    d = new Date(dateStr);
-                }
-            }
-            if (isNaN(d.getTime())) return dateStr;
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-            return `${day}.${month}.${year} ${time}`;
-        } catch (e) { return dateStr; }
-    };
-
     // Render Table (Desktop)
     if (tableBody) {
-        tableBody.innerHTML = list.map(req => {
+        tableBody.innerHTML = filteredList.map(req => {
             const reqEmailSafe = (req.email || '').toLowerCase().trim();
             // Match Student
             const studentObj = users.find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafe);
@@ -10661,27 +11106,21 @@ window.renderExtensionsTable = function (list, notifications, users) {
             const studentRequestsCount = reqEmailSafe ? list.filter(e => (e.email || '').toLowerCase().trim() === reqEmailSafe).length : 0;
 
             let statusHtml = '';
-            let currentBg = '#FEF3C7';
-            let currentTextColor = '#D97706';
-            let currentBorderColor = 'rgba(217, 119, 6, 0.15)';
+            let currentBg = '#F59E0B'; // Pending (Yellow/Gold)
 
             if (req.status === 'Approved') {
-                currentBg = '#D1FAE5';
-                currentTextColor = '#059669';
-                currentBorderColor = 'rgba(5, 150, 105, 0.15)';
+                currentBg = '#0D9488'; // Teal
             } else if (req.status === 'Rejected' || req.status === 'Declined') {
-                currentBg = '#FCE8E6';
-                currentTextColor = '#C5221F';
-                currentBorderColor = 'rgba(197, 34, 31, 0.15)';
+                currentBg = '#EF4444'; // Red
             }
 
             statusHtml = `
                 <select id="status-select-${req.requestId}" 
                     onchange="window.handleStatusDropdownChange(this, '${req.requestId}')" 
-                    style="background: ${currentBg}; color: ${currentTextColor}; border-radius: 9999px; padding: 6px 14px; font-weight: 700; font-size: 0.72rem; border: 1px solid ${currentBorderColor}; cursor: pointer; outline: none; text-align: center; font-family: inherit; transition: all 0.2s;">
-                <option value="Pending" ${req.status === 'Pending' ? 'selected' : ''} style="background: white; color: #D97706; font-weight: 700;">Pending</option>
-                <option value="Approved" ${req.status === 'Approved' ? 'selected' : ''} style="background: white; color: #059669; font-weight: 700;">Approved</option>
-                <option value="Rejected" ${req.status === 'Rejected' || req.status === 'Declined' ? 'selected' : ''} style="background: white; color: #C5221F; font-weight: 700;">Declined</option>
+                    style="background: ${currentBg}; color: white; border-radius: 9999px; padding: 6px 14px; font-weight: 700; font-size: 0.72rem; border: none; cursor: pointer; outline: none; text-align: center; font-family: inherit; transition: all 0.2s;">
+                <option value="Pending" ${req.status === 'Pending' ? 'selected' : ''} style="background: white; color: #F59E0B; font-weight: 700;">Pending</option>
+                <option value="Approved" ${req.status === 'Approved' ? 'selected' : ''} style="background: white; color: #0D9488; font-weight: 700;">Approved</option>
+                <option value="Rejected" ${req.status === 'Rejected' || req.status === 'Declined' ? 'selected' : ''} style="background: white; color: #EF4444; font-weight: 700;">Declined</option>
                 </select>
             `;
 
@@ -10689,24 +11128,24 @@ window.renderExtensionsTable = function (list, notifications, users) {
             const timestampText = formatDotDateTime(req.requestDate || req.timestamp);
 
             return `
-                <tr style="border-bottom: 1px solid #E2E8F0; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${timestampText}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.78rem; color: #4A5568; font-family: monospace; word-break: break-all; width: 200px; min-width: 200px; vertical-align: middle;">${req.requestId}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; font-weight: 500; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${studentName}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; font-weight: 800; color: #0F172A; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 130px; min-width: 130px; vertical-align: middle;">${studentId}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${studentYear}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4F46E5; font-weight: 700; width: 220px; min-width: 220px; word-break: break-word; vertical-align: middle;">${notifTitle}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #475569; line-height: 1.4; max-width: 250px; width: 250px; min-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: help; transition: all 0.2s; vertical-align: middle;" 
+                <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 600; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${timestampText}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.78rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; word-break: break-all; width: 200px; min-width: 200px; vertical-align: middle;">${req.requestId}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 700; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${studentName}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; font-weight: 800; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; width: 130px; min-width: 130px; vertical-align: middle;">${studentId}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 600; width: 160px; min-width: 160px; word-break: break-word; vertical-align: middle;">${studentYear}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 700; width: 220px; min-width: 220px; word-break: break-word; vertical-align: middle;">${notifTitle}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; line-height: 1.4; max-width: 250px; width: 250px; min-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: help; transition: all 0.2s; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;" 
                         title="${(req.reason || '—').replace(/"/g, '&quot;')}"
                         onmouseenter="this.style.whiteSpace='normal'; this.style.color='#4F46E5';" 
-                        onmouseleave="this.style.whiteSpace='nowrap'; this.style.color='#475569';">
+                        onmouseleave="this.style.whiteSpace='nowrap'; this.style.color='#334155';">
                         ${req.reason || '—'}
                     </td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; width: 160px; min-width: 160px; vertical-align: middle;">${formatDotDateTime(req.requestDate)}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; width: 160px; min-width: 160px; vertical-align: middle;">${formatDotDateTime(req.resolvedDate)}</td>
-                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #4A5568; font-weight: 700; width: 130px; min-width: 130px; vertical-align: middle;">${formatDotDate(req.newDeadline)}</td>
-                    <td style="padding: 1.1rem 1rem; text-align: left; width: 160px; min-width: 160px; vertical-align: middle;">${statusHtml}</td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.82rem; color: #4A5568; font-weight: 700; text-align: right; width: 120px; min-width: 120px; vertical-align: middle;">${studentRequestsCount}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; width: 160px; min-width: 160px; vertical-align: middle;">${formatDotDateTime(req.requestDate)}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; width: 160px; min-width: 160px; vertical-align: middle;">${formatDotDateTime(req.resolvedDate)}</td>
+                    <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-weight: 700; width: 130px; min-width: 130px; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${formatDotDate(req.newDeadline)}</td>
+                    <td style="padding: 1.1rem 1rem; text-align: left; width: 160px; min-width: 160px; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${statusHtml}</td>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.82rem; color: #334155; font-weight: 700; text-align: right; width: 120px; min-width: 120px; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${studentRequestsCount}</td>
                 </tr>
             `;
         }).join('');
@@ -10714,7 +11153,7 @@ window.renderExtensionsTable = function (list, notifications, users) {
 
     // Render Cards (Mobile)
     if (listMob) {
-        listMob.innerHTML = list.map(req => {
+        listMob.innerHTML = filteredList.map(req => {
             const reqEmailSafeMob = (req.email || '').toLowerCase().trim();
             const studentObj = users.find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafeMob);
             const studentName = studentObj ? (studentObj.name || studentObj.student_name || 'Student') : 'N/A';
@@ -12086,7 +12525,12 @@ window.updateDashboardRealData = function() {
     const activityContainer = document.getElementById('dashboard-activity-feed');
     if (activityContainer) {
         const entries = window.ATTENDANCE_HISTORY || [];
-        const topEntries = entries.slice(0, 2);
+        const sortedEntries = [...entries].sort((a, b) => {
+            const dA = parseDateToLocalDate(a.date || a.Date) || new Date(0);
+            const dB = parseDateToLocalDate(b.date || b.Date) || new Date(0);
+            return dB - dA;
+        });
+        const topEntries = sortedEntries.slice(0, 2);
         if (topEntries.length === 0) {
             activityContainer.innerHTML = `<div style="text-align: center; color: #94A3B8; padding: 1rem 0; font-size: 0.85rem;">No recent activities.</div>`;
         } else {

@@ -45,6 +45,9 @@ function doGet(e) {
     if (params.action === "getHighestPoints") {
       return respondJSON(getHighestPointsFromChart());
     }
+    if (params.action === "getRewardPoints") {
+      return respondJSON(getRewardPointsFromExternalCSV(params.email));
+    }
     if (params.action === "getTasks") {
       return respondJSON(getAllTasks());
     }
@@ -1256,5 +1259,50 @@ function rejectExtension(requestId) {
     return { status: "error", message: "Extension request not found." };
   } catch(err) {
     return { status: "error", message: "Reject extension error: " + err.toString() };
+  }
+}
+
+function getRewardPointsFromExternalCSV(email) {
+  try {
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuoa_2Si7e9QKvKoQEQ7kjg2LblBTqGMyuJZIEqMWS2vna_VcSrxFPQ1FIBRbyTyd8BMHrNghbE9xR/pub?output=csv";
+    const response = UrlFetchApp.fetch(url + "&t=" + Date.now());
+    const csvContent = response.getContentText();
+    const rows = Utilities.parseCsv(csvContent);
+    
+    if (rows.length < 2) {
+      return { status: "error", message: "Empty sheet data." };
+    }
+    
+    const headers = rows[0].map(h => h.toLowerCase().trim().replace(/[\s_]/g, ''));
+    const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('mail') || h === 'id');
+    const rollIdx = headers.findIndex(h => h.includes('roll') || h.includes('reg') || h.includes('register'));
+    
+    const earnedIdx = headers.findIndex(h => h.includes('earned') || h.includes('totalpoints') || (h.includes('points') && !h.includes('used') && !h.includes('balance')));
+    const usedIdx = headers.findIndex(h => h.includes('used') || h.includes('redeem'));
+    const balanceIdx = headers.findIndex(h => h.includes('balance') || h.includes('reward') || h.includes('current'));
+    
+    const queryVal = (email || "").toLowerCase().trim();
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const emailVal = emailIdx !== -1 ? (row[emailIdx] || "").toLowerCase().trim() : "";
+      const rollVal = rollIdx !== -1 ? (row[rollIdx] || "").toLowerCase().trim() : "";
+      
+      if (emailVal === queryVal || rollVal === queryVal) {
+        const earned = earnedIdx !== -1 ? (row[earnedIdx] || "0").trim() : "0";
+        const used = usedIdx !== -1 ? (row[usedIdx] || "0").trim() : "0";
+        const balance = balanceIdx !== -1 ? (row[balanceIdx] || "0").trim() : "0";
+        return {
+          status: "success",
+          student: {
+            earned_points: earned,
+            used_points: used,
+            balance_points: balance
+          }
+        };
+      }
+    }
+    return { status: "error", message: "Student not found in sheet rows." };
+  } catch(e) {
+    return { status: "error", message: "CSV parsing error: " + e.toString() };
   }
 }

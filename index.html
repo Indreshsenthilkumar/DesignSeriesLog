@@ -1380,107 +1380,134 @@
             </div>
             <!-- Admin Menu (Operations) -->
             <div id="admin-menu-mobile">
-                <h3 style="font-size: 1.05rem; font-weight: 800; color: #64748B; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.8px;">
+                <h3 style="font-size: 0.9rem; font-weight: 800; color: #64748B; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
                     Database Operations</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                     <!-- User Management Card -->
-                    <div class="card" onclick="window.toggleAdminSubView('user-list')"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="users" style="width: 24px;"></i>
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('user-list')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="users" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">User Management</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.5rem; line-height: 1.2;">
-                            User<br>Management</h4>
-                        <p style="font-size: 0.85rem; color: #8B5CF6; font-weight: 700;">Explore →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #F5F3FF; color: #8B5CF6; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Explore <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
                     <!-- Admins Card -->
-                    <div class="card" onclick="window.toggleAdminSubView('admin-list')"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #22C55E; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #F0FDF4; color: #22C55E; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="shield-check" style="width: 24px;"></i>
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('admin-list')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #F0FDF4; color: #22C55E; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Admin Database</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.75rem; line-height: 1.2;">
-                            Admin<br>Database</h4>
-                        <p style="font-size: 0.85rem; color: #8B5CF6; font-weight: 700;">Manage →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #F0FDF4; color: #22C55E; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Explore <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
                     <!-- Scan QR Card Mobile -->
-                    <div class="card" onclick="window.openScanner()"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #6366F1; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #EEF2FF; color: #6366F1; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="scan-line" style="width: 24px;"></i>
+                    <div class="card no-hover" onclick="window.openScanner()"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="scan-line" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Scan Student QR</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.75rem; line-height: 1.2;">
-                            Scan<br>Student QR</h4>
-                        <p style="font-size: 0.85rem; color: #6366F1; font-weight: 700;">Launch →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #2563EB; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Launch <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
                     <!-- Notification Center Card Mobile -->
-                    <div class="card" onclick="window.toggleAdminSubView('notifications')"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #F59E0B; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #FFFBEB; color: #F59E0B; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="bell" style="width: 24px;"></i>
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('notifications')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #FFFBEB; color: #D97706; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Notification Management</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.75rem; line-height: 1.2;">
-                            Notification<br>Management</h4>
-                        <p style="font-size: 0.85rem; color: #F59E0B; font-weight: 700;">Manage →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #FFFBEB; color: #D97706; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Manage <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
                     <!-- Task Management Card Mobile -->
-                    <div class="card" onclick="window.toggleAdminSubView('tasks')"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #06B6D4; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #ECFEFF; color: #06B6D4; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="list-todo" style="width: 24px;"></i>
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('tasks')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #ECFEFF; color: #0891B2; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="list-todo" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Task Management</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.75rem; line-height: 1.2;">
-                            Task<br>Management</h4>
-                        <p style="font-size: 0.85rem; color: #06B6D4; font-weight: 700;">Assign →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #ECFEFF; color: #0891B2; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Assign <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
-                    <!-- Analytics Card Mobile -->
-                    <div class="card" onclick="window.toggleAdminSubView('analytics')"
-                        style="padding: 1.5rem 1rem; border-radius: 18px; text-align: center; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; transition: transform 0.2s;">
-                        <div
-                            style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
-                            <div
-                                style="width: 50px; height: 50px; border-radius: 50%; background: #D1FAE5; color: #10B981; display: flex; align-items: center; justify-content: center;">
-                                <i data-lucide="bar-chart-2" style="width: 24px;"></i>
+                    <!-- Attendance Logs Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('attendance-logs')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="calendar-check" style="width: 20px; height: 20px;"></i>
                             </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Attendance Logs</h4>
                         </div>
-                        <h4
-                            style="font-size: 1rem; font-weight: 800; color: #334155; margin-bottom: 0.75rem; line-height: 1.2;">
-                            Daily<br>Analytics</h4>
-                        <p style="font-size: 0.85rem; color: #10B981; font-weight: 700;">View →</p>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #10B981; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            View <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
                     </div>
 
+                    <!-- Worklogs Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('worklogs')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="clipboard-list" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Worklog Analytics</h4>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #F5F3FF; color: #8B5CF6; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Explore <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
+                    </div>
 
+                    <!-- Extension Requests Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('extension-requests')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #FEE2E2; color: #EF4444; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Extension Requests</h4>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #FEE2E2; color: #EF4444; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Manage <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
+                    </div>
 
+                    <!-- LinkedIn Tracker Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('linkedin-tracker')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">LinkedIn Tracker</h4>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #2563EB; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Explore <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -2943,107 +2970,174 @@
                 </div>
             </div>
 
-
-
-
     <!-- Admin Management Screen (Desktop) -->
-    <div id="desktop-admin" class="desktop-screen hidden" style="padding: 1.5rem 2rem; overflow-y: auto; height: auto; min-height: 100%;">
+    <div id="desktop-admin" class="desktop-screen hidden" style="padding: 2rem 2.5rem; overflow-y: auto; height: auto; min-height: 100%; background: #F8FAFC;">
         <!-- Admin Menu -->
         <div id="admin-menu-desktop">
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1.5rem;">
-                Database Management</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h2 style="font-size: 1.85rem; font-weight: 900; color: #0F172A; margin: 0; letter-spacing: -0.8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Database Management</h2>
+                    <p style="font-size: 0.9rem; color: #64748B; margin: 6px 0 0 0; font-weight: 500;">Manage core portal databases, broadcast notifications, and assign mentor tasks.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; border: 1.5px solid rgba(16, 185, 129, 0.15); background: #ECFDF5; border-radius: 99px; padding: 6px 16px; font-size: 0.8rem; font-weight: 800; color: #065F46; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05); font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Admin System Active</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
                 <!-- User Management Card Desktop -->
-                <div class="card" onclick="window.toggleAdminSubView('user-list')"
-                    style="padding: 1.75rem 1.25rem; border-radius: 16px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="users" style="width: 28px;"></i>
+                <div class="card no-hover" onclick="window.toggleAdminSubView('user-list')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="users" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">User Management</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Manage student profiles, roles, and attendance records.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">User
-                        Management</h4>
-                    <p style="font-size: 0.9rem; color: #8B5CF6; font-weight: 700;">Explore →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #F5F3FF; color: #8B5CF6; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Explore <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
                 <!-- Admin Management Card Desktop -->
-                <div class="card" onclick="window.toggleAdminSubView('admin-list')"
-                    style="padding: 1.75rem 1.25rem; border-radius: 16px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #22C55E; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #F0FDF4; color: #22C55E; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="shield-check" style="width: 28px;"></i>
+                <div class="card no-hover" onclick="window.toggleAdminSubView('admin-list')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #F0FDF4; color: #22C55E; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="shield-check" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Admin Database</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Manage administrator accounts and security permissions.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">Admin Database
-                    </h4>
-                    <p style="font-size: 0.9rem; color: #8B5CF6; font-weight: 700;">Explore →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #F0FDF4; color: #22C55E; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Explore <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
                 <!-- Scan QR Card Desktop -->
-                <div class="card" onclick="window.openScanner()"
-                    style="padding: 1.75rem 1.25rem; border-radius: 12px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #6366F1; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #EEF2FF; color: #6366F1; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="scan-line" style="width: 28px;"></i>
+                <div class="card no-hover" onclick="window.openScanner()"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="scan-line" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Scan Student QR</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Launch high-speed QR code camera scanner for verification.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">Scan Student
-                        QR</h4>
-                    <p style="font-size: 0.9rem; color: #6366F1; font-weight: 700;">Launch Scanner →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #EFF6FF; color: #2563EB; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Launch Scanner <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
                 <!-- Notification Management Card Desktop -->
-                <div class="card" onclick="window.toggleAdminSubView('notifications')"
-                    style="padding: 1.75rem 1.25rem; border-radius: 12px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #F59E0B; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #FFFBEB; color: #F59E0B; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="bell-ring" style="width: 28px;"></i>
+                <div class="card no-hover" onclick="window.toggleAdminSubView('notifications')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #FFFBEB; color: #D97706; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="bell" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Notification Management</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Broadcast targeted student alerts, instructions, and extension requests.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">Notification Management</h4>
-                    <p style="font-size: 0.9rem; color: #F59E0B; font-weight: 700;">Manage Center →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #FFFBEB; color: #D97706; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Manage Center <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
                 <!-- Task Management Card Desktop -->
-                <div class="card" onclick="window.toggleAdminSubView('tasks')"
-                    style="padding: 1.75rem 1.25rem; border-radius: 12px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #06B6D4; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #ECFEFF; color: #06B6D4; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="list-todo" style="width: 28px;"></i>
+                <div class="card no-hover" onclick="window.toggleAdminSubView('tasks')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #ECFEFF; color: #0891B2; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="list-todo" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Task Management</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Assign mentor deliverables, specify deadlines, and track submissions.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">Task Management
-                    </h4>
-                    <p style="font-size: 0.9rem; color: #06B6D4; font-weight: 700;">Assign Tasks →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #ECFEFF; color: #0891B2; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Assign Tasks <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
-                <!-- Analytics Card Desktop -->
-                <div class="card" onclick="window.toggleAdminSubView('analytics')"
-                    style="padding: 1.75rem 1.25rem; border-radius: 12px; text-align: center; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; background: white;">
-                    <div
-                        style="width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <div
-                            style="width: 56px; height: 56px; border-radius: 50%; background: #D1FAE5; color: #10B981; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="bar-chart-2" style="width: 28px;"></i>
+                <!-- Attendance Logs Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('attendance-logs')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="calendar-check" style="width: 24px; height: 24px;"></i>
                         </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Attendance Logs</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Review real-time student attendance submissions and logged hours.</p>
                     </div>
-                    <h4 style="font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 1rem;">Daily Analytics
-                    </h4>
-                    <p style="font-size: 0.9rem; color: #10B981; font-weight: 700;">View History →</p>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #10B981; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        View Logs <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
                 </div>
 
+                <!-- Worklogs Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('worklogs')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #F5F3FF; color: #8B5CF6; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="clipboard-list" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Worklog Analytics</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Review student progress, task descriptions, and work logs.</p>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #F5F3FF; color: #8B5CF6; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Explore <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
+                </div>
 
+                <!-- Extension Requests Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('extension-requests')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #FEE2E2; color: #EF4444; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="clock" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Extension Requests</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Review pending deadline extension requests and approve/reject them.</p>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #FEE2E2; color: #EF4444; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Manage <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
+                </div>
 
+                <!-- LinkedIn Post Tracker Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('linkedin-tracker')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="link" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">LinkedIn Tracker</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Track student LinkedIn posts, links, validation status, and reach metrics.</p>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #EFF6FF; color: #2563EB; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Explore <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -3084,32 +3178,39 @@
                         </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="position: relative; width: 300px;">
-                        <i data-lucide="search"
-                            style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
-                        <input type="text" id="analytics-search-desktop" placeholder="Search by name or roll no..."
-                            oninput="window.renderAdminAnalytics()"
-                            style="width: 100%; height: 52px; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1rem 0 3rem; background: white; outline: none; transition: all 0.3s;">
+            </div>
+ 
+            <!-- Dedicated Filters Row for Attendance Logs -->
+            <div id="attendance-filter-row" style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <!-- Search Input -->
+                    <div style="position: relative; width: 280px;">
+                        <i data-lucide="search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
+                        <input type="text" id="attendance-search-input" placeholder="Search name, date, reg no..." oninput="window.renderAdminAnalytics()" style="width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.8rem; background: white; outline: none; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; color: #334155;">
                     </div>
-                    <select id="analytics-filter-desktop" onchange="window.renderAdminAnalytics()" style="height: 52px; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1.5rem; outline: none; background: white; font-weight: 800; color: #475569;">
+                    <!-- Date Filter Select -->
+                    <select id="attendance-date-select" onchange="window.handleAttendanceDateFilterChange(this.value)" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                        <option value="all" selected>All Time</option>
                         <option value="today">Today</option>
                         <option value="yesterday">Yesterday</option>
-                        <option value="all" selected>All Time</option>
+                        <option value="custom">Custom Date</option>
                     </select>
+                    <!-- Custom Date Picker (Hidden by default) -->
+                    <input type="date" id="attendance-custom-date" onchange="window.renderAdminAnalytics()" style="display: none; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <!-- Clear All Filters -->
+                    <button onclick="window.clearAttendanceFilters()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                        <i data-lucide="x-circle" style="width: 16px;"></i> Clear Filters
+                    </button>
+                    <!-- Refresh Table -->
+                    <button onclick="window.refreshAttendanceTable()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: #0D9488; color: white; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: none; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
+                    </button>
                 </div>
             </div>
-
-            <!-- Tab Selector Desktop -->
-            <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; background: #F1F5F9; padding: 4px; border-radius: 12px; width: fit-content; border: 1px solid #E2E8F0;">
-                <button onclick="window.switchAnalyticsTab('attendance')" id="analytics-tab-attendance-desktop" style="padding: 8px 20px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: white; color: #1E293B; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">Attendance</button>
-                <button onclick="window.switchAnalyticsTab('worklog')" id="analytics-tab-worklog-desktop" style="padding: 8px 20px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Worklog</button>
-                <button onclick="window.switchAnalyticsTab('history')" id="analytics-tab-history-desktop" style="padding: 8px 20px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Notification History</button>
-                <button onclick="window.switchAnalyticsTab('extensions')" id="analytics-tab-extensions-desktop" style="padding: 8px 20px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Notification Extension Request</button>
-                <button onclick="window.switchAnalyticsTab('linkedin')" id="analytics-tab-linkedin-desktop" style="padding: 8px 20px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">LinkedIn Post Tracker</button>
-            </div>
             
-            <div id="admin-analytics-attendance-container" class="ds-card" style="overflow: hidden; padding: 0;">
+            <div id="admin-analytics-attendance-container" class="hidden ds-card" style="overflow: hidden; padding: 0; margin-bottom: 2rem;">
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
                         <thead>
@@ -3128,14 +3229,61 @@
                     </table>
                 </div>
             </div>
-
-            <div id="admin-analytics-worklog-container" class="hidden ds-card" style="overflow: hidden; padding: 0;">
+            
+            <!-- Dedicated Filters Row for Worklog Analytics -->
+            <div id="worklog-filter-row" style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <!-- Search Input -->
+                    <div style="position: relative; width: 280px;">
+                        <i data-lucide="search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
+                        <input type="text" id="worklog-search-input" placeholder="Search name, reg no, date, title, worklog..." oninput="window.renderAdminAnalytics()" style="width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.8rem; background: white; outline: none; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; color: #334155;">
+                    </div>
+                    <!-- Date Filter Select -->
+                    <select id="worklog-date-select" onchange="window.handleWorklogDateFilterChange(this.value)" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                        <option value="all" selected>All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="custom">Custom Date</option>
+                    </select>
+                    <!-- Custom Date Picker -->
+                    <input type="date" id="worklog-custom-date" onchange="window.renderAdminAnalytics()" style="display: none; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif;">
+                    <!-- Progress Filter Select -->
+                    <select id="worklog-progress-select" onchange="window.renderAdminAnalytics()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                        <option value="all" selected>All Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                    <!-- Year Filter Select -->
+                    <select id="worklog-year-select" onchange="window.renderAdminAnalytics()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                        <option value="all" selected>All Years</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <!-- Clear All Filters -->
+                    <button onclick="window.clearWorklogFilters()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                        <i data-lucide="x-circle" style="width: 16px;"></i> Clear Filters
+                    </button>
+                    <!-- Refresh Table -->
+                    <button onclick="window.refreshWorklogTableOnly()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: #0D9488; color: white; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: none; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="admin-analytics-worklog-container" class="hidden ds-card" style="overflow: hidden; padding: 0; margin-bottom: 2rem;">
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
                         <thead>
                             <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
                                 <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Name</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Date/Title</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Reg Number</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Title</th>
                                 <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Work Log</th>
                                 <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Deadline</th>
                                 <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Progress</th>
@@ -3777,19 +3925,50 @@
                 </div>
 
                 <div class="card no-hover" style="padding: 0; overflow: hidden; border-radius: 20px !important; border: 1px solid #E2E8F0; background: transparent; box-shadow: none;">
-                    <div style="padding: 1.5rem 2rem; background: white; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 14px;">
-                            <div style="width: 40px; height: 40px; border-radius: 12px; background: #EEF2FF; color: #4F46E5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <i data-lucide="hourglass" style="width: 18px; height: 18px;"></i>
+
+                    <!-- Extension Requests Filter Row -->
+                    <div id="extension-filter-row" style="padding: 1rem 2rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                            <!-- Search Input -->
+                            <div style="position: relative; width: 250px;">
+                                <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; color: #94A3B8;"></i>
+                                <input type="text" id="extension-search-input" placeholder="Search name, reg no, date, reason..." oninput="window.renderExtensions()" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.5rem; background: white; outline: none; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; color: #334155;">
                             </div>
-                            <div>
-                                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Manage Extensions</h3>
-                                <p style="font-size: 0.8rem; color: #64748B; margin: 4px 0 0 0; font-weight: 500; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Review pending requests and extension history</p>
-                            </div>
+                            <!-- Date Filter Select -->
+                            <select id="extension-date-select" onchange="window.handleExtensionDateFilterChange(this.value)" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 0.75rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                                <option value="all" selected>All Time</option>
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="custom">Custom Date</option>
+                            </select>
+                            <!-- Custom Date Picker -->
+                            <input type="date" id="extension-custom-date" onchange="window.renderExtensions()" style="display: none; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 0.75rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.82rem; font-family: 'Google Sans', sans-serif;">
+                            <!-- Status Filter Select -->
+                            <select id="extension-status-select" onchange="window.renderExtensions()" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 0.75rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                                <option value="all" selected>All Statuses</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Declined</option>
+                            </select>
+                            <!-- Year Filter Select -->
+                            <select id="extension-year-select" onchange="window.renderExtensions()" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 0.75rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                                <option value="all" selected>All Years</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                            </select>
                         </div>
-                        <button class="btn-icon" onclick="loadExtensionRequests()" style="width: 40px; height: 40px; border-radius: 10px; background: white; border: 1px solid #E2E8F0; color: #64748B; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
-                            <i data-lucide="rotate-cw" style="width: 16px;"></i>
-                        </button>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <!-- Clear Filters -->
+                            <button onclick="window.clearExtensionFilters()" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; padding: 0 1rem; font-weight: 700; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                                <i data-lucide="x-circle" style="width: 14px;"></i> Clear
+                            </button>
+                            <!-- Refresh -->
+                            <button onclick="window.refreshExtensionTableOnly()" style="height: 40px; border-radius: 10px; border: none; background: #0D9488; color: white; padding: 0 1rem; font-weight: 700; font-size: 0.82rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                <i data-lucide="refresh-cw" style="width: 14px;"></i> Refresh
+                            </button>
+                        </div>
                     </div>
 
                     <div style="background: white; overflow-x: auto; width: 100%; border-radius: 0 0 20px 20px;">
@@ -4060,31 +4239,7 @@
 
             <!-- LinkedIn Post Tracker Subview Desktop -->
             <div id="mgmt-tab-linkedin" class="hidden animate-fade-in">
-                <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 2rem;">
-                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                        <div style="position: relative; min-width: 160px;">
-                            <button onclick="document.getElementById('linkedin-year-dropdown-desktop').classList.toggle('hidden')" style="height: 52px; width: 100%; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1rem; background: white; color: #334155; font-weight: 600; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                                <span id="linkedin-year-btn-text-desktop" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;">All Years</span>
-                                <i data-lucide="chevron-down" style="width: 16px; flex-shrink: 0;"></i>
-                            </button>
-                            <div id="linkedin-year-dropdown-desktop" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; margin-top: 8px; background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 0.5rem; z-index: 50; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;">
-                            </div>
-                        </div>
-                        <select id="linkedin-post-date-type-desktop" onchange="window.handleLinkedinDateTypeChange('desktop')" style="height: 52px; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1rem; background: white; outline: none; color: #334155; font-weight: 600; min-width: 130px;">
-                            <option value="today">Today</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="custom">Custom Date</option>
-                        </select>
-                        <input type="date" id="linkedin-post-date-desktop" onchange="window.renderLinkedinPostTracker()" style="height: 52px; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1rem; background: white; outline: none; color: #334155; font-family: inherit; font-weight: 600; display: none;">
-                        <div style="position: relative; width: 300px;">
-                            <i data-lucide="search"
-                                style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
-                            <input type="text" id="linkedin-post-search-desktop" placeholder="Search by name or roll..."
-                                oninput="window.filterLinkedinPostTracker()"
-                                style="width: 100%; height: 52px; border-radius: 14px; border: 1.5px solid #F1F5F9; padding: 0 1rem 0 3rem; background: white; outline: none; transition: all 0.3s;">
-                        </div>
-                    </div>
-                </div>
+                <div style="margin-top: 1rem;"></div>
 
                 <!-- Metrics Cards -->
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
@@ -4111,19 +4266,45 @@
                     </div>
                 </div>
 
-                <!-- Tabs and Controls -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <div style="display: flex; gap: 8px; background: white; padding: 6px; border-radius: 12px; border: 1px solid #E2E8F0;">
-                        <button onclick="window.switchLinkedinPostTab('all')" id="linkedin-post-tab-all" style="padding: 10px 24px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: #F1F5F9; color: #1E293B;">All Students</button>
-                        <button onclick="window.switchLinkedinPostTab('submitted')" id="linkedin-post-tab-submitted" style="padding: 10px 24px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Submitted</button>
-                        <button onclick="window.switchLinkedinPostTab('pending')" id="linkedin-post-tab-pending" style="padding: 10px 24px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Pending</button>
+                <!-- Dedicated Filters Row for LinkedIn Tracker -->
+                <div id="linkedin-filter-row" style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <!-- Tabs -->
+                        <div style="display: flex; gap: 6px; background: white; padding: 4px; border-radius: 12px; border: 1.5px solid #E2E8F0; height: 46px; align-items: center;">
+                            <button onclick="window.switchLinkedinPostTab('all')" id="linkedin-post-tab-all" style="height: 38px; padding: 0 16px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: #F1F5F9; color: #1E293B;">All Students</button>
+                            <button onclick="window.switchLinkedinPostTab('submitted')" id="linkedin-post-tab-submitted" style="height: 38px; padding: 0 16px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Submitted</button>
+                            <button onclick="window.switchLinkedinPostTab('pending')" id="linkedin-post-tab-pending" style="height: 38px; padding: 0 16px; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748B;">Pending</button>
+                        </div>
+                        <!-- Search Input -->
+                        <div style="position: relative; width: 250px;">
+                            <i data-lucide="search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
+                            <input type="text" id="linkedin-post-search-desktop" placeholder="Search by name or roll..." oninput="window.filterLinkedinPostTracker()" style="width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.8rem; background: white; outline: none; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; color: #334155;">
+                        </div>
+                        <!-- Year Selector Button/Dropdown -->
+                        <div style="position: relative; min-width: 140px;">
+                            <button onclick="document.getElementById('linkedin-year-dropdown-desktop').classList.toggle('hidden')" style="height: 46px; width: 100%; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; background: white; color: #334155; font-weight: 700; font-size: 0.85rem; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-family: 'Google Sans', sans-serif;">
+                                <span id="linkedin-year-btn-text-desktop" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">All Years</span>
+                                <i data-lucide="chevron-down" style="width: 16px; flex-shrink: 0; color: #64748B;"></i>
+                            </button>
+                            <div id="linkedin-year-dropdown-desktop" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 0.5rem; z-index: 50; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;">
+                            </div>
+                        </div>
+                        <select id="linkedin-post-date-type-desktop" onchange="window.handleLinkedinDateTypeChange('desktop')" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; min-width: 130px;">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="custom">Custom Date</option>
+                        </select>
+                        <!-- Custom Date Picker -->
+                        <input type="date" id="linkedin-post-date-desktop" onchange="window.renderLinkedinPostTracker()" style="display: none; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif;">
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button onclick="window.openExportModal()" style="height: 40px; padding: 0 16px; border-radius: 8px; background: #F1F5F9; border: 1px solid #E2E8F0; color: #334155; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <!-- Export -->
+                        <button onclick="window.openExportModal()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
                             <i data-lucide="download" style="width: 16px;"></i> Export
                         </button>
-                        <button onclick="window.loadLinkedinPostTracker()" style="height: 40px; padding: 0 16px; border-radius: 8px; background: white; border: 1px solid #E2E8F0; color: #334155; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh Data
+                        <!-- Refresh -->
+                        <button onclick="window.loadLinkedinPostTracker(true)" style="height: 46px; border-radius: 12px; background: #0D9488; color: white; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border: none; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
                         </button>
                     </div>
                 </div>
@@ -4957,7 +5138,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
-    <script src="script.js?v=5.03" defer></script>
+    <script src="script.js?v=5.04" defer></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
