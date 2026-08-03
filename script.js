@@ -2882,13 +2882,13 @@ function generateUserQR(freshData) {
     const tokenIdEl = document.getElementById('qr-token-id');
     if (tokenIdEl) tokenIdEl.innerText = `TOKEN: ${btoa(qrData).substring(0, 8).toUpperCase()}`;
 
-    // 2. Generate Canvas QR (Modern Rounded Style)
+    // 2. Generate Canvas QR (Modern Rounded Style matching user design)
     const qrContainer = document.getElementById('qr-canvas-container');
     if (qrContainer) {
         qrContainer.innerHTML = "";
         const qrCode = new QRCodeStyling({
-            width: 170,
-            height: 170,
+            width: 280,
+            height: 280,
             type: "svg",
             data: qrData,
             image: "DesignSerieslogo2.png",
@@ -2901,26 +2901,37 @@ function generateUserQR(freshData) {
             },
             imageOptions: {
                 crossOrigin: "anonymous",
-                margin: 5
+                margin: 4
             },
             cornersSquareOptions: {
-                color: "#6366F1",
+                color: "#5B50EC",
                 type: "extra-rounded"
             },
             cornersDotOptions: {
-                color: "#4F46E5",
+                color: "#5B50EC",
                 type: "dot"
             }
         });
         qrCode.append(qrContainer);
-    }
 
-    // 3. Sync static fallback previews
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=000000&bgcolor=FFFFFF&margin=2&ecc=H`;
-    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
-        img.src = qrUrl;
-        img.style.opacity = "1";
-    });
+        // Convert the styled SVG element to a Data URL to display inside standard <img> tags seamlessly
+        setTimeout(() => {
+            const svgEl = qrContainer.querySelector('svg');
+            if (svgEl) {
+                const svgString = new XMLSerializer().serializeToString(svgEl);
+                const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const dataUrl = reader.result;
+                    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
+                        img.src = dataUrl;
+                        img.style.opacity = "1";
+                    });
+                };
+                reader.readAsDataURL(svgBlob);
+            }
+        }, 50);
+    }
 }
 
 function initAttendanceChart() {
