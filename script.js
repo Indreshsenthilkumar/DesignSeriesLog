@@ -86,7 +86,7 @@ if (typeof firebase !== 'undefined') {
     };
 }
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwM0XKS9wRpdtyQmyQb_ynPE2b92NV3KQkBRNA4qYMoq-JwvbNCZmbP2AVVfVgYJ3r2/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwbm6TMHUJRn2Ja30C7s0PuKV_TkkOr5Tm76v8XH32mfa0svc0ZkSxvfNowQZhHr30cew/exec";
 window.SCRIPT_URL = API_URL;
 const REWARD_API_URL = "https://script.google.com/macros/s/AKfycbxP7Sm0TPV-GlLTnmFumjUxjsrQfTSFkwUc5aagplPf3cAWiMIzhaXShLEZGOxliMS4/exec";
 
