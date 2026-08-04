@@ -978,9 +978,20 @@ function getTargetStudentEmails(targets) {
   const data = studentSheet.getDataRange().getValues();
   const headers = data[0].map(h => h.toString().toLowerCase().trim().replace(/\s+/g, '_'));
   
-  const emailIdx = headers.findIndex(h => h.includes("email"));
-  const yearIdx = headers.findIndex(h => h.includes("year"));
-  const domainIdx = headers.findIndex(h => h.includes("domain"));
+  // Find correct column indexes using robust checking
+  const emailIdx = headers.indexOf("my_email_address") !== -1 ? headers.indexOf("my_email_address") : 
+                   headers.indexOf("email_id") !== -1 ? headers.indexOf("email_id") :
+                   headers.indexOf("email") !== -1 ? headers.indexOf("email") :
+                   headers.findIndex(h => h.includes("email"));
+                   
+  const yearIdx = headers.indexOf("session_year") !== -1 ? headers.indexOf("session_year") :
+                  headers.indexOf("year") !== -1 ? headers.indexOf("year") :
+                  headers.indexOf("academic_year") !== -1 ? headers.indexOf("academic_year") :
+                  headers.findIndex(h => h.includes("year"));
+                  
+  const domainIdx = headers.indexOf("domain_focus") !== -1 ? headers.indexOf("domain_focus") :
+                    headers.indexOf("domain") !== -1 ? headers.indexOf("domain") :
+                    headers.findIndex(h => h.includes("domain"));
   
   if (emailIdx === -1) return [];
   
@@ -1019,9 +1030,13 @@ function getTargetStudentEmails(targets) {
             const cleanY = y.replace(/[\s_]/g, '');
             const cleanStudentY = sYearRaw.replace(/[\s_]/g, '');
             
-            const yNumMatch = y.match(/\d+/);
-            if (yNumMatch && sYearNum) {
-              return sYearNum.includes(yNumMatch[0]) || yNumMatch[0].includes(sYearNum);
+            // If the filter is a simple number (like "2024"), do numerical matching
+            const isSimpleNumber = /^\d+$/.test(cleanY);
+            if (isSimpleNumber) {
+              const yNumMatch = y.match(/\d+/);
+              if (yNumMatch && sYearNum) {
+                return sYearNum.includes(yNumMatch[0]) || yNumMatch[0].includes(sYearNum);
+              }
             }
             return cleanStudentY.includes(cleanY) || cleanY.includes(cleanStudentY);
           });
@@ -1031,6 +1046,7 @@ function getTargetStudentEmails(targets) {
           matchesDomain = cleanDomains.some(d => {
             const cleanD = d.replace(/[\s_]/g, '');
             const cleanStudentD = sDomainRaw.replace(/[\s_]/g, '');
+            if (!cleanStudentD) return false;
             return cleanStudentD.includes(cleanD) || cleanD.includes(cleanStudentD);
           });
         }
@@ -1108,31 +1124,35 @@ function sendFcmNotification(targetEmails, title, description) {
     const baseUrl = "https://fcm.googleapis.com/v1/projects/" + SERVICE_ACCOUNT.project_id + "/messages:send";
     
     tokens.forEach(token => {
-      const payload = {
-        message: {
-          token: token,
-          notification: {
-            title: title.replace(/\+/g, ' '),
-            body: description.replace(/\+/g, ' ')
-          },
-          data: {
-            click_action: "https://designseriesattendance.vercel.app/"
+      try {
+        const payload = {
+          message: {
+            token: token,
+            notification: {
+              title: title.replace(/\+/g, ' '),
+              body: description.replace(/\+/g, ' ')
+            },
+            data: {
+              click_action: "https://designseriesattendance.vercel.app/"
+            }
           }
-        }
-      };
-      
-      const options = {
-        method: "post",
-        contentType: "application/json",
-        headers: {
-          Authorization: "Bearer " + accessToken
-        },
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      };
-      
-      const response = UrlFetchApp.fetch(baseUrl, options);
-      console.log("FCM Send Response for token (" + token.substring(0, 10) + "...): " + response.getContentText());
+        };
+        
+        const options = {
+          method: "post",
+          contentType: "application/json",
+          headers: {
+            Authorization: "Bearer " + accessToken
+          },
+          payload: JSON.stringify(payload),
+          muteHttpExceptions: true
+        };
+        
+        const response = UrlFetchApp.fetch(baseUrl, options);
+        console.log("FCM Send Response for token (" + token.substring(0, 10) + "...): " + response.getContentText());
+      } catch (tokenErr) {
+        console.error("FCM Send error for token " + token.substring(0, 10) + "...: " + tokenErr.toString());
+      }
     });
     
     return { status: "success", message: "FCM Push sent." };

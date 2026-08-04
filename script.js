@@ -2882,13 +2882,16 @@ function generateUserQR(freshData) {
     const tokenIdEl = document.getElementById('qr-token-id');
     if (tokenIdEl) tokenIdEl.innerText = `TOKEN: ${btoa(qrData).substring(0, 8).toUpperCase()}`;
 
-    // Helper to create standard premium styling options
-    const createQRStyle = (size, imageSize, margin, hasLogo) => {
-        const opts = {
-            width: size,
-            height: size,
+    // 2. Generate Canvas QR (Modern Rounded Style)
+    const qrContainer = document.getElementById('qr-canvas-container');
+    if (qrContainer) {
+        qrContainer.innerHTML = "";
+        const qrCode = new QRCodeStyling({
+            width: 170,
+            height: 170,
             type: "svg",
             data: qrData,
+            image: "DesignSerieslogo2.png",
             dotsOptions: {
                 color: "#1E293B",
                 type: "rounded"
@@ -2896,72 +2899,28 @@ function generateUserQR(freshData) {
             backgroundOptions: {
                 color: "#ffffff",
             },
+            imageOptions: {
+                crossOrigin: "anonymous",
+                margin: 5
+            },
             cornersSquareOptions: {
-                color: "#5B50EC",
+                color: "#6366F1",
                 type: "extra-rounded"
             },
             cornersDotOptions: {
-                color: "#5B50EC",
+                color: "#4F46E5",
                 type: "dot"
             }
-        };
-        if (hasLogo) {
-            opts.image = "DesignSerieslogo2.png";
-            opts.imageOptions = {
-                crossOrigin: "anonymous",
-                margin: margin,
-                imageSize: imageSize
-            };
-        }
-        return new QRCodeStyling(opts);
-    };
-
-    // 2. Render Modal Full QR
-    const qrContainer = document.getElementById('qr-canvas-container');
-    if (qrContainer) {
-        qrContainer.innerHTML = "";
-        createQRStyle(200, 0.35, 4, true).append(qrContainer);
+        });
+        qrCode.append(qrContainer);
     }
 
-    // 3. Render Desktop Profile QR Preview
-    const desktopContainer = document.getElementById('qr-preview-desktop');
-    if (desktopContainer) {
-        desktopContainer.innerHTML = "";
-        createQRStyle(140, 0.35, 3, true).append(desktopContainer);
-    }
-
-    // 4. Render Mobile Profile QR Preview
-    const mobileContainer = document.getElementById('qr-preview-mobile');
-    if (mobileContainer) {
-        mobileContainer.innerHTML = "";
-        const qrObj = createQRStyle(36, 0.4, 0, false);
-        qrObj.append(mobileContainer);
-        setTimeout(() => {
-            const svgEl = mobileContainer.querySelector('svg');
-            if (svgEl) {
-                svgEl.style.width = "100%";
-                svgEl.style.height = "100%";
-                svgEl.style.display = "block";
-            }
-        }, 50);
-    }
-
-    // 5. Render Mobile Dashboard Profile QR Preview
-    const mobileDashContainer = document.getElementById('qr-preview-mobile-dash');
-    if (mobileDashContainer) {
-        mobileDashContainer.innerHTML = "";
-        const qrObj = createQRStyle(44, 0.4, 0, false);
-        qrObj.append(mobileDashContainer);
-        mobileDashContainer.style.opacity = "1";
-        setTimeout(() => {
-            const svgEl = mobileDashContainer.querySelector('svg');
-            if (svgEl) {
-                svgEl.style.width = "100%";
-                svgEl.style.height = "100%";
-                svgEl.style.display = "block";
-            }
-        }, 50);
-    }
+    // 3. Sync static fallback previews
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=000000&bgcolor=FFFFFF&margin=2&ecc=H`;
+    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
+        img.src = qrUrl;
+        img.style.opacity = "1";
+    });
 }
 
 function initAttendanceChart() {
