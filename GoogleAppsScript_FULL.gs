@@ -231,7 +231,7 @@ function getStudentData(email, bypassCache) {
   const extensions = extensionsResult.status === "success" ? extensionsResult.extensions : [];
   
   const result = { status: "success", student: student, history: history, assignedTasks: assignedTasks, notifications: notifications, extensions: extensions };
-  putInCache(cacheKey, result, 300);
+  putInCache(cacheKey, result, CACHE_TTL);
   return result;
 }
 

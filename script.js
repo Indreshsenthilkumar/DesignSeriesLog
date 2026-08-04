@@ -2032,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Fetch student data to sync potential status/blocked updates quietly
-                    const studentRes = await fetch(`${API_URL}?email=${encodeURIComponent(userEmail)}&bypassCache=true&t=${Date.now()}`);
+                    const studentRes = await fetch(`${API_URL}?email=${encodeURIComponent(userEmail)}&t=${Date.now()}`);
                     const studentData = await studentRes.json();
                     if (studentData.status === 'success' && studentData.student) {
                         const status = (studentData.student.system_status || "").toLowerCase();
@@ -2330,7 +2330,7 @@ async function fetchAttendance(email) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 30000);
         const res = await fetch(
-            `${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`,
+            `${API_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`,
             { signal: ctrl.signal }
         );
         clearTimeout(timer);
@@ -2882,14 +2882,14 @@ function generateUserQR(freshData) {
     const tokenIdEl = document.getElementById('qr-token-id');
     if (tokenIdEl) tokenIdEl.innerText = `TOKEN: ${btoa(qrData).substring(0, 8).toUpperCase()}`;
 
-    // 2. Generate Canvas QR (Modern Rounded Style)
+    // 2. Generate Canvas QR (Modern Rounded Style matching user design)
     const qrContainer = document.getElementById('qr-canvas-container');
     if (qrContainer) {
         qrContainer.innerHTML = "";
         const qrCode = new QRCodeStyling({
-            width: 170,
-            height: 170,
-            type: "svg",
+            width: 200,
+            height: 200,
+            type: "canvas",
             data: qrData,
             image: "DesignSerieslogo2.png",
             dotsOptions: {
@@ -2913,14 +2913,29 @@ function generateUserQR(freshData) {
             }
         });
         qrCode.append(qrContainer);
-    }
 
-    // 3. Sync static fallback previews
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=000000&bgcolor=FFFFFF&margin=2&ecc=H`;
-    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
-        img.src = qrUrl;
-        img.style.opacity = "1";
-    });
+        // Sync static fallback previews with the styled canvas representation
+        setTimeout(() => {
+            const canvasEl = qrContainer.querySelector('canvas');
+            if (canvasEl) {
+                try {
+                    const dataUrl = canvasEl.toDataURL('image/png');
+                    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
+                        img.src = dataUrl;
+                        img.style.opacity = "1";
+                    });
+                } catch (e) {
+                    console.warn("Canvas export failed (likely CORS on logo):", e);
+                    // Fallback to static URL if canvas is tainted
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=000000&bgcolor=FFFFFF&margin=2&ecc=H`;
+                    document.querySelectorAll('#qr-preview-mobile, #qr-preview-desktop, #qr-preview-mobile-dash').forEach(img => {
+                        img.src = qrUrl;
+                        img.style.opacity = "1";
+                    });
+                }
+            }
+        }, 150);
+    }
 }
 
 function initAttendanceChart() {
