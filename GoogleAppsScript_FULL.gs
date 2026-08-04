@@ -1132,6 +1132,17 @@ function sendFcmNotification(targetEmails, title, description) {
               title: title.replace(/\+/g, ' '),
               body: description.replace(/\+/g, ' ')
             },
+            webpush: {
+              notification: {
+                title: title.replace(/\+/g, ' '),
+                body: description.replace(/\+/g, ' '),
+                icon: "https://designseriesattendance.vercel.app/DesignSerieslogo2.png",
+                badge: "https://designseriesattendance.vercel.app/DesignSerieslogo2.png"
+              },
+              fcm_options: {
+                link: "https://designseriesattendance.vercel.app/"
+              }
+            },
             data: {
               click_action: "https://designseriesattendance.vercel.app/"
             }
