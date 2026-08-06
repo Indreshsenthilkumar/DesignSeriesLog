@@ -161,14 +161,10 @@ function getAllAnalytics(startRow, limit) {
   if (!logSheet) return { status: "error", message: "Log sheet not found." };
   
   const totalRows = logSheet.getLastRow();
-  let start = startRow ? parseInt(startRow) : 2;
-  let rowCount = limit ? parseInt(limit) : 200;
+  if (totalRows <= 1) return { status: "success", history: [], hasMore: false };
   
-  if (start < 2) start = 2;
-  if (start > totalRows) return { status: "success", history: [], hasMore: false };
-  
-  const actualLimit = Math.min(rowCount, totalRows - start + 1);
-  const logData = logSheet.getRange(start, 1, actualLimit, 7).getValues();
+  // Fetch all logs from row 2 to the end of the sheet
+  const logData = logSheet.getRange(2, 1, totalRows - 1, 7).getValues();
   
   const history = logData.map(row => ({
     date: (row[0] instanceof Date) ? Utilities.formatDate(row[0], Session.getScriptTimeZone(), "yyyy-MM-dd") : row[0],
@@ -178,9 +174,9 @@ function getAllAnalytics(startRow, limit) {
     hours: row[4],
     reason: row[5],
     timestamp: row[6]
-  })).reverse();
+  })).reverse(); // Reverse so newest logs are at the top
 
-  return { status: "success", history: history, hasMore: (start + actualLimit <= totalRows) };
+  return { status: "success", history: history, hasMore: false };
 }
 
 function getStudentData(email, bypassCache) {

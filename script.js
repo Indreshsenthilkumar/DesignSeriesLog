@@ -592,6 +592,11 @@ const showLoadingOverlay = () => {
     document.body.appendChild(overlay);
 };
 
+const hideLoadingOverlay = () => {
+    const overlay = document.querySelector('.loading-overlay');
+    if (overlay) overlay.remove();
+};
+
 // --- GLOBAL AUTH HANDLERS ---
 window.handleLogout = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -1137,19 +1142,22 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
                     const diffHours = Math.floor(diffMins / 60);
                     const diffDays = Math.floor(diffHours / 24);
                     
+                    let timeStr = "";
                     if (diffMins < 1) {
-                        formattedTime = 'Just now';
+                        timeStr = 'Just now';
                     } else if (diffMins < 60) {
-                        formattedTime = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                        timeStr = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
                     } else if (diffHours < 24) {
-                        formattedTime = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                        timeStr = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
                     } else if (diffDays === 1) {
-                        formattedTime = 'Yesterday';
+                        timeStr = 'Yesterday';
                     } else if (diffDays < 7) {
-                        formattedTime = `${diffDays} days ago`;
-                    } else {
-                        formattedTime = launchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        timeStr = `${diffDays} days ago`;
                     }
+                    
+                    const dateStr = launchDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    notif.dateStr = dateStr;
+                    formattedTime = timeStr || dateStr;
                 } catch (e) { }
             }
 
@@ -1215,7 +1223,7 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
             if (notif.isApprovedActive) {
                 listBadge = `<span class="notif-badge-pill" style="color: #10B981; background: #ECFDF5; border: 1px solid rgba(16,185,129,0.12); font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px;">APPROVED</span>`;
             } else if (!notif.isExpired) {
-                listBadge = `<span class="notif-badge-pill" style="color: #3B82F6; background: #EFF6FF; border: 1px solid rgba(59,130,246,0.12); font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px;">ACTIVE</span>`;
+                listBadge = `<span class="notif-badge-pill" style="color: #10B981; background: #ECFDF5; border: 1px solid rgba(16,185,129,0.12); font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px;">ACTIVE</span>`;
             } else if (notif.extStatus === 'Pending') {
                 listBadge = `<span class="notif-badge-pill" style="color: #8B5CF6; background: #F5F3FF; border: 1px solid rgba(139,92,246,0.12); font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px;">UNDER REVIEW</span>`;
             } else if (notif.extStatus === 'Rejected') {
@@ -1226,6 +1234,10 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
 
             grouped[dateGroup].push(`
                 <div id="modal-notif-${notif.timestamp}" class="premium-notif-card ${!isRead ? 'unread' : ''}" onclick="window.markNotificationAsRead('${notif.timestamp}', this); window.openNotificationDetail('${escapedIframe}', '${escapedTitle}', '${escapedDesc}', '${escapedDeadline}', '${notif.extStatus}', '${notif.escapedDeadline ? notif.extDeadline : (notif.extDeadline || "")}', '${notif.timestamp}')" style="margin-bottom: 0.65rem;">
+                    <div style="font-size: 0.72rem; color: #64748B; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="calendar" style="width: 12px; height: 12px; stroke-width: 2.5px; color: #64748B;"></i>
+                        <span>${notif.dateStr || ''}</span>
+                    </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; margin-bottom: 4px;">
                         <div class="notif-title">${cleanTitle}</div>
                         ${listBadge}
@@ -1279,49 +1291,60 @@ window.handleCredentialResponse = async function (response) {
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
     const email = payload.email;
 
+    // Show loading overlay
+    showLoadingOverlay();
+
     // Check if super admin
     const superAdminEmail = "indreshs.it24@bitsathy.ac.in";
     const isSuperAdmin = (email.toLowerCase() === superAdminEmail.toLowerCase());
 
-    // Check local database first if available for immediate role lookup
-    let userRole = isSuperAdmin ? "admin" : "student";
-    let studentDetails = null;
-    const db = window.STUDENT_DATABASE || (typeof STUDENT_DATABASE !== 'undefined' ? STUDENT_DATABASE : null);
-    if (db && Array.isArray(db)) {
-        const student = db.find(s =>
-            (s.mailid && s.mailid.toLowerCase() === email.toLowerCase()) ||
-            (s.email && s.email.toLowerCase() === email.toLowerCase())
-        );
-        if (student) {
-            studentDetails = student;
-            userRole = student.role || (isSuperAdmin ? "admin" : "student");
+    try {
+        // Query the database directly to verify the student exists in Google Sheets (bypassing cache)
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`);
+        const data = await res.json();
+
+        if (data.status === "success" && data.student) {
+            const student = data.student;
             const status = (student.system_status || "").toLowerCase();
             if (status === "blocked") {
+                hideLoadingOverlay();
                 return showToast("error", "Access Blocked", "Your account has been suspended by the admin.");
             }
+
+            // Sync status to Logged_In
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "updateStatus", email: email, status: "Logged_In" })
+            }).catch(e => console.warn(e));
+
+            // Save user session
+            localStorage.setItem('user', JSON.stringify(student));
+            localStorage.setItem('session_start_time', Date.now().toString());
+
+            // Redirect to dashboard
+            window.location.replace('index.html?v=refreshed');
+        } else {
+            // If student not found but it is super admin, we let them login
+            if (isSuperAdmin) {
+                const adminSession = {
+                    email: email,
+                    name: payload.name || "Super Admin",
+                    picture: payload.picture || '',
+                    role: "admin"
+                };
+                localStorage.setItem('user', JSON.stringify(adminSession));
+                localStorage.setItem('session_start_time', Date.now().toString());
+                window.location.replace('index.html?v=refreshed');
+            } else {
+                hideLoadingOverlay();
+                return showToast("error", "Invalid User", "You are not registered in the student database.");
+            }
         }
+    } catch (e) {
+        console.error("Login verification failed:", e);
+        hideLoadingOverlay();
+        return showToast("error", "Verification Failed", "Unable to verify user account. Please check your internet connection.");
     }
-
-    // Save user session optimistically for instant login redirect
-    const userSession = studentDetails || {
-        email: email,
-        name: payload.name || email.split('@')[0],
-        picture: payload.picture || '',
-        role: userRole
-    };
-
-    localStorage.setItem('user', JSON.stringify(userSession));
-    localStorage.setItem('session_start_time', Date.now().toString());
-
-    // Sync status in the background
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: "updateStatus", email: email, status: "Logged_In" })
-    }).catch(e => console.warn(e));
-
-    // Redirect instantly (under 100ms)
-    showLoadingOverlay();
-    window.location.replace('index.html?v=refreshed');
 };
 
 window.handleManualLogin = async function (type) {
@@ -1671,6 +1694,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const context = isD ? screens.dsk : screens.mob;
             if (context[scr]) context[scr].classList.remove('hidden');
             else if (scr === 'add' && !isD) screens.mob.add.classList.remove('hidden');
+
+            if (scr === 'add' && !isD) {
+                if (!window.isDashboardDataLoaded) {
+                    if (typeof window.showViewLoader === 'function') {
+                        window.showViewLoader(screens.mob.add);
+                    }
+                } else {
+                    if (typeof window.hideViewLoader === 'function') {
+                        window.hideViewLoader(screens.mob.add);
+                    }
+                }
+            }
 
             if (scr === 'work-log') {
                 if (typeof window.renderWorklogHistory === 'function') {
@@ -2373,15 +2408,34 @@ async function fetchAttendance(email, forceBypass = false) {
 
             populateDashboard(data.student);
             window.isDashboardDataLoaded = true;
+
+            if (typeof window.hideViewLoader === 'function') {
+                window.hideViewLoader(document.getElementById('mobile-add'));
+                window.hideViewLoader(document.querySelector('#modal-container > .card'));
+            }
+            if (window.setupAttendanceModal) {
+                const modal = document.getElementById('modal-container');
+                if (modal && !modal.classList.contains('hidden')) {
+                    window.setupAttendanceModal('user');
+                }
+            }
         } else {
             console.warn("Fetch error: Status not success or student missing", data);
             showFetchErrorFallback();
             window.isDashboardDataLoaded = true;
+            if (typeof window.hideViewLoader === 'function') {
+                window.hideViewLoader(document.getElementById('mobile-add'));
+                window.hideViewLoader(document.querySelector('#modal-container > .card'));
+            }
         }
     } catch (e) {
         console.warn("Fetch error:", e.name);
         showFetchErrorFallback();
         window.isDashboardDataLoaded = true;
+        if (typeof window.hideViewLoader === 'function') {
+            window.hideViewLoader(document.getElementById('mobile-add'));
+            window.hideViewLoader(document.querySelector('#modal-container > .card'));
+        }
     }
 }
 
@@ -8168,10 +8222,76 @@ async function renderUserWorklogs(email) {
     }
 }
 
+window.showViewLoader = function(container) {
+    if (!container) return;
+    if (container.querySelector('.view-loader-overlay')) return;
+
+    // Inject CSS keyframes immediately if not present
+    if (!document.getElementById('inline-spinner-styles')) {
+        const style = document.createElement('style');
+        style.id = 'inline-spinner-styles';
+        style.innerHTML = `
+            @keyframes spin-inline {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const loader = document.createElement('div');
+    loader.className = 'view-loader-overlay';
+    loader.style.position = 'absolute';
+    loader.style.inset = '0';
+    loader.style.background = '#FFFFFF';
+    loader.style.zIndex = '99999';
+    loader.style.display = 'flex';
+    loader.style.flexDirection = 'column';
+    loader.style.alignItems = 'center';
+    loader.style.justifyContent = 'center';
+    loader.style.gap = '1rem';
+    loader.style.borderRadius = 'inherit';
+
+    loader.innerHTML = `
+        <div style="border: 4px solid #F3F3F3; border-top: 4px solid #3B82F6; border-radius: 50%; width: 40px; height: 40px; animation: spin-inline 0.8s linear infinite;"></div>
+        <div style="font-weight: 700; color: #64748B; font-size: 0.9rem;">Loading...</div>
+    `;
+
+    const origPosition = window.getComputedStyle(container).position;
+    if (origPosition === 'static') {
+        container.style.position = 'relative';
+    }
+
+    container.appendChild(loader);
+};
+
+window.hideViewLoader = function(container) {
+    if (!container) return;
+    const loader = container.querySelector('.view-loader-overlay');
+    if (loader) {
+        loader.remove();
+    }
+};
+
 window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
+    const screenOnStart = localStorage.getItem('lastScreen') || 'dash';
+
     if (window.isDashboardDataLoaded) {
         if (actionCallback) actionCallback();
         return;
+    }
+
+    // Inject CSS keyframes immediately if not present
+    if (!document.getElementById('inline-spinner-styles')) {
+        const style = document.createElement('style');
+        style.id = 'inline-spinner-styles';
+        style.innerHTML = `
+            @keyframes spin-inline {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     // Otherwise, we need to show a loading animation on the trigger element!
@@ -8188,35 +8308,38 @@ window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
         } else if (triggerEl.classList.contains('dashboard-grid-card')) {
             isCard = true;
             originalHtml = triggerEl.innerHTML;
-            // Let's replace the icon inside the grid card with a spinner!
+            
+            // 1. Update subtext to show loading text
+            const subtextEl = triggerEl.querySelector('span');
+            if (subtextEl) {
+                subtextEl.innerHTML = `<span class="loading-spinner-inline" style="border: 2px solid rgba(100, 116, 139, 0.2); border-top: 2px solid #64748B; border-radius: 50%; width: 10px; height: 10px; display: inline-block; animation: spin-inline 0.8s linear infinite; margin-right: 4px; vertical-align: middle;"></span> Loading...`;
+            }
+            
+            // 2. Animate the icon container to spin
             const iconContainer = triggerEl.querySelector('div');
             if (iconContainer) {
-                iconContainer.dataset.originalBg = iconContainer.style.background;
-                iconContainer.dataset.originalColor = iconContainer.style.color;
-                iconContainer.style.background = "#ECFDF5";
-                iconContainer.style.color = "#10B981";
-                iconContainer.innerHTML = `<div class="loading-spinner-inline" style="border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10B981; border-radius: 50%; width: 20px; height: 20px; animation: spin-inline 0.8s linear infinite; margin: 0 auto;"></div>`;
+                iconContainer.style.animation = 'spin-inline 1s linear infinite';
             }
         }
-    }
-
-    // Add CSS dynamic animation if not already present
-    if (!document.getElementById('inline-spinner-styles')) {
-        const style = document.createElement('style');
-        style.id = 'inline-spinner-styles';
-        style.innerHTML = `
-            @keyframes spin-inline {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
     }
 
     // Trigger the database fetch bypassing cache
     try {
         const userObj = JSON.parse(localStorage.getItem('user'));
-        const userEmail = userObj?.email || userObj?.email_id || window.currentUserEmail;
+        let userEmail = userObj?.email || userObj?.email_id || userObj?.mail || userObj?.mailid || userObj?.mail_id || window.currentUserEmail;
+        if (!userEmail && userObj) {
+            const studentEmailKeys = ['email', 'email_id', 'mail', 'mailid', 'mail_id', 'studentemail', 'student_email'];
+            const exactKey = Object.keys(userObj).find(k => studentEmailKeys.includes(k.toLowerCase().replace(/[\s_]/g, '').trim()));
+            if (exactKey) {
+                userEmail = userObj[exactKey];
+            } else {
+                const fuzzyKey = Object.keys(userObj).find(k => {
+                    const kl = k.toLowerCase().replace(/[\s_]/g, '');
+                    return (kl.includes('email') || kl.includes('mail')) && !kl.includes('mentor');
+                });
+                if (fuzzyKey) userEmail = userObj[fuzzyKey];
+            }
+        }
         if (userEmail) {
             await fetchAttendance(userEmail, true); // Force bypass cache
         }
@@ -8234,12 +8357,22 @@ window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
             }
         }
         
-        // Execute target action modal opening
-        if (actionCallback) actionCallback();
+        // Execute target action modal opening only if the user is still on the same screen they started from!
+        const screenOnEnd = localStorage.getItem('lastScreen') || 'dash';
+        if (screenOnStart === screenOnEnd) {
+            if (actionCallback) actionCallback();
+        }
     }
 };
 
 window.setupAttendanceModal = function (mode, targetUser = null) {
+    const modalBox = document.querySelector('#modal-container > .card');
+    if (mode !== 'admin' && !window.isDashboardDataLoaded) {
+        if (typeof window.showViewLoader === 'function') window.showViewLoader(modalBox);
+    } else {
+        if (typeof window.hideViewLoader === 'function') window.hideViewLoader(modalBox);
+    }
+
     const title = document.getElementById('attendance-modal-title');
     const subtitle = document.getElementById('attendance-modal-subtitle');
     const regGroup = document.getElementById('p-reg-group');
