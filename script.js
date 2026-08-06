@@ -618,53 +618,63 @@ const showLoadingOverlay = () => {
     overlay.className = 'loading-overlay';
     overlay.innerHTML = `
         <div class="loading-card">
-            <!-- Animated SVG of Boy Searching Files -->
-            <svg width="200" height="130" viewBox="0 0 200 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
+            <!-- High-fidelity Animated SVG of Boy Searching Files -->
+            <svg width="220" height="140" viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
                 <!-- Folder Background -->
-                <path d="M20 30C20 27.2386 22.2386 25 25 25H70L85 40H175C177.761 40 180 42.2386 180 45V115C180 117.761 177.761 120 175 120H25C22.2386 120 20 117.761 20 115V30Z" fill="#6366F1" opacity="0.15" />
+                <path d="M25 40C25 36.6863 27.6863 34 31 34H75L90 49H169C172.314 49 175 51.6863 175 55V115C175 118.314 172.314 121 169 121H31C27.6863 121 25 118.314 25 115V40Z" fill="#8B5CF6" opacity="0.15" />
                 
-                <!-- Floating Document 1 -->
-                <g style="animation: float-doc 2.2s ease-in-out infinite;">
-                    <rect x="55" y="15" width="36" height="46" rx="4" fill="white" stroke="#6366F1" stroke-width="1.5"/>
-                    <line x1="63" y1="25" x2="83" y2="25" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="63" y1="33" x2="75" y2="33" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="63" y1="41" x2="83" y2="41" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round"/>
+                <!-- Floating Document 1 (User profile) -->
+                <g style="animation: float-doc 2.4s ease-in-out infinite;">
+                    <rect x="40" y="20" width="38" height="50" rx="6" fill="white" stroke="#8B5CF6" stroke-width="2"/>
+                    <circle cx="59" cy="35" r="5" fill="#8B5CF6" />
+                    <line x1="48" y1="46" x2="70" y2="46" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="48" y1="52" x2="64" y2="52" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="48" y1="58" x2="70" y2="58" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"/>
                 </g>
                 
-                <!-- Floating Document 2 -->
-                <g style="animation: float-doc-delay 2.2s ease-in-out infinite 0.8s;">
-                    <rect x="105" y="20" width="36" height="46" rx="4" fill="white" stroke="#6366F1" stroke-width="1.5"/>
-                    <line x1="113" y1="30" x2="133" y2="30" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="113" y1="38" x2="125" y2="38" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="113" y1="46" x2="133" y2="46" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round"/>
+                <!-- Floating Document 2 (Database list) -->
+                <g style="animation: float-doc-delay 2.4s ease-in-out infinite 1.2s;">
+                    <rect x="85" y="25" width="38" height="50" rx="6" fill="white" stroke="#6366F1" stroke-width="2"/>
+                    <line x1="93" y1="37" x2="115" y2="37" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="93" y1="45" x2="109" y2="45" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="93" y1="53" x2="115" y2="53" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
                 </g>
 
                 <!-- Folder Front (Main Body) -->
-                <path d="M20 48C20 45.2386 22.2386 43 25 43H175C177.761 43 180 45.2386 180 48V115C180 117.761 177.761 120 175 120H25C22.2386 120 20 117.761 20 115V48Z" fill="#6366F1" />
-                <path d="M30 60H170M30 75H170M30 90H110" stroke="#4F46E5" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+                <path d="M25 58C25 54.6863 27.6863 52 31 52H169C172.314 52 175 54.6863 175 58V115C175 118.314 172.314 121 169 121H31C27.6863 121 25 118.314 25 115V58Z" fill="#8B5CF6" />
+                <path d="M35 70H165M35 85H165M35 100H105" stroke="#7C3AED" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
 
-                <!-- Bending Boy Silhouette / Character -->
-                <circle cx="155" cy="50" r="10" fill="#FFE4E6" stroke="#4F46E5" stroke-width="1.5"/>
-                <path d="M155 60C148 60 142 70 142 85H168C168 70 162 60 155 60Z" fill="#1E293B"/>
+                <!-- Detailed Person Character (boy searching) -->
+                <g class="character" style="transform: translate(130px, 35px);">
+                    <!-- Head -->
+                    <circle cx="25" cy="22" r="9" fill="#FEE2E2" stroke="#4C1D95" stroke-width="1.5"/>
+                    <!-- Hair -->
+                    <path d="M16 20C17 14 23 12 28 13C33 14 34 18 34 22C32 20 30 20 28 21C26 22 24 20 22 20C20 20 18 22 16 20Z" fill="#1E293B"/>
+                    <!-- Body/Torso -->
+                    <path d="M10 40C10 34 14 31 25 31C36 31 40 34 40 40V75H10V40Z" fill="#6D28D9" stroke="#4C1D95" stroke-width="1.5"/>
+                    <!-- Arm -->
+                    <path d="M14 36C8 38 2 46 6 52C9 55 14 50 14 44" fill="none" stroke="#FEE2E2" stroke-width="2" stroke-linecap="round"/>
+                </g>
                 
                 <!-- Animating Magnifying Glass -->
-                <g style="animation: search-move 1.8s ease-in-out infinite alternate;">
-                    <circle cx="95" cy="65" r="14" stroke="#F59E0B" stroke-width="2.5" fill="none"/>
-                    <line x1="105" y1="75" x2="116" y2="86" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+                <g style="animation: search-move 2s ease-in-out infinite alternate;">
+                    <circle cx="80" cy="75" r="15" stroke="#F59E0B" stroke-width="3" fill="none"/>
+                    <line x1="91" y1="86" x2="105" y2="100" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M65 75C65 66.7157 71.7157 60 80 60C88.2843 60 95 66.7157 95 75" stroke="#FBBF24" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>
                 </g>
             </svg>
 
             <!-- Text & Subtext -->
             <div>
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; font-family: 'Google Sans', sans-serif;">Updating your work...</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; font-family: 'Google Sans', sans-serif;">Verifying your details...</h3>
                 <p style="font-size: 0.88rem; color: #64748B; margin: 0; line-height: 1.4;">Sending credentials to BITSathy database to sync your account details.</p>
             </div>
 
             <!-- Bouncing Bouncing Dots -->
             <div style="display: flex; gap: 8px; justify-content: center; align-items: center; height: 16px;">
-                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.1s;"></span>
-                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.3s;"></span>
-                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.5s;"></span>
+                <span style="width: 8px; height: 8px; background: #8B5CF6; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.1s;"></span>
+                <span style="width: 8px; height: 8px; background: #8B5CF6; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.3s;"></span>
+                <span style="width: 8px; height: 8px; background: #8B5CF6; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.5s;"></span>
             </div>
         </div>
     `;
