@@ -1381,7 +1381,7 @@ window.handleCredentialResponse = async function (response) {
         // Query the database directly to verify the student exists in Google Sheets (bypassing cache)
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 5000); // STRICT 5-SECOND TIMEOUT
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`, { signal: ctrl.signal });
+        const res = await fetch(`${API_URL}?action=verifyUser&email=${encodeURIComponent(email)}&t=${Date.now()}`, { signal: ctrl.signal });
         clearTimeout(timer);
         const data = await res.json();
 
@@ -1477,7 +1477,7 @@ window.handleManualLogin = async function (type) {
     try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 5000); // STRICT 5-SECOND TIMEOUT
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&bypassCache=true&t=${Date.now()}`, { signal: ctrl.signal });
+        const res = await fetch(`${API_URL}?action=verifyUser&email=${encodeURIComponent(email)}&t=${Date.now()}`, { signal: ctrl.signal });
         clearTimeout(timer);
         const data = await res.json();
 
