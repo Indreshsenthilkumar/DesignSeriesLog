@@ -564,28 +564,107 @@ const copyToClipboard = (text, label) => {
 };
 
 const showLoadingOverlay = () => {
+    // Inject the CSS animations if not already present
+    if (!document.getElementById('loading-overlay-animation-styles')) {
+        const style = document.createElement('style');
+        style.id = 'loading-overlay-animation-styles';
+        style.innerHTML = `
+            @keyframes float-doc {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-8px); }
+            }
+            @keyframes float-doc-delay {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-8px); }
+            }
+            @keyframes search-move {
+                0% { transform: translate(-8px, -4px); }
+                100% { transform: translate(12px, 8px); }
+            }
+            @keyframes bounce-dot {
+                0%, 100% { transform: translateY(0); opacity: 0.4; }
+                50% { transform: translateY(-6px); opacity: 1; }
+            }
+            .loading-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(241, 245, 249, 0.95);
+                backdrop-filter: blur(10px);
+                z-index: 9999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 1.5rem;
+            }
+            .loading-card {
+                background: #FFFFFF;
+                border-radius: 24px;
+                padding: 2.5rem;
+                width: 100%;
+                max-width: 440px;
+                box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+                border: 1px solid #E2E8F0;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     const overlay = document.createElement('div');
     overlay.className = 'loading-overlay';
     overlay.innerHTML = `
-        <div style="width: 100%; height: 100%; max-width: 450px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; overflow: hidden; padding: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <div class="skeleton" style="width: 140px; height: 30px; border-radius: 8px;"></div>
-                <div class="skeleton" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+        <div class="loading-card">
+            <!-- Animated SVG of Boy Searching Files -->
+            <svg width="200" height="130" viewBox="0 0 200 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
+                <!-- Folder Background -->
+                <path d="M20 30C20 27.2386 22.2386 25 25 25H70L85 40H175C177.761 40 180 42.2386 180 45V115C180 117.761 177.761 120 175 120H25C22.2386 120 20 117.761 20 115V30Z" fill="#6366F1" opacity="0.15" />
+                
+                <!-- Floating Document 1 -->
+                <g style="animation: float-doc 2.2s ease-in-out infinite;">
+                    <rect x="55" y="15" width="36" height="46" rx="4" fill="white" stroke="#6366F1" stroke-width="1.5"/>
+                    <line x1="63" y1="25" x2="83" y2="25" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="63" y1="33" x2="75" y2="33" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="63" y1="41" x2="83" y2="41" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round"/>
+                </g>
+                
+                <!-- Floating Document 2 -->
+                <g style="animation: float-doc-delay 2.2s ease-in-out infinite 0.8s;">
+                    <rect x="105" y="20" width="36" height="46" rx="4" fill="white" stroke="#6366F1" stroke-width="1.5"/>
+                    <line x1="113" y1="30" x2="133" y2="30" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="113" y1="38" x2="125" y2="38" stroke="#E2E8F0" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="113" y1="46" x2="133" y2="46" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round"/>
+                </g>
+
+                <!-- Folder Front (Main Body) -->
+                <path d="M20 48C20 45.2386 22.2386 43 25 43H175C177.761 43 180 45.2386 180 48V115C180 117.761 177.761 120 175 120H25C22.2386 120 20 117.761 20 115V48Z" fill="#6366F1" />
+                <path d="M30 60H170M30 75H170M30 90H110" stroke="#4F46E5" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+
+                <!-- Bending Boy Silhouette / Character -->
+                <circle cx="155" cy="50" r="10" fill="#FFE4E6" stroke="#4F46E5" stroke-width="1.5"/>
+                <path d="M155 60C148 60 142 70 142 85H168C168 70 162 60 155 60Z" fill="#1E293B"/>
+                
+                <!-- Animating Magnifying Glass -->
+                <g style="animation: search-move 1.8s ease-in-out infinite alternate;">
+                    <circle cx="95" cy="65" r="14" stroke="#F59E0B" stroke-width="2.5" fill="none"/>
+                    <line x1="105" y1="75" x2="116" y2="86" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+            </svg>
+
+            <!-- Text & Subtext -->
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; font-family: 'Google Sans', sans-serif;">Updating your work...</h3>
+                <p style="font-size: 0.88rem; color: #64748B; margin: 0; line-height: 1.4;">Sending credentials to BITSathy database to sync your account details.</p>
             </div>
-            
-            <div class="skeleton" style="width: 100%; height: 160px; border-radius: 16px; margin-bottom: 1rem;"></div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                <div class="skeleton" style="height: 100px; border-radius: 20px;"></div>
-                <div class="skeleton" style="height: 100px; border-radius: 20px;"></div>
-            </div>
-            
-            <div class="skeleton" style="width: 100%; height: 200px; border-radius: 20px;"></div>
-            
-            <div style="margin-top: 2rem; text-align: center;">
-                <p style="font-weight: 800; font-size: 0.9rem; color: var(--text-secondary); letter-spacing: 0.5px; opacity: 0.7;">
-                    AUTHENTICATING...
-                </p>
+
+            <!-- Bouncing Bouncing Dots -->
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center; height: 16px;">
+                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.1s;"></span>
+                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.3s;"></span>
+                <span style="width: 8px; height: 8px; background: #6366F1; border-radius: 50%; display: inline-block; animation: bounce-dot 1s infinite alternate 0.5s;"></span>
             </div>
         </div>
     `;
@@ -1300,7 +1379,10 @@ window.handleCredentialResponse = async function (response) {
 
     try {
         // Query the database directly to verify the student exists in Google Sheets (bypassing cache)
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`);
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000); // STRICT 5-SECOND TIMEOUT
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&bypassCache=true&t=${Date.now()}`, { signal: ctrl.signal });
+        clearTimeout(timer);
         const data = await res.json();
 
         if (data.status === "success" && data.student) {
@@ -1393,7 +1475,10 @@ window.handleManualLogin = async function (type) {
     }
 
     try {
-        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&bypassCache=true&t=${Date.now()}`);
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000); // STRICT 5-SECOND TIMEOUT
+        const res = await fetch(`${API_URL}?email=${encodeURIComponent(email)}&rollNo=${encodeURIComponent(pass)}&bypassCache=true&t=${Date.now()}`, { signal: ctrl.signal });
+        clearTimeout(timer);
         const data = await res.json();
 
         if (data.status === "success" && data.student) {
