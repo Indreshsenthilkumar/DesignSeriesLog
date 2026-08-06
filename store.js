@@ -281,11 +281,13 @@
         window.AppStore.init();
         
         // --- GLOBAL ERROR BOUNDARY ---
+        /*
         window.addEventListener('error', (event) => {
             console.error("DesignSeries Global Error Boundary Captured:", event.error);
             if (typeof showToast === 'function') {
                 showToast('error', 'Unexpected Error', 'Something went wrong, but your data is safe.');
             }
         });
+        */
     });
 })();
