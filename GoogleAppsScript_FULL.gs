@@ -72,9 +72,6 @@ function doGet(e) {
     if (params.adminAction === "getAllExtensions" && isAdmin) {
       return respondJSON(getAllExtensions());
     }
-    if (params.action === "verifyUser") {
-      return respondJSON(verifyUser(params.email));
-    }
     if (params.email) {
       const bypass = params.bypassCache === "true" || params.force === "true";
       return respondJSON(getStudentData(params.email, bypass));
@@ -1404,32 +1401,4 @@ function getRewardPointsFromExternalCSV(email) {
   } catch(e) {
     return { status: "error", message: "CSV parsing error: " + e.toString() };
   }
-}
-
-function verifyUser(email) {
-  if (!email) return { status: "error", message: "Email required." };
-  const emailLower = email.toLowerCase().trim();
-  
-  const ss = getSpreadsheet();
-  const studentSheet = ss.getSheetByName(STUDENT_SHEET);
-  const studentData = studentSheet.getDataRange().getValues();
-  const headers = studentData[0].map(h => h.toString().toLowerCase().trim().replace(/\s+/g, '_'));
-  
-  let student = null;
-  const emailIdx = studentData[0].findIndex(h => h.toString().toLowerCase().includes("email"));
-
-  for (let i = 1; i < studentData.length; i++) {
-    const rowEmail = (studentData[i][emailIdx] || "").toString().toLowerCase().trim();
-    if (rowEmail === emailLower) {
-      student = {};
-      headers.forEach((h, idx) => { student[h] = studentData[i][idx]; });
-      break;
-    }
-  }
-
-  if (!student) {
-    return { status: "error", message: "User not found." };
-  }
-  
-  return { status: "success", student: student };
 }
