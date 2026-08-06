@@ -46,7 +46,7 @@ function doGet(e) {
       return respondJSON(getHighestPointsFromChart());
     }
     if (params.action === "getRewardPoints") {
-      return respondJSON(getRewardPointsFromExternalCSV(params.email));
+      return respondJSON(getRewardPointsFromExternalCSV(params.email, params.rollNo));
     }
     if (params.action === "getTasks") {
       return respondJSON(getAllTasks());
@@ -1358,15 +1358,29 @@ function rejectExtension(requestId) {
   }
 }
 
-function getRewardPointsFromExternalCSV(email) {
+function getRewardPointsFromExternalCSV(email, rollNo) {
   try {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuoa_2Si7e9QKvKoQEQ7kjg2LblBTqGMyuJZIEqMWS2vna_VcSrxFPQ1FIBRbyTyd8BMHrNghbE9xR/pub?output=csv";
-    const response = UrlFetchApp.fetch(url + "&t=" + Date.now());
+    let response;
+    try {
+      response = UrlFetchApp.fetch(url + "&t=" + Date.now(), {
+        headers: {
+          "Authorization": "Bearer " + ScriptApp.getOAuthToken()
+        },
+        muteHttpExceptions: true
+      });
+      if (response.getResponseCode() !== 200) {
+        response = UrlFetchApp.fetch(url + "&t=" + Date.now(), { muteHttpExceptions: true });
+      }
+    } catch (fetchErr) {
+      response = UrlFetchApp.fetch(url + "&t=" + Date.now(), { muteHttpExceptions: true });
+    }
+    
     const csvContent = response.getContentText();
     const rows = Utilities.parseCsv(csvContent);
     
     if (rows.length < 2) {
-      return { status: "error", message: "Empty sheet data." };
+      return { status: "error", message: "Empty sheet data. Code: " + (response ? response.getResponseCode() : "N/A") };
     }
     
     const headers = rows[0].map(h => h.toLowerCase().trim().replace(/[\s_]/g, ''));
@@ -1377,13 +1391,18 @@ function getRewardPointsFromExternalCSV(email) {
     const usedIdx = headers.findIndex(h => h.includes('used') || h.includes('redeem'));
     const balanceIdx = headers.findIndex(h => h.includes('balance') || h.includes('reward') || h.includes('current'));
     
-    const queryVal = (email || "").toLowerCase().trim();
+    const queryEmail = (email || "").toLowerCase().trim();
+    const queryRoll = (rollNo || "").toLowerCase().trim();
+    
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       const emailVal = emailIdx !== -1 ? (row[emailIdx] || "").toLowerCase().trim() : "";
       const rollVal = rollIdx !== -1 ? (row[rollIdx] || "").toLowerCase().trim() : "";
       
-      if (emailVal === queryVal || rollVal === queryVal) {
+      const isEmailMatch = queryEmail && emailVal === queryEmail;
+      const isRollMatch = queryRoll && rollVal === queryRoll;
+      
+      if (isEmailMatch || isRollMatch) {
         const earned = earnedIdx !== -1 ? (row[earnedIdx] || "0").trim() : "0";
         const used = usedIdx !== -1 ? (row[usedIdx] || "0").trim() : "0";
         const balance = balanceIdx !== -1 ? (row[balanceIdx] || "0").trim() : "0";

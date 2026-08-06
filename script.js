@@ -2561,9 +2561,18 @@ function showFetchErrorFallback() {
     if (typeof window.updateDashboardRealData === 'function') window.updateDashboardRealData();
 }
 
-async function fetchRewardPoints(emailOrReg) {
+async function fetchRewardPoints(emailOrReg, rollNo = null) {
     if (!emailOrReg) return;
-    console.log("[Rewards] Fetching points for:", emailOrReg);
+    
+    // Extract rollNo from localStorage if not explicitly passed
+    if (!rollNo) {
+        const cachedUser = JSON.parse(localStorage.getItem('user'));
+        if (cachedUser) {
+            rollNo = getStudentRoll(cachedUser);
+        }
+    }
+    
+    console.log("[Rewards] Fetching points for:", emailOrReg, "Roll:", rollNo);
 
     // Try direct web-published CSV fetch first (faster, direct bypass)
     const directCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuoa_2Si7e9QKvKoQEQ7kjg2LblBTqGMyuJZIEqMWS2vna_VcSrxFPQ1FIBRbyTyd8BMHrNghbE9xR/pub?output=csv";
@@ -2608,11 +2617,13 @@ async function fetchRewardPoints(emailOrReg) {
                 const usedIdx = headers.findIndex(h => h.includes('used') || h.includes('redeem'));
                 const balanceIdx = headers.findIndex(h => h.includes('balance') || h.includes('reward') || h.includes('current'));
 
-                const queryVal = emailOrReg.toLowerCase().trim();
+                const queryEmail = emailOrReg.toLowerCase().trim();
+                const queryRoll = (rollNo || '').toLowerCase().trim();
+                
                 const matchedRow = rows.slice(1).find(r => {
                     const emailVal = emailIdx !== -1 ? (r[emailIdx] || '').toLowerCase().trim() : '';
                     const rollVal = rollIdx !== -1 ? (r[rollIdx] || '').toLowerCase().trim() : '';
-                    return emailVal === queryVal || rollVal === queryVal;
+                    return (queryEmail && emailVal === queryEmail) || (queryRoll && rollVal === queryRoll);
                 });
 
                 if (matchedRow) {
@@ -2649,7 +2660,7 @@ async function fetchRewardPoints(emailOrReg) {
     // Try main API_URL with action=getRewardPoints first (proxy fetch to bypass CORS)
     try {
         console.log("[Rewards] Fetching via main API getRewardPoints...");
-        const res = await fetch(`${API_URL}?action=getRewardPoints&email=${encodeURIComponent(emailOrReg)}&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}?action=getRewardPoints&email=${encodeURIComponent(emailOrReg)}&rollNo=${encodeURIComponent(rollNo || '')}&t=${Date.now()}`);
         const data = await res.json();
         if (data.status === "success" && data.student) {
             const s = data.student;
@@ -2684,7 +2695,7 @@ async function fetchRewardPoints(emailOrReg) {
     // Fallback to separate REWARD_API_URL web app API
     try {
         console.log("[Rewards] Falling back to separate Rewards API endpoint...");
-        const res = await fetch(`${REWARD_API_URL}?email=${encodeURIComponent(emailOrReg)}&t=${Date.now()}`);
+        const res = await fetch(`${REWARD_API_URL}?email=${encodeURIComponent(emailOrReg)}&rollNo=${encodeURIComponent(rollNo || '')}&t=${Date.now()}`);
         const data = await res.json();
 
         if (data.status === "success" && data.student) {
@@ -3294,10 +3305,11 @@ function showToast(type, title, message, callback = null) {
         if (!hours) return showToast('error', 'Select Hours', 'Please select at least one hour.');
         if (!task) return showToast('error', 'Reason Needed', 'Please enter a valid reason.');
 
-        // 🚫 Deadline Check (Set to 11:00 PM by default)
-        const DEADLINE_HOUR = 23; // 23 = 11:00 PM
+        // 🚫 Deadline Check (Set to 11:30 PM)
         const now = new Date();
-        if (now.getHours() >= DEADLINE_HOUR) {
+        const currentHour = now.getHours();
+        const currentMins = now.getMinutes();
+        if (currentHour > 23 || (currentHour === 23 && currentMins >= 30)) {
             return showToast('error', 'Deadline Passed', 'Attendance submission is closed for today. Please contact your admin.');
         }
 
