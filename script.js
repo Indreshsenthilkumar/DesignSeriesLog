@@ -1107,8 +1107,8 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
         // Apply search keyword filter
         if (window.notificationSearchTerm) {
             const term = window.notificationSearchTerm.toLowerCase();
-            filtered = filtered.filter(n => 
-                (n.title || '').toLowerCase().replace(/\+/g, ' ').includes(term) || 
+            filtered = filtered.filter(n =>
+                (n.title || '').toLowerCase().replace(/\+/g, ' ').includes(term) ||
                 (n.description || '').toLowerCase().replace(/\+/g, ' ').includes(term)
             );
         }
@@ -1220,7 +1220,7 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
                     const diffMins = Math.floor(diffMs / 60000);
                     const diffHours = Math.floor(diffMins / 60);
                     const diffDays = Math.floor(diffHours / 24);
-                    
+
                     let timeStr = "";
                     if (diffMins < 1) {
                         timeStr = 'Just now';
@@ -1233,7 +1233,7 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
                     } else if (diffDays < 7) {
                         timeStr = `${diffDays} days ago`;
                     }
-                    
+
                     const dateStr = launchDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                     notif.dateStr = dateStr;
                     formattedTime = timeStr || dateStr;
@@ -1254,10 +1254,10 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
             let iconName = 'bell';
             let iconBg = '#F1F5F9';
             let iconColor = '#64748B';
-            
+
             const titleLower = cleanTitle.toLowerCase();
             const descLower = cleanDesc.toLowerCase();
-            
+
             if (titleLower.includes('worklog') || descLower.includes('worklog')) {
                 category = 'Worklog';
                 catColor = '#10B981';
@@ -1347,7 +1347,7 @@ window.renderNotifications = function (notifications, extensions = window.USER_E
         renderFilteredList(activeTabId);
     };
 
-    window.filterNotifications = function(val) {
+    window.filterNotifications = function (val) {
         window.notificationSearchTerm = val;
         renderFilteredList(activeTabId);
     };
@@ -1425,7 +1425,7 @@ window.handleCredentialResponse = async function (response) {
     } catch (e) {
         console.error("Login verification failed:", e);
         hideLoadingOverlay();
-        return showToast("error", "Verification Failed", "Unable to verify user account. Please check your internet connection.");
+        return showToast("error", "Verification Failed", `Unable to verify: ${e.message || e.toString()}`);
     }
 };
 
@@ -1510,7 +1510,7 @@ window.handleManualLogin = async function (type) {
             showToast("error", "Authentication Failed", "No Student Found! Check your credentials.");
         }
     } catch (e) {
-        showToast("error", "Connection Error", "Please check your internet connection.");
+        showToast("error", "Connection Error", `Unable to verify: ${e.message || e.toString()}`);
     }
     btn.innerText = "Login to Portal";
 };
@@ -1682,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('modal-container'),
                     document.getElementById('calendar-modal')
                 ].find(m => m && !m.classList.contains('hidden'));
-                
+
                 if (openModal) {
                     const focusables = openModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
                     if (focusables.length > 0) {
@@ -2562,7 +2562,7 @@ async function fetchRewardPoints(emailOrReg) {
         const csvRes = await fetch(`${directCsvUrl}&t=${Date.now()}`);
         if (csvRes.ok) {
             const csvText = await csvRes.text();
-            
+
             // Safe CSV Parser
             const rows = [];
             let currentRow = [""];
@@ -2589,11 +2589,11 @@ async function fetchRewardPoints(emailOrReg) {
 
             if (rows.length > 1) {
                 const headers = rows[0].map(h => h.toLowerCase().trim().replace(/[\s_]/g, ''));
-                
+
                 // Identify column indices
                 const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('mail') || h === 'id');
                 const rollIdx = headers.findIndex(h => h.includes('roll') || h.includes('reg') || h.includes('register'));
-                
+
                 const earnedIdx = headers.findIndex(h => h.includes('earned') || h.includes('totalpoints') || (h.includes('points') && !h.includes('used') && !h.includes('balance')));
                 const usedIdx = headers.findIndex(h => h.includes('used') || h.includes('redeem'));
                 const balanceIdx = headers.findIndex(h => h.includes('balance') || h.includes('reward') || h.includes('current'));
@@ -2922,11 +2922,11 @@ async function populateDashboard(freshStudentData) {
     }
     fill('p-absent', totalAbsentDays);
     fill('p-absent-desktop', totalAbsentDays);
-    
+
     // Present Days
     const presentDays = Object.keys(dateMap).length;
     fill('p-present-days-desktop', presentDays);
-    
+
     // Today's Worklogs (number of logged sessions today)
     const todayLogsCount = entries.filter(e => {
         let rawDate = e.date || e.Date || '';
@@ -5696,9 +5696,9 @@ window.renderAdminList = function (admins, d, m) {
                     <div style="font-size:0.75rem; font-weight:800; color:#64748B; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Module Access</div>
                     <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
                         ${AVAILABLE_MODULES.map(mod => {
-                            const key = mod.name.toLowerCase().replace(/\s+/g, '_');
-                            const hasAccess = isSuper || (u[key] === true || u[key] === 'TRUE' || u[key] === 'true' || u[key] === 1 || u[key] === '1');
-                            return `
+            const key = mod.name.toLowerCase().replace(/\s+/g, '_');
+            const hasAccess = isSuper || (u[key] === true || u[key] === 'TRUE' || u[key] === 'true' || u[key] === 1 || u[key] === '1');
+            return `
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: #F8FAFC; border: 1px solid #F1F5F9;">
                                     <span style="font-size: 0.78rem; font-weight: 700; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">${mod.name}</span>
                                     <label style="position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; margin-left: 8px;">
@@ -5710,7 +5710,7 @@ window.renderAdminList = function (admins, d, m) {
                                     </label>
                                 </div>
                             `;
-                        }).join('')}
+        }).join('')}
                     </div>
                 </div>
             </div>
@@ -6003,14 +6003,14 @@ window.toggleAdminSubView = function (viewId) {
     if (typeof window.closeUserDetailModal === 'function') window.closeUserDetailModal();
 
     // Hide all
-    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, 
-     document.getElementById('admin-analytics-attendance-container'),
-     document.getElementById('admin-analytics-attendance-container-mobile'),
-     document.getElementById('admin-analytics-worklog-container'),
-     document.getElementById('admin-analytics-worklog-container-mobile'),
-     document.getElementById('mgmt-tab-history'), document.getElementById('mgmt-tab-extensions'), document.getElementById('mgmt-tab-linkedin'), 
-     document.getElementById('notif-mgmt-tab-history'), document.getElementById('notif-mgmt-tab-extensions'), 
-     document.getElementById('notif-mgmt-tab-history-mobile'), document.getElementById('notif-mgmt-tab-extensions-mobile')].forEach(el => el?.classList.add('hidden'));
+    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost,
+        document.getElementById('admin-analytics-attendance-container'),
+        document.getElementById('admin-analytics-attendance-container-mobile'),
+        document.getElementById('admin-analytics-worklog-container'),
+        document.getElementById('admin-analytics-worklog-container-mobile'),
+        document.getElementById('mgmt-tab-history'), document.getElementById('mgmt-tab-extensions'), document.getElementById('mgmt-tab-linkedin'),
+        document.getElementById('notif-mgmt-tab-history'), document.getElementById('notif-mgmt-tab-extensions'),
+        document.getElementById('notif-mgmt-tab-history-mobile'), document.getElementById('notif-mgmt-tab-extensions-mobile')].forEach(el => el?.classList.add('hidden'));
 
     // Handle Mobile Main Header visibility
     if (mobileMainHeader) {
@@ -6056,7 +6056,7 @@ window.toggleAdminSubView = function (viewId) {
         const linkedinContMob = document.getElementById('mgmt-tab-linkedin-mobile');
 
         [attendanceCont, worklogCont, historyCont, extensionsCont, linkedinCont,
-         attendanceContMob, worklogContMob, historyContMob, extensionsContMob, linkedinContMob].forEach(el => el?.classList.add('hidden'));
+            attendanceContMob, worklogContMob, historyContMob, extensionsContMob, linkedinContMob].forEach(el => el?.classList.add('hidden'));
 
         // Hide desktop tab selector in analytics since they are now separate main menu options
         const tabSelector = document.querySelector('#admin-subview-analytics div[style*="display: flex; gap: 8px"]');
@@ -8307,7 +8307,7 @@ async function renderUserWorklogs(email) {
     }
 }
 
-window.showViewLoader = function(container) {
+window.showViewLoader = function (container) {
     if (!container) return;
     if (container.querySelector('.view-loader-overlay')) return;
 
@@ -8350,7 +8350,7 @@ window.showViewLoader = function(container) {
     container.appendChild(loader);
 };
 
-window.hideViewLoader = function(container) {
+window.hideViewLoader = function (container) {
     if (!container) return;
     const loader = container.querySelector('.view-loader-overlay');
     if (loader) {
@@ -8358,7 +8358,7 @@ window.hideViewLoader = function(container) {
     }
 };
 
-window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
+window.ensureUserDataLoadedAndOpen = async function (triggerEl, actionCallback) {
     const screenOnStart = localStorage.getItem('lastScreen') || 'dash';
 
     if (window.isDashboardDataLoaded) {
@@ -8393,13 +8393,13 @@ window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
         } else if (triggerEl.classList.contains('dashboard-grid-card')) {
             isCard = true;
             originalHtml = triggerEl.innerHTML;
-            
+
             // 1. Update subtext to show loading text
             const subtextEl = triggerEl.querySelector('span');
             if (subtextEl) {
                 subtextEl.innerHTML = `<span class="loading-spinner-inline" style="border: 2px solid rgba(100, 116, 139, 0.2); border-top: 2px solid #64748B; border-radius: 50%; width: 10px; height: 10px; display: inline-block; animation: spin-inline 0.8s linear infinite; margin-right: 4px; vertical-align: middle;"></span> Loading...`;
             }
-            
+
             // 2. Animate the icon container to spin
             const iconContainer = triggerEl.querySelector('div');
             if (iconContainer) {
@@ -8428,7 +8428,7 @@ window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
         if (userEmail) {
             await fetchAttendance(userEmail, true); // Force bypass cache
         }
-    } catch(err) {
+    } catch (err) {
         console.error("Failed to load user data:", err);
     } finally {
         // Restore trigger element
@@ -8441,7 +8441,7 @@ window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
-        
+
         // Execute target action modal opening only if the user is still on the same screen they started from!
         const screenOnEnd = localStorage.getItem('lastScreen') || 'dash';
         if (screenOnStart === screenOnEnd) {
@@ -11484,7 +11484,7 @@ window.renderExtensionsTable = function (list, notifications, users) {
                         itemDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     }
                 }
-            } catch(e) {}
+            } catch (e) { }
 
             if (dateFilter === 'today' && itemDateStr !== todayStr) return false;
             if (dateFilter === 'yesterday' && itemDateStr !== yesterdayStr) return false;
@@ -11493,7 +11493,7 @@ window.renderExtensionsTable = function (list, notifications, users) {
 
         // Search Filter
         if (searchVal) {
-            const matches = 
+            const matches =
                 studentName.toLowerCase().includes(searchVal) ||
                 studentId.toLowerCase().includes(searchVal) ||
                 notifTitle.toLowerCase().includes(searchVal) ||
@@ -12076,7 +12076,7 @@ function initNotes() {
     }
 }
 
-window.createNewNote = function() {
+window.createNewNote = function () {
     const newNote = {
         id: 'note_' + Date.now(),
         title: 'Untitled Note',
@@ -12093,7 +12093,7 @@ window.createNewNote = function() {
     localStorage.setItem('ds_notes', JSON.stringify(notesData));
     window.renderNotesList();
     window.selectNote(newNote.id);
-    
+
     // Toggle mobile screen focus to editor
     if (window.innerWidth <= 1024) {
         document.getElementById('notes-workspace-sidebar').style.display = 'none';
@@ -12103,10 +12103,10 @@ window.createNewNote = function() {
     }
 };
 
-window.switchWorkspace = function() {
+window.switchWorkspace = function () {
     currentWorkspace = document.getElementById('notes-workspace-select').value;
     window.renderNotesList();
-    
+
     // Auto-select first note of workspace if any
     const wsNotes = notesData.filter(n => n.workspace === currentWorkspace && !n.isDeleted);
     if (wsNotes.length > 0) {
@@ -12117,7 +12117,7 @@ window.switchWorkspace = function() {
     }
 };
 
-window.toggleFolderTreeCollapse = function() {
+window.toggleFolderTreeCollapse = function () {
     folderTreeCollapsed = !folderTreeCollapsed;
     const tree = document.getElementById('notes-folder-tree-list');
     const icon = document.getElementById('folder-tree-toggle-icon');
@@ -12129,32 +12129,32 @@ window.toggleFolderTreeCollapse = function() {
     }
 };
 
-window.selectFolderFilter = function(folder) {
+window.selectFolderFilter = function (folder) {
     currentFolderFilter = folder;
     currentSmartView = null;
-    
+
     // Update active state class in sidebar
     document.querySelectorAll('.folder-tree-item').forEach(it => {
         it.classList.toggle('active', it.getAttribute('data-folder') === folder);
     });
     document.querySelectorAll('.filter-view-item').forEach(it => it.classList.remove('active'));
-    
+
     window.renderNotesList();
 };
 
-window.selectSmartView = function(view) {
+window.selectSmartView = function (view) {
     currentSmartView = view;
     currentFolderFilter = null;
-    
+
     document.querySelectorAll('.folder-tree-item').forEach(it => it.classList.remove('active'));
     document.querySelectorAll('.filter-view-item').forEach(it => {
         it.classList.toggle('active', it.getAttribute('id') === `filter-view-${view === 'favorites' ? 'fav' : view}`);
     });
-    
+
     window.renderNotesList();
 };
 
-window.selectNote = function(id) {
+window.selectNote = function (id) {
     activeNoteId = id;
     const note = notesData.find(n => n.id === id);
     if (!note) return;
@@ -12215,7 +12215,7 @@ window.selectNote = function(id) {
     }
 };
 
-window.updateWordCharCount = function() {
+window.updateWordCharCount = function () {
     const body = document.getElementById('note-editor-body');
     const label = document.getElementById('note-word-char-count');
     if (!body || !label) return;
@@ -12225,14 +12225,14 @@ window.updateWordCharCount = function() {
     label.innerText = `${wordCount} Words | ${charCount} Characters`;
 };
 
-window.backToNotesList = function() {
+window.backToNotesList = function () {
     document.getElementById('notes-workspace-sidebar').style.display = 'flex';
     document.getElementById('notes-list-sidebar').style.display = 'flex';
     document.getElementById('note-editor-card').style.display = 'none';
     document.getElementById('btn-back-notes-list').style.display = 'none';
 };
 
-window.saveActiveNote = function() {
+window.saveActiveNote = function () {
     if (!activeNoteId) return;
     const titleVal = document.getElementById('note-editor-title').value || 'Untitled Note';
     const bodyVal = document.getElementById('note-editor-body').innerHTML;
@@ -12256,7 +12256,7 @@ window.saveActiveNote = function() {
         note.body = bodyVal;
         note.updatedAt = Date.now();
         localStorage.setItem('ds_notes', JSON.stringify(notesData));
-        
+
         const activeItem = document.querySelector(`.note-item[data-id="${activeNoteId}"]`);
         if (activeItem) {
             const titleEl = activeItem.querySelector('.note-item-title');
@@ -12275,7 +12275,7 @@ window.saveActiveNote = function() {
     }
 };
 
-window.toggleVersionHistoryPanel = function() {
+window.toggleVersionHistoryPanel = function () {
     const panel = document.getElementById('note-history-panel');
     if (!panel) return;
     panel.classList.toggle('hidden');
@@ -12284,7 +12284,7 @@ window.toggleVersionHistoryPanel = function() {
     }
 };
 
-window.renderVersionHistoryList = function() {
+window.renderVersionHistoryList = function () {
     const listContainer = document.getElementById('note-versions-list');
     if (!listContainer || !activeNoteId) return;
     listContainer.innerHTML = '';
@@ -12316,7 +12316,7 @@ window.renderVersionHistoryList = function() {
     });
 };
 
-window.restoreVersion = function(timestamp) {
+window.restoreVersion = function (timestamp) {
     if (!activeNoteId) return;
     const note = notesData.find(n => n.id === activeNoteId);
     if (note && note.versions) {
@@ -12326,7 +12326,7 @@ window.restoreVersion = function(timestamp) {
             note.body = ver.body;
             note.updatedAt = Date.now();
             localStorage.setItem('ds_notes', JSON.stringify(notesData));
-            
+
             document.getElementById('note-editor-title').value = ver.title;
             document.getElementById('note-editor-body').innerHTML = ver.body;
             window.renderNotesList();
@@ -12336,7 +12336,7 @@ window.restoreVersion = function(timestamp) {
     }
 };
 
-window.togglePinActiveNote = function() {
+window.togglePinActiveNote = function () {
     if (!activeNoteId) return;
     const note = notesData.find(n => n.id === activeNoteId);
     if (note) {
@@ -12347,7 +12347,7 @@ window.togglePinActiveNote = function() {
     }
 };
 
-window.toggleFavActiveNote = function() {
+window.toggleFavActiveNote = function () {
     if (!activeNoteId) return;
     const note = notesData.find(n => n.id === activeNoteId);
     if (note) {
@@ -12358,7 +12358,7 @@ window.toggleFavActiveNote = function() {
     }
 };
 
-window.updateNoteFolder = function() {
+window.updateNoteFolder = function () {
     if (!activeNoteId) return;
     const folderVal = document.getElementById('note-folder-select').value;
     const note = notesData.find(n => n.id === activeNoteId);
@@ -12370,7 +12370,7 @@ window.updateNoteFolder = function() {
     }
 };
 
-window.updateNoteColor = function() {
+window.updateNoteColor = function () {
     if (!activeNoteId) return;
     const colorVal = document.getElementById('note-color-select').value;
     const note = notesData.find(n => n.id === activeNoteId);
@@ -12382,7 +12382,7 @@ window.updateNoteColor = function() {
     }
 };
 
-window.duplicateActiveNote = function() {
+window.duplicateActiveNote = function () {
     if (!activeNoteId) return;
     const note = notesData.find(n => n.id === activeNoteId);
     if (note) {
@@ -12403,7 +12403,7 @@ window.duplicateActiveNote = function() {
 let lastDeletedNote = null;
 let deleteUndoTimeout = null;
 
-window.deleteOrRestoreActiveNote = function() {
+window.deleteOrRestoreActiveNote = function () {
     if (!activeNoteId) return;
     const note = notesData.find(n => n.id === activeNoteId);
     if (note) {
@@ -12421,7 +12421,7 @@ window.deleteOrRestoreActiveNote = function() {
     }
 };
 
-window.showUndoToast = function(msg) {
+window.showUndoToast = function (msg) {
     const toast = document.getElementById('notes-undo-toast');
     const msgSpan = document.getElementById('undo-toast-message');
     if (!toast || !msgSpan) return;
@@ -12437,7 +12437,7 @@ window.showUndoToast = function(msg) {
     }, 5000);
 };
 
-window.undoLastDelete = function() {
+window.undoLastDelete = function () {
     if (!lastDeletedNote) return;
     const note = notesData.find(n => n.id === lastDeletedNote);
     if (note) {
@@ -12454,12 +12454,12 @@ window.undoLastDelete = function() {
     lastDeletedNote = null;
 };
 
-window.formatNoteText = function(command) {
+window.formatNoteText = function (command) {
     document.execCommand(command, false, null);
     window.saveActiveNote();
 };
 
-window.toggleCommandPalette = function() {
+window.toggleCommandPalette = function () {
     const modal = document.getElementById('notes-command-palette');
     if (!modal) return;
     modal.classList.toggle('hidden');
@@ -12470,7 +12470,7 @@ window.toggleCommandPalette = function() {
     }
 };
 
-window.filterPaletteOptions = function() {
+window.filterPaletteOptions = function () {
     const input = document.getElementById('palette-search-input');
     const container = document.getElementById('palette-results-container');
     if (!input || !container) return;
@@ -12538,7 +12538,7 @@ let bulkSelectActive = false;
 let bulkSelectedIds = new Set();
 let focusModeActive = false;
 
-window.toggleBulkSelect = function() {
+window.toggleBulkSelect = function () {
     bulkSelectActive = !bulkSelectActive;
     bulkSelectedIds.clear();
     const bar = document.getElementById('notes-bulk-action-bar');
@@ -12549,7 +12549,7 @@ window.toggleBulkSelect = function() {
     window.renderNotesList();
 };
 
-window.toggleSelectNoteBulk = function(id, event) {
+window.toggleSelectNoteBulk = function (id, event) {
     event.stopPropagation();
     if (bulkSelectedIds.has(id)) {
         bulkSelectedIds.delete(id);
@@ -12559,7 +12559,7 @@ window.toggleSelectNoteBulk = function(id, event) {
     document.getElementById('bulk-selected-count').innerText = `${bulkSelectedIds.size} Selected`;
 };
 
-window.bulkPinNotes = function() {
+window.bulkPinNotes = function () {
     if (bulkSelectedIds.size === 0) return;
     notesData.forEach(n => {
         if (bulkSelectedIds.has(n.id)) {
@@ -12571,7 +12571,7 @@ window.bulkPinNotes = function() {
     window.renderNotesList();
 };
 
-window.bulkDeleteNotes = function() {
+window.bulkDeleteNotes = function () {
     if (bulkSelectedIds.size === 0) return;
     notesData.forEach(n => {
         if (bulkSelectedIds.has(n.id)) {
@@ -12583,7 +12583,7 @@ window.bulkDeleteNotes = function() {
     window.renderNotesList();
 };
 
-window.exportNotes = function() {
+window.exportNotes = function () {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(notesData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
@@ -12593,15 +12593,15 @@ window.exportNotes = function() {
     downloadAnchor.remove();
 };
 
-window.triggerImport = function() {
+window.triggerImport = function () {
     document.getElementById('notes-import-input').click();
 };
 
-window.importNotes = function(event) {
+window.importNotes = function (event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const imported = JSON.parse(e.target.result);
             if (Array.isArray(imported)) {
@@ -12622,12 +12622,12 @@ window.importNotes = function(event) {
     reader.readAsText(file);
 };
 
-window.toggleFocusMode = function() {
+window.toggleFocusMode = function () {
     focusModeActive = !focusModeActive;
     const sidebar = document.getElementById('notes-workspace-sidebar');
     const feed = document.getElementById('notes-list-sidebar');
     const btn = document.getElementById('btn-toggle-focus-mode');
-    
+
     if (sidebar && feed && btn) {
         if (focusModeActive) {
             sidebar.style.display = 'none';
@@ -12645,7 +12645,7 @@ window.toggleFocusMode = function() {
 // Context Menu triggers
 let contextNoteId = null;
 
-window.contextAction = function(action) {
+window.contextAction = function (action) {
     if (!contextNoteId) return;
     const note = notesData.find(n => n.id === contextNoteId);
     if (!note) return;
@@ -12673,7 +12673,7 @@ window.contextAction = function(action) {
     }
     localStorage.setItem('ds_notes', JSON.stringify(notesData));
     window.renderNotesList();
-    
+
     // Hide context menu
     const menu = document.getElementById('notes-context-menu');
     if (menu) menu.style.display = 'none';
@@ -12727,14 +12727,14 @@ document.addEventListener('click', () => {
 // Drag and drop variables
 let draggedNoteId = null;
 
-window.renderNotesList = function() {
+window.renderNotesList = function () {
     const list = document.getElementById('notes-list-container');
     const searchVal = (document.getElementById('notes-search-input')?.value || '').toLowerCase();
     const sortBy = document.getElementById('notes-sort-filter')?.value || 'updated';
     if (!list) return;
 
     list.innerHTML = '';
-    
+
     let sorted = [...notesData];
     if (sortBy === 'title') {
         sorted.sort((a, b) => a.title.localeCompare(b.title));
@@ -12749,7 +12749,7 @@ window.renderNotesList = function() {
     const filtered = sorted.filter(n => {
         // Workspace check
         if (n.workspace !== currentWorkspace) return false;
-        
+
         // Search filter
         const matchesSearch = n.title.toLowerCase().includes(searchVal) || n.body.toLowerCase().includes(searchVal);
         if (!matchesSearch) return false;
@@ -12758,7 +12758,7 @@ window.renderNotesList = function() {
         if (currentSmartView) {
             if (currentSmartView === 'trash') return n.isDeleted === true;
             if (n.isDeleted) return false;
-            
+
             if (currentSmartView === 'pinned') return n.isPinned === true;
             if (currentSmartView === 'favorites') return n.isFavorite === true;
             return true;
@@ -12784,7 +12784,7 @@ window.renderNotesList = function() {
         div.className = `note-item ${note.id === activeNoteId ? 'active' : ''}`;
         div.setAttribute('data-id', note.id);
         div.setAttribute('draggable', 'true');
-        
+
         // Click action
         div.onclick = (e) => {
             if (e.shiftKey) {
@@ -12839,7 +12839,7 @@ window.renderNotesList = function() {
                 }
             }
         };
-        
+
         div.style.padding = '1rem';
         div.style.borderRadius = '10px';
         div.style.border = '1px solid var(--border-color)';
@@ -12881,7 +12881,7 @@ initNotes();
 const hookShow = () => {
     const origShow = window.show;
     if (origShow) {
-        window.show = async function(scr, pushHistory = true) {
+        window.show = async function (scr, pushHistory = true) {
             await origShow(scr, pushHistory);
             if (scr === 'notes') {
                 window.renderNotesList();
@@ -12901,7 +12901,7 @@ hookShow();
 
 
 // --- DYNAMIC DASHBOARD WIDGET BINDING ---
-window.updateDashboardRealData = function() {
+window.updateDashboardRealData = function () {
     // 1. Render Real Notes Previews on Dashboard
     const notesContainer = document.getElementById('dashboard-notes-feed');
     if (notesContainer) {
@@ -12912,7 +12912,7 @@ window.updateDashboardRealData = function() {
             if (!a.isPinned && b.isPinned) return 1;
             return (b.updatedAt || 0) - (a.updatedAt || 0);
         });
-        
+
         const topNotes = activeNotes.slice(0, 2);
         if (topNotes.length === 0) {
             notesContainer.innerHTML = `<div style="text-align: center; color: #94A3B8; padding: 1rem 0; font-size: 0.85rem;">No notes available.</div>`;
@@ -12922,9 +12922,9 @@ window.updateDashboardRealData = function() {
                 const borderColor = note.color ? `var(--note-border-${note.color}, #DDD6FE)` : '#DDD6FE';
                 const textColor = note.color ? `var(--note-text-${note.color}, #5B21B6)` : '#5B21B6';
                 const iconColor = note.color ? `var(--note-text-${note.color}, #7C3AED)` : '#7C3AED';
-                
+
                 const timeStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Recently';
-                
+
                 return `
                     <div onclick="window.show('notes'); window.selectNote('${note.id}');" style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 10px; padding: 10px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -12949,10 +12949,10 @@ window.updateDashboardRealData = function() {
             const now = Date.now();
             notifContainer.innerHTML = topNotifs.map(n => {
                 const timeStr = n.launch ? new Date(n.launch).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Recently';
-                
+
                 // Truncate description to 60 chars maximum
                 const descSnippet = n.description ? (n.description.replace(/\+/g, ' ').length > 60 ? n.description.replace(/\+/g, ' ').substring(0, 60) + '...' : n.description.replace(/\+/g, ' ')) : 'System Notice';
-                
+
                 // Expiry / Active status calculation
                 const launchMs = n.launch ? new Date(n.launch).getTime() : 0;
                 const deadlineMs = n.deadline ? new Date(n.deadline).getTime() : Infinity;
@@ -13015,13 +13015,13 @@ window.updateDashboardRealData = function() {
             }).join('');
         }
     }
-    
+
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
 
 // Global Helper to trigger Check-in Modal
-window.openAttendanceHourModal = function(triggerEl) {
+window.openAttendanceHourModal = function (triggerEl) {
     window.ensureUserDataLoadedAndOpen(triggerEl, () => {
         if (window.setupAttendanceModal) window.setupAttendanceModal('user');
         const modal = document.getElementById('modal-container');
@@ -13033,7 +13033,7 @@ window.openAttendanceHourModal = function(triggerEl) {
 };
 
 // Helper to redirect from dashboard to modal notification and highlight it
-window.openNotificationInModal = function(timestamp) {
+window.openNotificationInModal = function (timestamp) {
     window.toggleNotificationModal(true);
     setTimeout(() => {
         const targetCard = document.getElementById(`modal-notif-${timestamp}`);
@@ -13051,7 +13051,7 @@ window.openNotificationInModal = function(timestamp) {
     }, 400);
 };
 
-window.checkModuleAccessAndHideNav = function() {
+window.checkModuleAccessAndHideNav = function () {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     const email = user.email || user.email_id || "";
