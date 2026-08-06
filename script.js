@@ -1891,10 +1891,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-binding the desktop add button consistently
         const deskAddBtn = document.getElementById('btn-add-desktop');
         if (deskAddBtn) {
-            deskAddBtn.addEventListener('click', () => {
-                if (window.setupAttendanceModal) window.setupAttendanceModal('user');
-                actions.mod.classList.remove('hidden');
-                actions.mod.style.display = 'flex';
+            deskAddBtn.addEventListener('click', (e) => {
+                window.ensureUserDataLoadedAndOpen(deskAddBtn, () => {
+                    if (window.setupAttendanceModal) window.setupAttendanceModal('user');
+                    actions.mod.classList.remove('hidden');
+                    actions.mod.style.display = 'flex';
+                });
             });
         }
 
@@ -1933,10 +1935,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (historyAddBtn) {
-            historyAddBtn.addEventListener('click', () => {
-                if (window.setupAttendanceModal) window.setupAttendanceModal('user');
-                actions.mod.classList.remove('hidden');
-                actions.mod.style.display = 'flex';
+            historyAddBtn.addEventListener('click', (e) => {
+                window.ensureUserDataLoadedAndOpen(historyAddBtn, () => {
+                    if (window.setupAttendanceModal) window.setupAttendanceModal('user');
+                    actions.mod.classList.remove('hidden');
+                    actions.mod.style.display = 'flex';
+                });
             });
         }
 
@@ -2248,13 +2252,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-async function fetchAttendance(email) {
+async function fetchAttendance(email, forceBypass = false) {
     if (!email) return;
 
     window.isDashboardDataLoaded = false;
 
     // SWR Cache Layer
-    const cached = window.AppStore.get('attendance');
+    const cached = forceBypass ? null : window.AppStore.get('attendance');
     if (cached) {
         if (cached.history) {
             window.ATTENDANCE_HISTORY = cached.history;
@@ -2330,7 +2334,7 @@ async function fetchAttendance(email) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 30000);
         const res = await fetch(
-            `${API_URL}?email=${encodeURIComponent(email)}&t=${Date.now()}`,
+            `${API_URL}?email=${encodeURIComponent(email)}${forceBypass ? '&bypassCache=true' : ''}&t=${Date.now()}`,
             { signal: ctrl.signal }
         );
         clearTimeout(timer);
@@ -8163,6 +8167,78 @@ async function renderUserWorklogs(email) {
         body.innerHTML = '<div style="text-align:center; color:#EF4444; padding:2rem;">Failed to load worklogs.</div>';
     }
 }
+
+window.ensureUserDataLoadedAndOpen = async function(triggerEl, actionCallback) {
+    if (window.isDashboardDataLoaded) {
+        if (actionCallback) actionCallback();
+        return;
+    }
+
+    // Otherwise, we need to show a loading animation on the trigger element!
+    let originalHtml = "";
+    let isButton = false;
+    let isCard = false;
+
+    if (triggerEl) {
+        if (triggerEl.tagName === 'BUTTON') {
+            isButton = true;
+            originalHtml = triggerEl.innerHTML;
+            triggerEl.disabled = true;
+            triggerEl.innerHTML = `<span class="loading-spinner-inline" style="border: 2.5px solid rgba(255,255,255,0.3); border-top: 2.5px solid white; border-radius: 50%; width: 16px; height: 16px; display: inline-block; animation: spin-inline 0.8s linear infinite; margin-right: 8px; vertical-align: middle;"></span> Loading...`;
+        } else if (triggerEl.classList.contains('dashboard-grid-card')) {
+            isCard = true;
+            originalHtml = triggerEl.innerHTML;
+            // Let's replace the icon inside the grid card with a spinner!
+            const iconContainer = triggerEl.querySelector('div');
+            if (iconContainer) {
+                iconContainer.dataset.originalBg = iconContainer.style.background;
+                iconContainer.dataset.originalColor = iconContainer.style.color;
+                iconContainer.style.background = "#ECFDF5";
+                iconContainer.style.color = "#10B981";
+                iconContainer.innerHTML = `<div class="loading-spinner-inline" style="border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10B981; border-radius: 50%; width: 20px; height: 20px; animation: spin-inline 0.8s linear infinite; margin: 0 auto;"></div>`;
+            }
+        }
+    }
+
+    // Add CSS dynamic animation if not already present
+    if (!document.getElementById('inline-spinner-styles')) {
+        const style = document.createElement('style');
+        style.id = 'inline-spinner-styles';
+        style.innerHTML = `
+            @keyframes spin-inline {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Trigger the database fetch bypassing cache
+    try {
+        const userObj = JSON.parse(localStorage.getItem('user'));
+        const userEmail = userObj?.email || userObj?.email_id || window.currentUserEmail;
+        if (userEmail) {
+            await fetchAttendance(userEmail, true); // Force bypass cache
+        }
+    } catch(err) {
+        console.error("Failed to load user data:", err);
+    } finally {
+        // Restore trigger element
+        if (triggerEl) {
+            if (isButton) {
+                triggerEl.disabled = false;
+                triggerEl.innerHTML = originalHtml;
+            } else if (isCard) {
+                triggerEl.innerHTML = originalHtml;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+        
+        // Execute target action modal opening
+        if (actionCallback) actionCallback();
+    }
+};
+
 window.setupAttendanceModal = function (mode, targetUser = null) {
     const title = document.getElementById('attendance-modal-title');
     const subtitle = document.getElementById('attendance-modal-subtitle');
@@ -12727,13 +12803,15 @@ window.updateDashboardRealData = function() {
 
 
 // Global Helper to trigger Check-in Modal
-window.openAttendanceHourModal = function() {
-    if (window.setupAttendanceModal) window.setupAttendanceModal('user');
-    const modal = document.getElementById('modal-container');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-    }
+window.openAttendanceHourModal = function(triggerEl) {
+    window.ensureUserDataLoadedAndOpen(triggerEl, () => {
+        if (window.setupAttendanceModal) window.setupAttendanceModal('user');
+        const modal = document.getElementById('modal-container');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+    });
 };
 
 // Helper to redirect from dashboard to modal notification and highlight it
