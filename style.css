@@ -104,11 +104,11 @@ html {
     }
 }
 
-html, body {
-    margin: 0;
-    padding: 0;
+html {
     height: 100%;
     background: var(--bg-light);
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 body {
@@ -667,6 +667,7 @@ body {
 
 .main-content {
     flex: 1;
+    min-width: 0; /* Allow the main flex item to shrink below its children's min-content width */
     min-height: 100vh;
     padding: 0;
     overflow-y: auto;
@@ -757,7 +758,7 @@ body {
 
 @media (max-width: 1366px) {
     .main-content {
-        padding: 2rem;
+        padding: 0;
     }
 }
 
@@ -3836,7 +3837,7 @@ button:active:not(:disabled), .btn:active:not(:disabled), .btn-icon:active:not(:
     }
     
     .desktop-dashboard-grid {
-        grid-template-columns: 1fr !important; /* Stack right widgets underneath to give main content breathing room */
+        grid-template-columns: 1fr 320px !important; /* Keep two-column side-by-side layout on smaller laptop/desktop screens */
         gap: 1.5rem !important;
         padding: 1.5rem !important;
     }

@@ -2288,7 +2288,7 @@
                 <div class="desktop-dashboard-grid">
                     
                     <!-- LEFT CONTAINER -->
-                    <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    <div style="display: flex; flex-direction: column; gap: 2rem; min-width: 0;">
                         
                         <!-- DASHBOARD OVERVIEW HEADER CARD -->
                         <div class="dashboard-widget-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem;">
@@ -2304,7 +2304,7 @@
                         <!-- QUICK ACTIONS -->
                         <div>
                             <h4 style="font-size: 0.8rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 1rem 0;">Quick Actions</h4>
-                            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
                                 <!-- Action 1 -->
                                 <div class="dashboard-grid-card" onclick="window.openAttendanceHourModal(this)" style="display: flex; flex-direction: column; gap: 10px; cursor: pointer;">
                                     <div style="width: 40px; height: 40px; border-radius: 10px; background: #ECFDF5; display: flex; align-items: center; justify-content: center; color: #10B981;">
@@ -2362,7 +2362,7 @@
                         <!-- TODAY'S SUMMARY -->
                         <div>
                             <h4 style="font-size: 0.8rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 1rem 0;">Today's Summary</h4>
-                            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
                                 <!-- Stat 1: Today's Hours -->
                                 <div class="dashboard-grid-card" style="display: flex; flex-direction: column; gap: 6px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -2442,7 +2442,7 @@
                         </div>
 
                         <!-- ATTENDANCE HISTORY -->
-                        <div id="attendance-history-section" class="dashboard-widget-card" style="padding: 1.5rem 2rem;">
+                        <div id="attendance-history-section" class="dashboard-widget-card" style="padding: 1.5rem 2rem; overflow-x: auto;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                                 <h3 style="font-size: 1.1rem; font-weight: 800; color: #1E293B; margin: 0;">Attendance History</h3>
                             </div>
@@ -2475,7 +2475,7 @@
                     </div>
 
                     <!-- RIGHT CONTAINER -->
-                    <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    <div style="display: flex; flex-direction: column; gap: 2rem; min-width: 0;">
                         
                         <!-- NOTIFICATIONS -->
                         <div class="dashboard-widget-card" style="padding: 1.5rem;">
@@ -2553,16 +2553,16 @@
 
                 <!-- Stats Cards Grid -->
                 <div class="desktop-stats-grid">
-                    <!-- Card 1: Total Logs -->
+                    <!-- Card 1: Absent Days -->
                     <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #EEF2FF; color: #4F46E5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <i data-lucide="clipboard-list" style="width: 22px; stroke-width: 2px;"></i>
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #F1F5F9; color: #475569; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(226, 232, 240, 0.8);">
+                            <i data-lucide="frown" style="width: 22px; stroke-width: 2px;"></i>
                         </div>
                         <div>
-                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Total Days Logged</span>
-                            <h3 id="stat-total-logs" style="font-size: 1.75rem; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2;">0</h3>
-                            <span style="color: #10B981; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
-                                <span>&nearr;</span> 12% from last month
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Absent Days</span>
+                            <h3 id="stat-absent-days" style="font-size: 1.75rem; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2;">0.0</h3>
+                            <span style="color: #94A3B8; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
+                                This Month
                             </span>
                         </div>
                     </div>
@@ -2705,9 +2705,6 @@
                                 <th
                                     style="padding: 1rem; text-align: center; font-size: 0.75rem; color: #64748B; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">
                                     STATUS</th>
-                                <th
-                                    style="padding: 1rem; text-align: center; font-size: 0.75rem; color: #64748B; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">
-                                    SELECT</th>
                             </tr>
                         </thead>
                         <tbody id="full-history-table">

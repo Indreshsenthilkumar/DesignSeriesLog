@@ -3612,10 +3612,6 @@ function renderHistory(searchTerm = '') {
                     <div style="font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 3px; letter-spacing: -0.2px;">
                         ${i.reason}
                     </div>
-                    <div style="font-size: 0.72rem; color: #10B981; display: flex; align-items: center; gap: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        System Verified
-                    </div>
                 </td>
                 <td style="padding: 1.25rem 1rem; text-align: center; display: flex; justify-content: center; align-items: center; min-height: 58px;">
                     ${generateHourBubbles(i.hours)}
@@ -3642,10 +3638,6 @@ function renderHistory(searchTerm = '') {
                     <div style="font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 3px; letter-spacing: -0.2px;">
                         ${i.reason}
                     </div>
-                    <div style="font-size: 0.72rem; color: #10B981; display: flex; align-items: center; gap: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        System Verified
-                    </div>
                 </td>
                 <td style="padding: 1.25rem 1rem; text-align: left;">
                     ${generateHourBubbles(i.hours)}
@@ -3656,11 +3648,8 @@ function renderHistory(searchTerm = '') {
                         LOGGED
                     </span>
                 </td>
-                <td style="padding: 1.25rem 1rem; text-align: center;">
-                    <input type="checkbox" class="modern-checkbox" style="width: 18px; height: 18px; cursor: pointer; border-radius: 6px; border: 1.5px solid #CBD5E1; accent-color: #2563EB;">
-                </td>
             </tr>
-        `).join('') : `<tr><td colspan="5" style="padding: 5rem; text-align: center; color: var(--text-secondary);">
+        `).join('') : `<tr><td colspan="4" style="padding: 5rem; text-align: center; color: var(--text-secondary);">
                         <i data-lucide="folder-open" style="width: 48px; height: 48px; display: block; margin: 0 auto 1rem; opacity: 0.3;"></i>
                         No logs found matching your criteria.
                       </td></tr>`;
@@ -3672,16 +3661,13 @@ function renderHistory(searchTerm = '') {
             ${filteredItems.length > 0 ? filteredItems.map(i => `
                 <div class="card" style="padding: 0.75rem 1rem; margin-bottom: 0.75rem; border: 1.5px solid #E2E8F0; border-radius: 14px !important; position: relative; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;">
                     
-
-                    
-                    <!-- Date and Checkbox row -->
+                    <!-- Date row -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <div style="font-weight: 800; color: #111827; font-size: 1.1rem; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px;">
                                 ${formatDate(i.date)}
                             </div>
                         </div>
-                        <input type="checkbox" class="modern-checkbox" style="margin-top: 2px;">
                     </div>
 
                     <!-- Reason and Rating badge row -->
@@ -3812,13 +3798,13 @@ function renderHistory(searchTerm = '') {
     if (absentDsk) absentDsk.innerText = totalLeaveUnits.toFixed(1);
 
     // Update top stat cards dynamically from real user data
-    const statTotalLogs = document.getElementById('stat-total-logs');
+    const statAbsentDays = document.getElementById('stat-absent-days');
     const statTotalHours = document.getElementById('stat-total-hours');
     const statPendingLogs = document.getElementById('stat-pending-logs');
     const statApprovedLogs = document.getElementById('stat-approved-logs');
     const historyRecordsCount = document.getElementById('history-records-count');
 
-    if (statTotalLogs) statTotalLogs.innerText = filteredItems.length;
+    if (statAbsentDays) statAbsentDays.innerText = totalLeaveUnits.toFixed(1);
     if (statTotalHours) {
         const totalHours = filteredItems.reduce((sum, item) => sum + (item.hours ? item.hours.length : 0), 0);
         statTotalHours.innerText = totalHours;
