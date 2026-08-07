@@ -947,19 +947,26 @@ function registerFCMToken(email, token) {
     const cleanEmail = email.toLowerCase().trim();
     const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
     
-    let existsIdx = -1;
+    // Find all rows matching this email
+    const userTokenRows = [];
     for (let i = 1; i < data.length; i++) {
-      // Allow multiple tokens per email (e.g. laptop and phone) by checking if both email and token match
-      if ((data[i][0] || "").toString().toLowerCase().trim() === cleanEmail && (data[i][1] || "").toString() === token) {
-        existsIdx = i + 1;
-        break;
+      if ((data[i][0] || "").toString().toLowerCase().trim() === cleanEmail) {
+        userTokenRows.push({ rowNum: i + 1, token: (data[i][1] || "").toString(), timestamp: data[i][2] });
       }
     }
     
-    if (existsIdx > -1) {
-      sheet.getRange(existsIdx, 3).setValue(now); // Just update the active timestamp
+    // If the exact token already exists, just update timestamp
+    const exactMatch = userTokenRows.find(r => r.token === token);
+    if (exactMatch) {
+      sheet.getRange(exactMatch.rowNum, 3).setValue(now);
     } else {
-      sheet.appendRow([cleanEmail, token, now]); // Append new device token row
+      // Keep a max of 3 tokens per user. If we have 3 or more, delete the oldest one first.
+      if (userTokenRows.length >= 3) {
+        userTokenRows.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        const oldestRowNum = userTokenRows[0].rowNum;
+        sheet.deleteRow(oldestRowNum);
+      }
+      sheet.appendRow([cleanEmail, token, now]);
     }
     return { status: "success", message: "Token registered." };
   } catch(e) {
@@ -1156,7 +1163,25 @@ function sendFcmNotification(targetEmails, title, description) {
         };
         
         const response = UrlFetchApp.fetch(baseUrl, options);
-        console.log("FCM Send Response for token (" + token.substring(0, 10) + "...): " + response.getContentText());
+        const resText = response.getContentText();
+        console.log("FCM Send Response for token (" + token.substring(0, 10) + "...): " + resText);
+        
+        try {
+          const resJson = JSON.parse(resText);
+          if (resJson.error && (resJson.error.status === "UNREGISTERED" || 
+                                resJson.error.message.includes("requested entity was not found") || 
+                                resJson.error.message.includes("unregistered"))) {
+            // Find and delete the unregistered/invalid token row
+            const tokenSheet = getUserTokensSheet();
+            const tokenData = tokenSheet.getDataRange().getValues();
+            for (let i = tokenData.length - 1; i >= 1; i--) {
+              if ((tokenData[i][1] || "").toString() === token) {
+                tokenSheet.deleteRow(i + 1);
+                console.log("Automatically deleted dead/unregistered token for: " + tokenData[i][0]);
+              }
+            }
+          }
+        } catch(jsonErr) {}
       } catch (tokenErr) {
         console.error("FCM Send error for token " + token.substring(0, 10) + "...: " + tokenErr.toString());
       }
