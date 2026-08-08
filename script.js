@@ -13864,6 +13864,53 @@ function getStatusPillHtml(status, isSmall = false) {
     return `<span style="background: ${bgColor}; color: #ffffff; padding: ${padding}; border-radius: 9999px; font-size: ${fontSize}; font-weight: 800; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">${status || 'Pending'}</span>`;
 }
 
+function isActivityPassExpired(dateStr, toTimeStr) {
+    if (!dateStr || !toTimeStr) return false;
+    const dDate = new Date(dateStr);
+    if (isNaN(dDate.getTime())) return false;
+    const dTime = new Date(toTimeStr);
+    if (isNaN(dTime.getTime())) return false;
+    
+    // Construct local target Date using dateStr's YMD and toTimeStr's HMS
+    const target = new Date(dDate.getFullYear(), dDate.getMonth(), dDate.getDate(), dTime.getHours(), dTime.getMinutes(), dTime.getSeconds());
+    return new Date() > target;
+}
+
+function getUserStatusPillHtml(status, isExpired) {
+    if (isExpired) {
+        return `<span style="background: #F87171; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Expired</span>`;
+    }
+    
+    let bgColor = "#D97706"; // Pending
+    let label = "Pending Approval";
+    if (status === 'Approved') {
+        bgColor = "#008000";
+        label = "Approved";
+    } else if (status === 'Rejected') {
+        bgColor = "#DC2626";
+        label = "Rejected";
+    }
+    
+    return `<span style="background: ${bgColor}; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">${label}</span>`;
+}
+
+function formatPassRangeHeader(dateStr, fromTimeStr, toTimeStr) {
+    if (!dateStr || !fromTimeStr || !toTimeStr) return '';
+    const d = new Date(dateStr);
+    let datePart = '';
+    if (!isNaN(d.getTime())) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        datePart = `${d.getDate()} ${months[d.getMonth()]}`;
+    } else {
+        datePart = dateStr;
+    }
+    const tFrom = formatTimeOnly(fromTimeStr);
+    const tTo = formatTimeOnly(toTimeStr);
+    return `${datePart} - ${tFrom} to ${tTo}`;
+}
+
+window.USER_ACTIVITY_PASSES = [];
+
 window.loadUserActivityPasses = async function(force = false) {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
@@ -13871,66 +13918,131 @@ window.loadUserActivityPasses = async function(force = false) {
     if (!email) return;
 
     try {
-        const res = await fetch(`${API_URL}?action=getUserActivityPasses&email=${encodeURIComponent(email)}&t=${Date.now()}`);
-        const data = await res.json();
-        
         const desktopContainer = document.getElementById('user-activity-pass-history-container');
         const desktopEmptyState = document.getElementById('user-activity-pass-empty-state');
-        const desktopList = document.getElementById('user-activity-pass-history-list-desktop');
+        const desktopGrid = document.getElementById('user-activity-pass-history-grid');
         
         const mobileContainer = document.getElementById('user-activity-pass-history-container-mobile');
         const mobileEmptyState = document.getElementById('user-activity-pass-empty-state-mobile');
+
+        // Show spinner on load and hide default empty state screen
+        if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+        if (desktopContainer) desktopContainer.style.display = 'block';
+        if (desktopGrid) {
+            desktopGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 4rem 2rem; background: white; border-radius: 10px !important; box-shadow: 0 4px 18px rgba(0,0,0,0.06); font-family: 'Google Sans', sans-serif; border: none !important;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; color: #4F46E5;">
+                        <div class="analytics-spin-loader" style="width: 28px; height: 28px; border-width: 3px; border-top-color: #4F46E5;"></div>
+                        <span style="font-size: 0.85rem; font-weight: 700; letter-spacing: -0.2px;">Loading activity passes...</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+        if (mobileContainer) {
+            mobileContainer.style.display = 'flex';
+            mobileContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: white; border-radius: 10px !important; box-shadow: 0 4px 18px rgba(0,0,0,0.06); width: 100%; box-sizing: border-box; font-family: 'Google Sans', sans-serif; border: none !important;">
+                    <div class="analytics-spin-loader" style="width: 24px; height: 24px; border-width: 3px; border-top-color: #4F46E5; margin-bottom: 8px;"></div>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #4F46E5; letter-spacing: -0.2px;">Loading...</span>
+                </div>
+            `;
+        }
+
+        const res = await fetch(`${API_URL}?action=getUserActivityPasses&email=${encodeURIComponent(email)}&t=${Date.now()}`);
+        const data = await res.json();
         
         if (data.status === 'success' && data.passes && data.passes.length > 0) {
-            // Render desktop table rows
-            if (desktopList) {
-                desktopList.innerHTML = data.passes.map(pass => {
-                    return `
-                        <tr style="border-bottom: 1.5px solid #F1F5F9; font-weight: 600; color: #1E293B;">
-                            <td style="padding: 1.25rem 1.5rem; color: #4F46E5; white-space: nowrap;">${pass.category || ''}</td>
-                            <td style="padding: 1.25rem 1.5rem; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">${pass.title || ''}</td>
-                            <td style="padding: 1.25rem 1.5rem; color: #64748B; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${pass.venue || '-'}">${pass.venue || '-'}</td>
-                            <td style="padding: 1.25rem 1.5rem; white-space: nowrap;">${formatDateOnly(pass.date)}</td>
-                            <td style="padding: 1.25rem 1.5rem; color: #059669; white-space: nowrap;">${formatTimeOnly(pass.fromTime)}</td>
-                            <td style="padding: 1.25rem 1.5rem; color: #DC2626; white-space: nowrap;">${formatTimeOnly(pass.toTime)}</td>
-                            <td style="padding: 1.25rem 1.5rem; font-size: 0.85rem; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #64748B;" title="${pass.reason || ''}">${pass.reason || ''}</td>
-                            <td style="padding: 1.25rem 1.5rem; text-align: center; white-space: nowrap;">
-                                ${getStatusPillHtml(pass.status)}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            }
+            window.USER_ACTIVITY_PASSES = data.passes;
             
-            // Render mobile list cards
-            if (mobileContainer) {
-                mobileContainer.innerHTML = data.passes.map(pass => {
-                    return `
-                        <div class="card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div>
-                                    <span style="background: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.category || ''}</span>
-                                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 6px 0 0 0;">${pass.title || ''}</h4>
-                                </div>
-                                ${getStatusPillHtml(pass.status, true)}
+            // Helper for category badge styling
+            const getCategoryBadgeHtml = (category) => {
+                const cat = (category || '').trim().toLowerCase();
+                let bg = '#EEF2FF';
+                let text = '#4F46E5';
+                let border = '#C7D2FE';
+                
+                if (cat.includes('lab')) {
+                    bg = '#EFF6FF'; // light blue
+                    text = '#1D4ED8';
+                    border = '#BFDBFE';
+                } else if (cat.includes('guest') || cat.includes('lecture') || cat.includes('seminar')) {
+                    bg = '#FAF5FF'; // light purple
+                    text = '#6B21A8';
+                    border = '#F3E8FF';
+                } else if (cat.includes('ps') || cat.includes('slot')) {
+                    bg = '#ECFDF5'; // light emerald
+                    text = '#047857';
+                    border = '#A7F3D0';
+                } else if (cat.includes('exam') || cat.includes('test')) {
+                    bg = '#FEF2F2'; // light red
+                    text = '#991B1B';
+                    border = '#FEE2E2';
+                }
+                
+                return `<span style="background: ${bg}; color: ${text}; border: 1px solid ${border}; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; font-family: 'Google Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">${category || ''}</span>`;
+            };
+
+            // Build card grid elements for desktop & mobile
+            const desktopCardsHtml = data.passes.map(pass => {
+                const isExpired = isActivityPassExpired(pass.date, pass.toTime);
+                const rangeHeader = formatPassRangeHeader(pass.date, pass.fromTime, pass.toTime);
+                const reasonPreview = pass.reason ? (pass.reason.length > 75 ? pass.reason.substring(0, 75) + '...' : pass.reason) : '';
+                
+                return `
+                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 10px !important; padding: 1.25rem; box-shadow: 0 4px 18px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; border: none !important;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.09)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 18px rgba(0,0,0,0.06)';">
+                        <div>
+                            <div style="font-size: 0.78rem; font-weight: 700; color: #4F46E5; margin-bottom: 0.5rem; font-family: 'Google Sans', sans-serif; letter-spacing: -0.2px;">
+                                ${rangeHeader}
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #64748B;">
-                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="map-pin" style="width: 14px; color: #94A3B8;"></i> Venue: ${pass.venue || '-'}</div>
-                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar" style="width: 14px; color: #94A3B8;"></i> Date: ${formatDateOnly(pass.date)}</div>
-                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="clock" style="width: 14px; color: #94A3B8;"></i> Time: ${formatTimeOnly(pass.fromTime)} - ${formatTimeOnly(pass.toTime)}</div>
-                            </div>
-                            <div style="font-size: 0.8rem; color: #475569; background: #F8FAFC; padding: 10px; border-radius: 12px; line-height: 1.4; border: 1px solid #F1F5F9; white-space: normal;">
-                                <strong>Reason:</strong> ${pass.reason || ''}
-                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">
+                                ${pass.title || ''}
+                            </h4>
+                            ${reasonPreview ? `
+                            <p style="font-size: 0.82rem; color: #64748B; margin: 0.5rem 0 0 0; line-height: 1.5; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.reason}">
+                                ${reasonPreview}
+                            </p>
+                            ` : ''}
                         </div>
-                    `;
-                }).join('');
-                if (window.lucide) window.lucide.createIcons();
-            }
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Google Sans', sans-serif;">
+                            ${getCategoryBadgeHtml(pass.category)}
+                            ${getUserStatusPillHtml(pass.status, isExpired)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const mobileCardsHtml = data.passes.map(pass => {
+                const isExpired = isActivityPassExpired(pass.date, pass.toTime);
+                const rangeHeader = formatPassRangeHeader(pass.date, pass.fromTime, pass.toTime);
+                
+                return `
+                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 10px !important; padding: 1.25rem; box-shadow: 0 4px 18px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; border: none !important;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.09)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 18px rgba(0,0,0,0.06)';">
+                        <div>
+                            <div style="font-size: 0.78rem; font-weight: 700; color: #4F46E5; margin-bottom: 0.5rem; font-family: 'Google Sans', sans-serif; letter-spacing: -0.2px;">
+                                ${rangeHeader}
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">
+                                ${pass.title || ''}
+                            </h4>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Google Sans', sans-serif;">
+                            ${getCategoryBadgeHtml(pass.category)}
+                            ${getUserStatusPillHtml(pass.status, isExpired)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (desktopGrid) desktopGrid.innerHTML = desktopCardsHtml;
+            if (mobileContainer) mobileContainer.innerHTML = mobileCardsHtml;
+            
+            if (window.lucide) window.lucide.createIcons();
 
             if (desktopContainer) desktopContainer.style.display = 'block';
             if (desktopEmptyState) desktopEmptyState.style.display = 'none';
-            if (mobileContainer) mobileContainer.style.display = 'flex';
+            if (mobileContainer) mobileContainer.style.display = 'grid';
             if (mobileEmptyState) mobileEmptyState.style.display = 'none';
         } else {
             if (desktopContainer) desktopContainer.style.display = 'none';
@@ -13940,6 +14052,88 @@ window.loadUserActivityPasses = async function(force = false) {
         }
     } catch (err) {
         console.error("Failed to load user passes: ", err);
+    }
+};
+
+window.showUserActivityPassDetailModal = function(requestId) {
+    const pass = (window.USER_ACTIVITY_PASSES || []).find(p => p.requestId === requestId);
+    if (!pass) return;
+
+    const badgeContainer = document.getElementById('user-modal-status-badge-container');
+    const contentDiv = document.getElementById('user-activity-pass-detail-content');
+    if (!contentDiv || !badgeContainer) return;
+
+    const isExpired = isActivityPassExpired(pass.date, pass.toTime);
+    const timingText = `${formatTimeOnly(pass.fromTime)} to ${formatTimeOnly(pass.toTime)}`;
+    
+    let statusLabel = isExpired ? "Expired" : (pass.status || "Pending Approval");
+    if (statusLabel === "Approved") statusLabel = "Active";
+    
+    let statusBg = "#D97706"; // Amber
+    if (isExpired) statusBg = "#F87171"; // Coral Red
+    else if (pass.status === "Approved") statusBg = "#10B981"; // Green
+    else if (pass.status === "Rejected") statusBg = "#EF4444"; // Solid Red
+    
+    badgeContainer.innerHTML = `
+        <span style="background: ${statusBg}; color: white; padding: 2px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;">
+            ${statusLabel}
+        </span>
+    `;
+
+    contentDiv.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #475569; font-family: 'Google Sans', sans-serif;">
+            <div>
+                <span style="font-weight: 700; color: #64748B;">User Id:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px; font-family: monospace;">${pass.rollNo || 'N/A'}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Name:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px;">${pass.name || 'Student'}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Dept:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px;">Year ${pass.year || 'N/A'}</span>
+            </div>
+            <div style="border-top: 1px solid #F1F5F9; margin-top: 0.5rem; padding-top: 0.75rem;">
+                <span style="font-weight: 700; color: #64748B;">Date:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px;">${formatDateOnly(pass.date)}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Timing:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px;">${timingText}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Category:</span>
+                <span style="color: #4F46E5; font-weight: 800; margin-left: 6px;">${pass.category || 'N/A'}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Title:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px; white-space: normal;">${pass.title || '-'}</span>
+            </div>
+            <div>
+                <span style="font-weight: 700; color: #64748B;">Venue:</span>
+                <span style="color: #1E293B; font-weight: 600; margin-left: 6px; white-space: normal;">${pass.venue || '-'}</span>
+            </div>
+            <div style="border-top: 1px solid #F1F5F9; margin-top: 0.5rem; padding-top: 0.75rem; white-space: normal;">
+                <div style="font-weight: 700; color: #64748B; margin-bottom: 0.25rem;">Reason:</div>
+                <div style="color: #334155; line-height: 1.5; background: #F8FAFC; padding: 12px; border-radius: 8px; border: 1.5px solid #F1F5F9; font-family: 'Google Sans', sans-serif;">
+                    ${pass.reason || 'N/A'}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = document.getElementById('user-activity-pass-detail-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
+    }
+};
+
+window.closeUserActivityPassDetailModal = function() {
+    const modal = document.getElementById('user-activity-pass-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
     }
 };
 
@@ -14006,8 +14200,39 @@ window.loadAllActivityPasses = async function(force = false) {
     if (refreshBtn) {
         icon = refreshBtn.querySelector('[data-lucide="refresh-cw"]');
         if (icon) {
-            icon.classList.add('animate-spin');
+            icon.classList.add('animate-spin-custom');
         }
+    }
+
+    // Instantly show inline spinning loader in the tables
+    const desktopList = document.getElementById('admin-activity-approval-list-desktop');
+    const mobileContainer = document.getElementById('admin-activity-approval-list-mobile');
+    const desktopContainer = document.getElementById('admin-activity-approval-table-container');
+    const desktopEmptyState = document.getElementById('admin-activity-approval-empty-state');
+    const mobileEmptyState = document.getElementById('admin-activity-approval-empty-state-mobile');
+
+    if (desktopContainer) desktopContainer.style.display = 'block';
+    if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+    if (mobileContainer) mobileContainer.style.display = 'flex';
+    if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+
+    if (desktopList) {
+        desktopList.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 4rem 2rem;">
+                    <div class="analytics-spin-loader" style="width: 36px; height: 36px; border-width: 3px; border-top-color: #4F46E5; animation: analytics-spin 1s linear infinite;"></div>
+                    <div style="margin-top: 1rem; font-weight: 700; color: #64748B; font-size: 0.9rem;">Fetching submissions from database...</div>
+                </td>
+            </tr>
+        `;
+    }
+    if (mobileContainer) {
+        mobileContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 4rem 2rem;">
+                <div class="analytics-spin-loader" style="width: 36px; height: 36px; border-width: 3px; border-top-color: #4F46E5; animation: analytics-spin 1s linear infinite;"></div>
+                <div style="margin-top: 1rem; font-weight: 700; color: #64748B; font-size: 0.9rem;">Loading submissions...</div>
+            </div>
+        `;
     }
 
     try {
@@ -14022,9 +14247,10 @@ window.loadAllActivityPasses = async function(force = false) {
         }
     } catch (err) {
         console.error("Failed to load admin passes: ", err);
+        window.renderAdminActivityPassesList([]);
     } finally {
         if (icon) {
-            icon.classList.remove('animate-spin');
+            icon.classList.remove('animate-spin-custom');
         }
     }
 };

@@ -1222,6 +1222,16 @@ function getExtensionsSheet() {
   return sheet;
 }
 
+function getStudentField(studentObj, prefixes) {
+  if (!studentObj) return "";
+  const keys = Object.keys(studentObj);
+  const exactMatch = keys.find(k => prefixes.some(p => k.toLowerCase().trim() === p.toLowerCase().trim()));
+  if (exactMatch) return studentObj[exactMatch];
+
+  const fuzzyMatch = keys.find(k => prefixes.some(p => k.toLowerCase().replace(/[\s_]/g, '').includes(p.toLowerCase().replace(/[\s_]/g, ''))));
+  return fuzzyMatch ? studentObj[fuzzyMatch] : "";
+}
+
 function requestExtension(data) {
   try {
     const sheet = getExtensionsSheet();
@@ -1249,9 +1259,9 @@ function requestExtension(data) {
         (u.email || u.email_id || "").toString().toLowerCase().trim() === emailLower
       );
       if (studentObj) {
-        studentName = studentObj.name || studentObj.student_name || "Student";
-        studentRoll = studentObj.roll_no || studentObj.roll_number || studentObj.reg_num || studentObj.reg_no || "N/A";
-        studentYear = studentObj.year || "N/A";
+        studentName = getStudentField(studentObj, ['name', 'full_name', 'student_name']) || "Student";
+        studentRoll = getStudentField(studentObj, ['roll', 'reg', 'id']) || "N/A";
+        studentYear = getStudentField(studentObj, ['year']) || "N/A";
       }
     }
     
@@ -1478,12 +1488,31 @@ function saveActivityPass(body) {
     const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
     const requestId = "REQ-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
     
+    let rollNo = body.rollNo || "";
+    let name = body.name || "";
+    let year = body.year || "";
+    
+    if (!rollNo || rollNo === "N/A" || !name || !year) {
+      const emailLower = (body.email || "").toLowerCase().trim();
+      const studentsRes = getAllStudents();
+      if (studentsRes.status === "success") {
+        const studentObj = studentsRes.users.find(u => 
+          (u.email || u.email_id || "").toString().toLowerCase().trim() === emailLower
+        );
+        if (studentObj) {
+          if (!rollNo || rollNo === "N/A") rollNo = getStudentField(studentObj, ['roll', 'reg', 'id']) || "";
+          if (!name) name = getStudentField(studentObj, ['name', 'full_name', 'student_name']) || "";
+          if (!year) year = getStudentField(studentObj, ['year']) || "";
+        }
+      }
+    }
+    
     sheet.appendRow([
       timestamp,
       body.email || "",
-      body.rollNo || "",
-      body.name || "",
-      body.year || "",
+      rollNo,
+      name,
+      year,
       body.category || "",
       body.title || "",
       body.venue || "",
