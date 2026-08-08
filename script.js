@@ -1801,6 +1801,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
+            if (scr === 'activity-approval') {
+                if (typeof window.loadUserActivityPasses === 'function') window.loadUserActivityPasses(false);
+            }
 
             if (scr === 'work-log') {
                 if (typeof window.renderWorklogHistory === 'function') {
@@ -6362,7 +6365,7 @@ window.confirmDeleteUser = async function (email) {
 window.toggleAdminSubView = function (viewId) {
     const user = JSON.parse(localStorage.getItem('user'));
     if (viewId !== 'menu' && user) {
-        const email = (user.email || user.email_id || "").toLowerCase().trim();
+        const email = (user.email || user.email_id || user.mailid || user.mail || "").toLowerCase().trim();
         const isSuper = email === "indreshs.it24@bitsathy.ac.in";
         if (!isSuper) {
             const viewToHeaderKey = {
@@ -6406,12 +6409,14 @@ window.toggleAdminSubView = function (viewId) {
 
     const dLinkedinPost = document.getElementById('admin-subview-linkedin-post-tracker');
     const mLinkedinPost = document.getElementById('admin-subview-linkedin-post-tracker-mobile');
+    const dActApproval = document.getElementById('admin-subview-activity-approval');
+    const mActApproval = document.getElementById('admin-subview-activity-approval-mobile');
 
     // Always close detail view when switching
     if (typeof window.closeUserDetailModal === 'function') window.closeUserDetailModal();
 
     // Hide all
-    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost,
+    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, dActApproval, mActApproval,
         document.getElementById('admin-analytics-attendance-container'),
         document.getElementById('admin-analytics-attendance-container-mobile'),
         document.getElementById('admin-analytics-worklog-container'),
@@ -6533,6 +6538,10 @@ window.toggleAdminSubView = function (viewId) {
 
         const headerTitleMob = document.querySelector('#admin-subview-analytics-mobile h2');
         if (headerTitleMob) headerTitleMob.innerText = subviewTitle;
+    } else if (viewId === 'activity-approval') {
+        if (dActApproval) dActApproval.classList.remove('hidden');
+        if (mActApproval) mActApproval.classList.remove('hidden');
+        if (typeof window.loadAllActivityPasses === 'function') window.loadAllActivityPasses(false);
     } else if (viewId === 'menu') {
         if (desktopMenu) desktopMenu.classList.remove('hidden');
         if (mobileMenu) mobileMenu.classList.remove('hidden');
@@ -8352,7 +8361,7 @@ let isScannerProcessing = false;
 window.openScanner = async function () {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
-        const email = (user.email || user.email_id || "").toLowerCase().trim();
+        const email = (user.email || user.email_id || user.mailid || user.mail || "").toLowerCase().trim();
         const isSuper = email === "indreshs.it24@bitsathy.ac.in";
         if (!isSuper) {
             const val = user['scan_student_qr'];
@@ -13564,7 +13573,7 @@ window.openNotificationInModal = function (timestamp) {
 window.checkModuleAccessAndHideNav = function () {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    const email = user.email || user.email_id || "";
+    const email = user.email || user.email_id || user.mailid || user.mail || "";
     const isSuper = email.toLowerCase().trim() === "indreshs.it24@bitsathy.ac.in";
 
     // Find all cards inside desktop and mobile menus
@@ -13635,3 +13644,636 @@ window.checkModuleAccessAndHideNav = function () {
         initDatePickers();
     }
 })();
+
+// --- Activity Pass Form UI Logic ---
+window.toggleActivityPassModal = function(show) {
+    const modal = document.getElementById('activity-pass-modal-container');
+    if (!modal) return;
+    if (show) {
+        modal.classList.remove('hidden');
+        // Initialize date picker to today
+        const todayISO = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('act-pass-date');
+        if (dateInput) dateInput.value = todayISO;
+        if (window.lucide) window.lucide.createIcons();
+    } else {
+        modal.classList.add('hidden');
+        // Reset form
+        const categorySelect = document.getElementById('act-pass-category');
+        if (categorySelect) categorySelect.value = 'PS Slot';
+        const customGrp = document.getElementById('act-pass-custom-category-group');
+        if (customGrp) customGrp.classList.add('hidden');
+        
+        const customCat = document.getElementById('act-pass-custom-category');
+        if (customCat) customCat.value = '';
+        const actTitle = document.getElementById('act-pass-title');
+        if (actTitle) actTitle.value = '';
+        const actVenue = document.getElementById('act-pass-venue');
+        if (actVenue) actVenue.value = '';
+        const actFrom = document.getElementById('act-pass-from-time');
+        if (actFrom) actFrom.value = '';
+        const actTo = document.getElementById('act-pass-to-time');
+        if (actTo) actTo.value = '';
+        const actReason = document.getElementById('act-pass-reason');
+        if (actReason) actReason.value = '';
+    }
+};
+
+window.handleActivityPassCategoryChange = function(val) {
+    const customGrp = document.getElementById('act-pass-custom-category-group');
+    if (customGrp) {
+        if (val === 'Others') {
+            customGrp.classList.remove('hidden');
+        } else {
+            customGrp.classList.add('hidden');
+        }
+    }
+};
+
+window.submitActivityPass = function() {
+    const categorySelect = document.getElementById('act-pass-category');
+    const category = categorySelect ? categorySelect.value : '';
+    const customCat = document.getElementById('act-pass-custom-category');
+    const customCategory = customCat ? customCat.value.trim() : '';
+    const actTitle = document.getElementById('act-pass-title');
+    const title = actTitle ? actTitle.value.trim() : '';
+    const actVenue = document.getElementById('act-pass-venue');
+    const venue = actVenue ? actVenue.value.trim() : '';
+    const actDate = document.getElementById('act-pass-date');
+    const date = actDate ? actDate.value : '';
+    const actFrom = document.getElementById('act-pass-from-time');
+    const fromTime = actFrom ? actFrom.value : '';
+    const actTo = document.getElementById('act-pass-to-time');
+    const toTime = actTo ? actTo.value : '';
+    const actReason = document.getElementById('act-pass-reason');
+    const reason = actReason ? actReason.value.trim() : '';
+
+    const selectedCategory = category === 'Others' ? customCategory : category;
+
+    if (!selectedCategory) {
+        alert("Please specify the category.");
+        return;
+    }
+    if (!title) {
+        alert("Please enter the title of the activity.");
+        return;
+    }
+    if (!date) {
+        alert("Please select a date.");
+        return;
+    }
+    if (!fromTime || !toTime) {
+        alert("Please fill in both From and To times.");
+        return;
+    }
+    if (!reason) {
+        alert("Please enter the reason.");
+        return;
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+        alert("User session not found.");
+        return;
+    }
+
+    const email = user.email || user.email_id || user.mailid || user.mail || '';
+    const rollNo = user.roll_no || user.roll_number || user.roll || '';
+    const name = user.name || user.student_name || '';
+    const year = user.year || user.student_year || '';
+
+    // Show loading style on button if possible
+    const submitBtn = document.querySelector('button[onclick="window.submitActivityPass()"]');
+    let originalText = "";
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i> Submitting...';
+        if (window.lucide) window.lucide.createIcons();
+        submitBtn.disabled = true;
+    }
+
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: 'submitActivityPass',
+            email: email,
+            rollNo: rollNo,
+            name: name,
+            year: year,
+            category: selectedCategory,
+            title: title,
+            venue: venue,
+            date: date,
+            fromTime: fromTime,
+            toTime: toTime,
+            reason: reason
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert("Activity Pass request submitted successfully!");
+            window.toggleActivityPassModal(false);
+            // Clear input fields
+            if (customCat) customCat.value = "";
+            if (actTitle) actTitle.value = "";
+            if (actVenue) actVenue.value = "";
+            if (actDate) actDate.value = "";
+            if (actFrom) actFrom.value = "";
+            if (actTo) actTo.value = "";
+            if (actReason) actReason.value = "";
+            
+            // Reload history list
+            window.loadUserActivityPasses(true);
+        } else {
+            alert("Failed to submit request: " + (data.message || "Unknown error"));
+        }
+    })
+    .catch(err => {
+        console.error("Submit Activity Pass Error: ", err);
+        alert("Connection error while submitting request.");
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    });
+};
+
+// Date and Time Formatter Helpers for Activity Pass System
+function formatISOToClean(str) {
+    if (!str) return '';
+    const s = str.toString();
+    if (s.includes('T')) {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return s;
+        if (s.includes('1899-12-30') || s.includes('1899-12-31') || d.getFullYear() === 1899) {
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        const hr = d.getHours();
+        const min = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const displayHr = hr % 12 || 12;
+        return `${yr}-${mo}-${dy} ${displayHr}:${min} ${ampm}`;
+    }
+    return s;
+}
+
+function formatDateOnly(str) {
+    if (!str) return '';
+    const s = str.toString();
+    if (s.includes('T')) {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return s;
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${dy}`;
+    }
+    return s;
+}
+
+function formatTimeOnly(str) {
+    if (!str) return '';
+    const s = str.toString();
+    if (s.includes('T')) {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return s;
+        const hr = d.getHours();
+        const min = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const displayHr = hr % 12 || 12;
+        return `${displayHr}:${min} ${ampm}`;
+    }
+    return s;
+}
+
+window.loadUserActivityPasses = async function(force = false) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+    const email = user.email || user.email_id || user.mailid || user.mail || '';
+    if (!email) return;
+
+    try {
+        const res = await fetch(`${API_URL}?action=getUserActivityPasses&email=${encodeURIComponent(email)}&t=${Date.now()}`);
+        const data = await res.json();
+        
+        const desktopContainer = document.getElementById('user-activity-pass-history-container');
+        const desktopEmptyState = document.getElementById('user-activity-pass-empty-state');
+        const desktopList = document.getElementById('user-activity-pass-history-list-desktop');
+        
+        const mobileContainer = document.getElementById('user-activity-pass-history-container-mobile');
+        const mobileEmptyState = document.getElementById('user-activity-pass-empty-state-mobile');
+        
+        if (data.status === 'success' && data.passes && data.passes.length > 0) {
+            // Render desktop table rows
+            if (desktopList) {
+                desktopList.innerHTML = data.passes.map(pass => {
+                    let statusColor = "#E2E8F0";
+                    let statusTextColor = "#64748B";
+                    if (pass.status === 'Approved') {
+                        statusColor = "#ECFDF5";
+                        statusTextColor = "#10B981";
+                    } else if (pass.status === 'Rejected') {
+                        statusColor = "#FEF2F2";
+                        statusTextColor = "#EF4444";
+                    } else if (pass.status === 'Pending') {
+                        statusColor = "#FFFBEB";
+                        statusTextColor = "#D97706";
+                    }
+                    
+                    return `
+                        <tr style="border-bottom: 1.5px solid #F1F5F9; font-weight: 600; color: #1E293B;">
+                            <td style="padding: 1.25rem 1.5rem; color: #4F46E5; white-space: nowrap;">${pass.category || ''}</td>
+                            <td style="padding: 1.25rem 1.5rem; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">${pass.title || ''}</td>
+                            <td style="padding: 1.25rem 1.5rem; color: #64748B; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${pass.venue || '-'}">${pass.venue || '-'}</td>
+                            <td style="padding: 1.25rem 1.5rem; white-space: nowrap;">${formatDateOnly(pass.date)}</td>
+                            <td style="padding: 1.25rem 1.5rem; color: #059669; white-space: nowrap;">${formatTimeOnly(pass.fromTime)}</td>
+                            <td style="padding: 1.25rem 1.5rem; color: #DC2626; white-space: nowrap;">${formatTimeOnly(pass.toTime)}</td>
+                            <td style="padding: 1.25rem 1.5rem; font-size: 0.85rem; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #64748B;" title="${pass.reason || ''}">${pass.reason || ''}</td>
+                            <td style="padding: 1.25rem 1.5rem; text-align: center; white-space: nowrap;">
+                                <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block;">${pass.status || 'Pending'}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            // Render mobile list cards
+            if (mobileContainer) {
+                mobileContainer.innerHTML = data.passes.map(pass => {
+                    let statusColor = "#E2E8F0";
+                    let statusTextColor = "#64748B";
+                    if (pass.status === 'Approved') {
+                        statusColor = "#ECFDF5";
+                        statusTextColor = "#10B981";
+                    } else if (pass.status === 'Rejected') {
+                        statusColor = "#FEF2F2";
+                        statusTextColor = "#EF4444";
+                    } else if (pass.status === 'Pending') {
+                        statusColor = "#FFFBEB";
+                        statusTextColor = "#D97706";
+                    }
+                    
+                    return `
+                        <div class="card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <span style="background: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.category || ''}</span>
+                                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 6px 0 0 0;">${pass.title || ''}</h4>
+                                </div>
+                                <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.status || 'Pending'}</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #64748B;">
+                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="map-pin" style="width: 14px; color: #94A3B8;"></i> Venue: ${pass.venue || '-'}</div>
+                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar" style="width: 14px; color: #94A3B8;"></i> Date: ${formatDateOnly(pass.date)}</div>
+                                <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="clock" style="width: 14px; color: #94A3B8;"></i> Time: ${formatTimeOnly(pass.fromTime)} - ${formatTimeOnly(pass.toTime)}</div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #475569; background: #F8FAFC; padding: 10px; border-radius: 12px; line-height: 1.4; border: 1px solid #F1F5F9; white-space: normal;">
+                                <strong>Reason:</strong> ${pass.reason || ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            if (desktopContainer) desktopContainer.style.display = 'block';
+            if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+            if (mobileContainer) mobileContainer.style.display = 'flex';
+            if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+        } else {
+            if (desktopContainer) desktopContainer.style.display = 'none';
+            if (desktopEmptyState) desktopEmptyState.style.display = 'block';
+            if (mobileContainer) mobileContainer.style.display = 'none';
+            if (mobileEmptyState) mobileEmptyState.style.display = 'block';
+        }
+    } catch (err) {
+        console.error("Failed to load user passes: ", err);
+    }
+};
+
+// Admin Filters & Global State variables
+window.ALL_ACTIVITY_PASSES = [];
+window.CURRENT_ACT_FILTER_STATUS = 'ALL';
+
+window.filterActivityApprovalStatus = function(status) {
+    window.CURRENT_ACT_FILTER_STATUS = status;
+    const tabs = {
+        'ALL': document.getElementById('act-tab-all'),
+        'Pending': document.getElementById('act-tab-pending'),
+        'Approved': document.getElementById('act-tab-approved'),
+        'Rejected': document.getElementById('act-tab-rejected')
+    };
+    Object.keys(tabs).forEach(k => {
+        const btn = tabs[k];
+        if (btn) {
+            if (k === status) {
+                btn.style.background = '#F1F5F9';
+                btn.style.color = '#1E293B';
+            } else {
+                btn.style.background = 'transparent';
+                btn.style.color = '#64748B';
+            }
+        }
+    });
+    window.filterActivityApprovalList();
+};
+
+window.filterActivityApprovalList = function() {
+    const searchVal = document.getElementById('admin-act-search-desktop') ? document.getElementById('admin-act-search-desktop').value.toLowerCase().trim() : '';
+    const catVal = document.getElementById('admin-act-category-filter') ? document.getElementById('admin-act-category-filter').value : 'ALL';
+    
+    let filtered = window.ALL_ACTIVITY_PASSES || [];
+    
+    if (window.CURRENT_ACT_FILTER_STATUS !== 'ALL') {
+        filtered = filtered.filter(p => p.status === window.CURRENT_ACT_FILTER_STATUS);
+    }
+    
+    if (catVal !== 'ALL') {
+        filtered = filtered.filter(p => p.category === catVal);
+    }
+    
+    if (searchVal) {
+        filtered = filtered.filter(p => 
+            (p.name && p.name.toLowerCase().includes(searchVal)) || 
+            (p.rollNo && p.rollNo.toLowerCase().includes(searchVal))
+        );
+    }
+    
+    window.renderAdminActivityPassesList(filtered);
+};
+
+window.loadAllActivityPasses = async function(force = false) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+    const adminEmail = user.email || user.email_id || user.mailid || user.mail || '';
+    if (!adminEmail) return;
+
+    try {
+        const res = await fetch(`${API_URL}?adminAction=getAllActivityPasses&adminEmail=${encodeURIComponent(adminEmail)}&t=${Date.now()}`);
+        const data = await res.json();
+        
+        if (data.status === 'success' && data.passes) {
+            window.ALL_ACTIVITY_PASSES = data.passes;
+            window.filterActivityApprovalList();
+        } else {
+            window.renderAdminActivityPassesList([]);
+        }
+    } catch (err) {
+        console.error("Failed to load admin passes: ", err);
+    }
+};
+
+window.renderAdminActivityPassesList = function(passesList) {
+    const desktopContainer = document.getElementById('admin-activity-approval-table-container');
+    const desktopEmptyState = document.getElementById('admin-activity-approval-empty-state');
+    const desktopList = document.getElementById('admin-activity-approval-list-desktop');
+    
+    const mobileContainer = document.getElementById('admin-activity-approval-list-mobile');
+    const mobileEmptyState = document.getElementById('admin-activity-approval-empty-state-mobile');
+    
+    if (passesList && passesList.length > 0) {
+        // Render desktop table rows
+        if (desktopList) {
+            desktopList.innerHTML = passesList.map(pass => {
+                let actionHtml = '';
+                if (pass.status === 'Pending') {
+                    actionHtml = `
+                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center; white-space: nowrap;">
+                            <button onclick="window.showActivityPassDetailModal('${pass.requestId}')" style="background: white; border: 1.5px solid #E2E8F0; color: #4F46E5; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                                <i data-lucide="eye" style="width: 14px;"></i> Details
+                            </button>
+                            <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'approve')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                                <i data-lucide="check" style="width: 14px;"></i> Approve
+                            </button>
+                            <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'reject')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                                <i data-lucide="x" style="width: 14px;"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    let statusColor = "#E2E8F0";
+                    let statusTextColor = "#64748B";
+                    if (pass.status === 'Approved') {
+                        statusColor = "#ECFDF5";
+                        statusTextColor = "#10B981";
+                    } else if (pass.status === 'Rejected') {
+                        statusColor = "#FEF2F2";
+                        statusTextColor = "#EF4444";
+                    }
+                    actionHtml = `
+                        <div style="display: flex; gap: 8px; justify-content: center; align-items: center; white-space: nowrap;">
+                            <button onclick="window.showActivityPassDetailModal('${pass.requestId}')" style="background: white; border: 1.5px solid #E2E8F0; color: #4F46E5; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                                <i data-lucide="eye" style="width: 14px;"></i> Details
+                            </button>
+                            <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block;">${pass.status}</span>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <tr style="border-bottom: 1.5px solid #F1F5F9; font-weight: 600; color: #1E293B;">
+                        <td style="padding: 1.25rem 1.5rem; font-size: 0.8rem; color: #64748B; white-space: nowrap;">${formatISOToClean(pass.timestamp)}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #1E293B; white-space: nowrap;">${pass.name || ''}</td>
+                        <td style="padding: 1.25rem 1.5rem; font-family: monospace; white-space: nowrap;">${pass.rollNo || ''}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #64748B; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${pass.year || ''}">Year ${pass.year || ''}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #4F46E5; white-space: nowrap;">${pass.category || ''}</td>
+                        <td style="padding: 1.25rem 1.5rem; white-space: nowrap;">${formatDateOnly(pass.date)}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #059669; white-space: nowrap;">${formatTimeOnly(pass.fromTime)}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #DC2626; white-space: nowrap;">${formatTimeOnly(pass.toTime)}</td>
+                        <td style="padding: 1.25rem 1.5rem; text-align: center; white-space: nowrap;">${actionHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Render mobile list cards
+        if (mobileContainer) {
+            mobileContainer.innerHTML = passesList.map(pass => {
+                let actionHtml = '';
+                if (pass.status === 'Pending') {
+                    actionHtml = `
+                        <div style="display: flex; gap: 8px; width: 100%; margin-top: 0.5rem;">
+                            <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'approve')" style="flex: 1; height: 38px; background: #10B981; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="check" style="width: 14px;"></i> Approve
+                            </button>
+                            <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'reject')" style="flex: 1; height: 38px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="x" style="width: 14px;"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    let statusColor = "#E2E8F0";
+                    let statusTextColor = "#64748B";
+                    if (pass.status === 'Approved') {
+                        statusColor = "#ECFDF5";
+                        statusTextColor = "#10B981";
+                    } else if (pass.status === 'Rejected') {
+                        statusColor = "#FEF2F2";
+                        statusTextColor = "#EF4444";
+                    }
+                    actionHtml = `<span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block; text-align: center; width: 100%;">${pass.status}</span>`;
+                }
+                
+                return `
+                    <div class="card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.75rem; width: 100%;" onclick="window.showActivityPassDetailModal('${pass.requestId}')">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0;">${pass.name || ''}</h4>
+                                <span style="font-size: 0.75rem; color: #64748B; font-weight: 600;">${pass.rollNo || ''} (Year ${pass.year || ''})</span>
+                            </div>
+                            <span style="background: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.category || ''}</span>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #1E293B; border-top: 1px solid #F1F5F9; padding-top: 0.5rem;">
+                            ${pass.title || ''}
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #64748B;">
+                            <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="map-pin" style="width: 14px; color: #94A3B8;"></i> Venue: ${pass.venue || '-'}</div>
+                            <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="calendar" style="width: 14px; color: #94A3B8;"></i> Date: ${formatDateOnly(pass.date)}</div>
+                            <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="clock" style="width: 14px; color: #94A3B8;"></i> Time: ${formatTimeOnly(pass.fromTime)} - ${formatTimeOnly(pass.toTime)}</div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #475569; background: #F8FAFC; padding: 10px; border-radius: 12px; line-height: 1.4; border: 1px solid #F1F5F9; white-space: normal;">
+                            <strong>Reason:</strong> ${pass.reason || ''}
+                        </div>
+                        ${actionHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        if (window.lucide) window.lucide.createIcons();
+
+        if (desktopContainer) desktopContainer.style.display = 'block';
+        if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+        if (mobileContainer) mobileContainer.style.display = 'flex';
+        if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+    } else {
+        if (desktopContainer) desktopContainer.style.display = 'none';
+        if (desktopEmptyState) desktopEmptyState.style.display = 'block';
+        if (mobileContainer) mobileContainer.style.display = 'none';
+        if (mobileEmptyState) mobileEmptyState.style.display = 'block';
+    }
+};
+
+window.showActivityPassDetailModal = function(requestId) {
+    const pass = window.ALL_ACTIVITY_PASSES.find(p => p.requestId === requestId);
+    if (!pass) return;
+
+    const contentDiv = document.getElementById('admin-activity-pass-detail-content');
+    if (!contentDiv) return;
+
+    contentDiv.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Student Info</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #1E293B;">${pass.name || '-'}</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Roll Number: <span style="font-family: monospace; color: #1E293B;">${pass.rollNo || '-'}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Year: <span style="color: #1E293B;">Year ${pass.year || '-'}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Email: <span style="color: #1E293B;">${pass.email || '-'}</span></div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Activity Info</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Category: <span style="color: #4F46E5; font-weight: 800;">${pass.category || '-'}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Title: <span style="color: #1E293B; font-weight: 700; white-space: normal;">${pass.title || '-'}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Venue: <span style="color: #1E293B; white-space: normal;">${pass.venue || '-'}</span></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Schedule</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Date: <span style="color: #1E293B;">${formatDateOnly(pass.date)}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Time: <span style="color: #059669; font-weight: 700;">${formatTimeOnly(pass.fromTime)}</span> to <span style="color: #DC2626; font-weight: 700;">${formatTimeOnly(pass.toTime)}</span></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Reason</div>
+            <div style="font-size: 0.9rem; color: #334155; background: #F8FAFC; padding: 12px; border-radius: 12px; line-height: 1.5; border: 1px solid #E2E8F0; white-space: normal;">
+                ${pass.reason || '-'}
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Status</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <div id="modal-detail-status-badge"></div>
+            </div>
+        </div>
+    `;
+
+    const badgeDiv = document.getElementById('modal-detail-status-badge');
+    if (badgeDiv) {
+        if (pass.status === 'Pending') {
+            badgeDiv.innerHTML = `
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'approve'); window.closeActivityPassDetailModal();" style="background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="check" style="width: 16px;"></i> Approve
+                    </button>
+                    <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'reject'); window.closeActivityPassDetailModal();" style="background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="x" style="width: 16px;"></i> Reject
+                    </button>
+                </div>
+            `;
+        } else {
+            let statusColor = "#E2E8F0";
+            let statusTextColor = "#64748B";
+            if (pass.status === 'Approved') {
+                statusColor = "#ECFDF5";
+                statusTextColor = "#10B981";
+            } else if (pass.status === 'Rejected') {
+                statusColor = "#FEF2F2";
+                statusTextColor = "#EF4444";
+            }
+            badgeDiv.innerHTML = `<span style="background: ${statusColor}; color: ${statusTextColor}; padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 800; display: inline-block;">${pass.status}</span>`;
+        }
+    }
+
+    const modal = document.getElementById('admin-activity-pass-detail-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
+    }
+};
+
+window.closeActivityPassDetailModal = function() {
+    const modal = document.getElementById('admin-activity-pass-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+};
+
+window.updateActivityPassStatus = async function(requestId, action) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+    const adminEmail = user.email || user.email_id || user.mailid || user.mail || '';
+    if (!adminEmail) return;
+
+    const actionText = action === 'approve' ? 'approveActivityPass' : 'rejectActivityPass';
+    const confirmMsg = `Are you sure you want to ${action} this activity pass request?`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: actionText,
+                adminEmail: adminEmail,
+                requestId: requestId
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert(`Activity pass request ${action}d successfully!`);
+            window.loadAllActivityPasses(true);
+        } else {
+            alert("Failed to update status: " + (data.message || "Unknown error"));
+        }
+    } catch (err) {
+        console.error("Error updating pass status: ", err);
+        alert("Connection error while updating status.");
+    }
+};

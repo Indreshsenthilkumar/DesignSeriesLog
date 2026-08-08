@@ -72,6 +72,12 @@ function doGet(e) {
     if (params.adminAction === "getAllExtensions" && isAdmin) {
       return respondJSON(getAllExtensions());
     }
+    if (params.adminAction === "getAllActivityPasses" && isAdmin) {
+      return respondJSON(getAllActivityPasses());
+    }
+    if (params.action === "getUserActivityPasses" && params.email) {
+      return respondJSON(getUserActivityPasses(params.email));
+    }
     if (params.email) {
       const bypass = params.bypassCache === "true" || params.force === "true";
       return respondJSON(getStudentData(params.email, bypass));
@@ -122,6 +128,9 @@ function doPost(e) {
     if (body.action === "requestExtension") {
       return respondJSON(requestExtension(body));
     }
+    if (body.action === "submitActivityPass") {
+      return respondJSON(saveActivityPass(body));
+    }
     
     const isAdmin = checkAdminStatus(body.adminEmail || body.admin);
     
@@ -133,6 +142,8 @@ function doPost(e) {
       if (body.action === "updateAdminPermission") return respondJSON(updateAdminPermission(body.targetEmail, body.moduleId, body.isAllowed));
       if (body.action === "approveExtension") return respondJSON(approveExtension(body.requestId, body.newDeadline));
       if (body.action === "rejectExtension") return respondJSON(rejectExtension(body.requestId));
+      if (body.action === "approveActivityPass") return respondJSON(updateActivityPassStatus(body.requestId, "Approved"));
+      if (body.action === "rejectActivityPass") return respondJSON(updateActivityPassStatus(body.requestId, "Rejected"));
     }
 
     // 🔑 ACCESS CONTROL ACTIONS (Login/Logout State)
@@ -1444,5 +1455,130 @@ function getRewardPointsFromExternalCSV(email, rollNo) {
     return { status: "error", message: "Student not found in sheet rows." };
   } catch(e) {
     return { status: "error", message: "CSV parsing error: " + e.toString() };
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ACTIVITY PASS SYSTEM
+// ════════════════════════════════════════════════════════════
+
+function getActivityPassesSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName("ActivityPasses");
+  if (!sheet) {
+    sheet = ss.insertSheet("ActivityPasses");
+    sheet.appendRow(["Timestamp", "Email", "Roll Number", "Name", "Year", "Request Category", "Title", "Venue", "Date", "From Time", "To Time", "Reason", "Status", "Request ID"]);
+  }
+  return sheet;
+}
+
+function saveActivityPass(body) {
+  try {
+    const sheet = getActivityPassesSheet();
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    const requestId = "REQ-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+    
+    sheet.appendRow([
+      timestamp,
+      body.email || "",
+      body.rollNo || "",
+      body.name || "",
+      body.year || "",
+      body.category || "",
+      body.title || "",
+      body.venue || "",
+      body.date || "",
+      body.fromTime || "",
+      body.toTime || "",
+      body.reason || "",
+      "Pending",
+      requestId
+    ]);
+    
+    return { status: "success", message: "Activity pass request submitted successfully.", requestId: requestId };
+  } catch (err) {
+    return { status: "error", message: "Failed to save activity pass: " + err.toString() };
+  }
+}
+
+function getUserActivityPasses(email) {
+  try {
+    const sheet = getActivityPassesSheet();
+    const data = sheet.getDataRange().getValues();
+    const passes = [];
+    if (data.length > 1) {
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (row[1].toString().toLowerCase().trim() === email.toLowerCase().trim()) {
+          passes.push({
+            timestamp: row[0],
+            email: row[1],
+            rollNo: row[2],
+            name: row[3],
+            year: row[4],
+            category: row[5],
+            title: row[6],
+            venue: row[7],
+            date: row[8],
+            fromTime: row[9],
+            toTime: row[10],
+            reason: row[11],
+            status: row[12],
+            requestId: row[13]
+          });
+        }
+      }
+    }
+    return { status: "success", passes: passes.reverse() };
+  } catch (err) {
+    return { status: "error", message: "Failed to fetch user activity passes: " + err.toString() };
+  }
+}
+
+function getAllActivityPasses() {
+  try {
+    const sheet = getActivityPassesSheet();
+    const data = sheet.getDataRange().getValues();
+    const passes = [];
+    if (data.length > 1) {
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        passes.push({
+          timestamp: row[0],
+          email: row[1],
+          rollNo: row[2],
+          name: row[3],
+          year: row[4],
+          category: row[5],
+          title: row[6],
+          venue: row[7],
+          date: row[8],
+          fromTime: row[9],
+          toTime: row[10],
+          reason: row[11],
+          status: row[12],
+          requestId: row[13]
+        });
+      }
+    }
+    return { status: "success", passes: passes.reverse() };
+  } catch (err) {
+    return { status: "error", message: "Failed to fetch all activity passes: " + err.toString() };
+  }
+}
+
+function updateActivityPassStatus(requestId, newStatus) {
+  try {
+    const sheet = getActivityPassesSheet();
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][13].toString() === requestId.toString()) {
+        sheet.getRange(i + 1, 13).setValue(newStatus); // Column 13 is Status
+        return { status: "success", message: "Activity pass request status updated to " + newStatus };
+      }
+    }
+    return { status: "error", message: "Activity pass request not found." };
+  } catch (err) {
+    return { status: "error", message: "Failed to update status: " + err.toString() };
   }
 }
