@@ -13853,6 +13853,17 @@ function formatTimeOnly(str) {
     return s;
 }
 
+function getStatusPillHtml(status, isSmall = false) {
+    let bgColor = "#D97706"; // Pending
+    if (status === 'Approved') bgColor = "#008000";
+    else if (status === 'Rejected') bgColor = "#DC2626";
+    
+    const padding = isSmall ? "4px 12px" : "6px 16px";
+    const fontSize = isSmall ? "0.75rem" : "0.8rem";
+    
+    return `<span style="background: ${bgColor}; color: #ffffff; padding: ${padding}; border-radius: 9999px; font-size: ${fontSize}; font-weight: 800; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">${status || 'Pending'}</span>`;
+}
+
 window.loadUserActivityPasses = async function(force = false) {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
@@ -13874,19 +13885,6 @@ window.loadUserActivityPasses = async function(force = false) {
             // Render desktop table rows
             if (desktopList) {
                 desktopList.innerHTML = data.passes.map(pass => {
-                    let statusColor = "#E2E8F0";
-                    let statusTextColor = "#64748B";
-                    if (pass.status === 'Approved') {
-                        statusColor = "#ECFDF5";
-                        statusTextColor = "#10B981";
-                    } else if (pass.status === 'Rejected') {
-                        statusColor = "#FEF2F2";
-                        statusTextColor = "#EF4444";
-                    } else if (pass.status === 'Pending') {
-                        statusColor = "#FFFBEB";
-                        statusTextColor = "#D97706";
-                    }
-                    
                     return `
                         <tr style="border-bottom: 1.5px solid #F1F5F9; font-weight: 600; color: #1E293B;">
                             <td style="padding: 1.25rem 1.5rem; color: #4F46E5; white-space: nowrap;">${pass.category || ''}</td>
@@ -13897,7 +13895,7 @@ window.loadUserActivityPasses = async function(force = false) {
                             <td style="padding: 1.25rem 1.5rem; color: #DC2626; white-space: nowrap;">${formatTimeOnly(pass.toTime)}</td>
                             <td style="padding: 1.25rem 1.5rem; font-size: 0.85rem; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #64748B;" title="${pass.reason || ''}">${pass.reason || ''}</td>
                             <td style="padding: 1.25rem 1.5rem; text-align: center; white-space: nowrap;">
-                                <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block;">${pass.status || 'Pending'}</span>
+                                ${getStatusPillHtml(pass.status)}
                             </td>
                         </tr>
                     `;
@@ -13907,19 +13905,6 @@ window.loadUserActivityPasses = async function(force = false) {
             // Render mobile list cards
             if (mobileContainer) {
                 mobileContainer.innerHTML = data.passes.map(pass => {
-                    let statusColor = "#E2E8F0";
-                    let statusTextColor = "#64748B";
-                    if (pass.status === 'Approved') {
-                        statusColor = "#ECFDF5";
-                        statusTextColor = "#10B981";
-                    } else if (pass.status === 'Rejected') {
-                        statusColor = "#FEF2F2";
-                        statusTextColor = "#EF4444";
-                    } else if (pass.status === 'Pending') {
-                        statusColor = "#FFFBEB";
-                        statusTextColor = "#D97706";
-                    }
-                    
                     return `
                         <div class="card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -13927,7 +13912,7 @@ window.loadUserActivityPasses = async function(force = false) {
                                     <span style="background: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.category || ''}</span>
                                     <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 6px 0 0 0;">${pass.title || ''}</h4>
                                 </div>
-                                <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">${pass.status || 'Pending'}</span>
+                                ${getStatusPillHtml(pass.status, true)}
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #64748B;">
                                 <div style="display: flex; align-items: center; gap: 6px;"><i data-lucide="map-pin" style="width: 14px; color: #94A3B8;"></i> Venue: ${pass.venue || '-'}</div>
@@ -14015,6 +14000,16 @@ window.loadAllActivityPasses = async function(force = false) {
     const adminEmail = user.email || user.email_id || user.mailid || user.mail || '';
     if (!adminEmail) return;
 
+    // Spin refresh icon
+    const refreshBtn = document.querySelector('button[onclick="window.loadAllActivityPasses(true)"]');
+    let icon = null;
+    if (refreshBtn) {
+        icon = refreshBtn.querySelector('[data-lucide="refresh-cw"]');
+        if (icon) {
+            icon.classList.add('animate-spin');
+        }
+    }
+
     try {
         const res = await fetch(`${API_URL}?adminAction=getAllActivityPasses&adminEmail=${encodeURIComponent(adminEmail)}&t=${Date.now()}`);
         const data = await res.json();
@@ -14027,6 +14022,10 @@ window.loadAllActivityPasses = async function(force = false) {
         }
     } catch (err) {
         console.error("Failed to load admin passes: ", err);
+    } finally {
+        if (icon) {
+            icon.classList.remove('animate-spin');
+        }
     }
 };
 
@@ -14058,21 +14057,12 @@ window.renderAdminActivityPassesList = function(passesList) {
                         </div>
                     `;
                 } else {
-                    let statusColor = "#E2E8F0";
-                    let statusTextColor = "#64748B";
-                    if (pass.status === 'Approved') {
-                        statusColor = "#ECFDF5";
-                        statusTextColor = "#10B981";
-                    } else if (pass.status === 'Rejected') {
-                        statusColor = "#FEF2F2";
-                        statusTextColor = "#EF4444";
-                    }
                     actionHtml = `
                         <div style="display: flex; gap: 8px; justify-content: center; align-items: center; white-space: nowrap;">
                             <button onclick="window.showActivityPassDetailModal('${pass.requestId}')" style="background: white; border: 1.5px solid #E2E8F0; color: #4F46E5; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
                                 <i data-lucide="eye" style="width: 14px;"></i> Details
                             </button>
-                            <span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block;">${pass.status}</span>
+                            ${getStatusPillHtml(pass.status)}
                         </div>
                     `;
                 }
@@ -14109,16 +14099,7 @@ window.renderAdminActivityPassesList = function(passesList) {
                         </div>
                     `;
                 } else {
-                    let statusColor = "#E2E8F0";
-                    let statusTextColor = "#64748B";
-                    if (pass.status === 'Approved') {
-                        statusColor = "#ECFDF5";
-                        statusTextColor = "#10B981";
-                    } else if (pass.status === 'Rejected') {
-                        statusColor = "#FEF2F2";
-                        statusTextColor = "#EF4444";
-                    }
-                    actionHtml = `<span style="background: ${statusColor}; color: ${statusTextColor}; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; display: inline-block; text-align: center; width: 100%;">${pass.status}</span>`;
+                    actionHtml = `<div style="width: 100%; margin-top: 0.5rem; text-align: center;">${getStatusPillHtml(pass.status)}</div>`;
                 }
                 
                 return `
@@ -14219,16 +14200,7 @@ window.showActivityPassDetailModal = function(requestId) {
                 </div>
             `;
         } else {
-            let statusColor = "#E2E8F0";
-            let statusTextColor = "#64748B";
-            if (pass.status === 'Approved') {
-                statusColor = "#ECFDF5";
-                statusTextColor = "#10B981";
-            } else if (pass.status === 'Rejected') {
-                statusColor = "#FEF2F2";
-                statusTextColor = "#EF4444";
-            }
-            badgeDiv.innerHTML = `<span style="background: ${statusColor}; color: ${statusTextColor}; padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 800; display: inline-block;">${pass.status}</span>`;
+            badgeDiv.innerHTML = getStatusPillHtml(pass.status);
         }
     }
 
