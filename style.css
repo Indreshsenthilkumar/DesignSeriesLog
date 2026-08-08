@@ -3935,3 +3935,28 @@ button:active:not(:disabled), .btn:active:not(:disabled), .btn-icon:active:not(:
     opacity: 0.8 !important;
 }
 
+/* Redesigned Worklog Textareas Styles */
+/* Desktop modal inputs: thin border, soft glow on focus */
+.worklog-form textarea.worklog-textarea {
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.worklog-form textarea.worklog-textarea:focus {
+    border-color: #6366F1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Mobile screen inputs: borderless, styled by outer grid container */
+.form-group textarea.worklog-textarea,
+.form-group textarea.worklog-textarea:focus {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+

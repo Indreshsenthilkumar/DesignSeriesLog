@@ -90,8 +90,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbm6TMHUJRn2Ja30C7s0Pu
 window.SCRIPT_URL = API_URL;
 const REWARD_API_URL = "https://script.google.com/macros/s/AKfycbxP7Sm0TPV-GlLTnmFumjUxjsrQfTSFkwUc5aagplPf3cAWiMIzhaXShLEZGOxliMS4/exec";
 
-// 📝 WORKLOG SUBMISSION SHEET ENDPOINT (Separate Sheet Web App)
-const WORKLOG_API_URL = "https://script.google.com/macros/s/AKfycbxVofSpgzUTuU92-ymgHTp-cJ7dqg2zr1uh2GBAUgybou2YnonWqiuKNlSbLqyutOWg/exec";
+const WORKLOG_API_URL = "https://script.google.com/macros/s/AKfycbw6LBbV1-iutCAakjOar8J4AvMMCIJgkJsPLCErp5uqyi1WK13kHeRzB24ADpXylc_1/exec";
 const SYNC_API_URL = (WORKLOG_API_URL && !WORKLOG_API_URL.includes("YOUR_WORKLOG_APPS_SCRIPT_WEB_APP_URL")) ? WORKLOG_API_URL : API_URL;
 
 // 🏆 COHORT HIGHEST REWARD POINTS DATA & FETCH
@@ -240,8 +239,8 @@ async function fetchWorklogs(email, rollNo) {
         const cleanEmail = (email === "undefined" || email === "null") ? "" : (email || "");
         const res = await fetch(`${WORKLOG_API_URL}?email=${encodeURIComponent(cleanEmail)}&rollNo=${encodeURIComponent(identifier)}&t=${Date.now()}`);
         const data = await res.json();
-        if (data.status === 'success' && data.worklogs) {
-            window.WORKLOG_HISTORY = data.worklogs;
+        if (data.status === 'success') {
+            window.WORKLOG_HISTORY = data.worklogs || data.history || [];
         }
     } catch (err) {
         console.warn("[Worklog] Error fetching worklogs from separate sheet:", err);
@@ -1588,19 +1587,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initDuplicateTabsSync();
     // 🔍 FIX: Map screen names exactly to your IDs
     const screens = {
-        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes') },
+        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes'), 'activity-approval': document.getElementById('mobile-activity-approval') },
         dsk: {
             dash: document.getElementById('desktop-dashboard'),
             history: document.getElementById('desktop-history'),
             'work-log': document.getElementById('desktop-work-log'),
             profile: document.getElementById('desktop-profile'),
             admin: document.getElementById('desktop-admin'),
-            notes: document.getElementById('desktop-notes')
+            notes: document.getElementById('desktop-notes'),
+            'activity-approval': document.getElementById('desktop-activity-approval')
         }
     };
     const navB = {
-        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile'), admin: document.getElementById('nav-admin-mobile'), notes: document.getElementById('nav-notes-mobile') },
-        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop') }
+        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile'), admin: document.getElementById('nav-admin-mobile'), notes: document.getElementById('nav-notes-mobile'), 'activity-approval': document.getElementById('nav-activity-approval-mobile') },
+        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop'), 'activity-approval': document.getElementById('nav-activity-approval-desktop') }
     };
     const actions = {
         addM: document.getElementById('btn-add-mobile'), addD: document.getElementById('btn-add-desktop'),
@@ -1843,7 +1843,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const gFabHist = document.getElementById('global-fab-history');
             const gFabWork = document.getElementById('global-fab-worklog');
 
-            if (bottomNav) bottomNav.classList.remove('bottom-nav-hidden');
+            if (bottomNav) {
+                if (scr === 'log-work' || scr === 'add') {
+                    bottomNav.classList.add('bottom-nav-hidden');
+                } else {
+                    bottomNav.classList.remove('bottom-nav-hidden');
+                }
+            }
             if (gFabHist) {
                 gFabHist.classList.add('hidden');
                 gFabHist.classList.remove('bottom-nav-hidden');
@@ -3925,51 +3931,129 @@ function formatToISODate(dateVal) {
 }
 
 // --- WORKLOG MODAL & LOGIC ---
+// --- WORKLOG LOCK & PARSE HELPERS ---
+window.isWorklogLocked = function (dateStr) {
+    if (!dateStr) return false;
+    const today = new Date();
+    const todayISO = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    
+    let logISO = '';
+    try {
+        const parsed = parseDateToLocalDate(dateStr);
+        if (parsed) {
+            logISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+        }
+    } catch (e) {}
+    
+    if (!logISO) return true;
+    
+    if (logISO !== todayISO) {
+        return true; // Locked because it is a past or future date
+    }
+    
+    // If it is today, check if past 11:59 PM (23:59:00)
+    if (today.getHours() === 23 && today.getMinutes() >= 59) {
+        return true;
+    }
+    
+    return false;
+};
+
+window.parseConsolidatedWorklog = function (text) {
+    const slots = { slot1: '', slot2: '', slot3: '', slot4: '', slot5: '' };
+    if (!text) return slots;
+    const lines = text.split('\n');
+    let customLines = [];
+    lines.forEach(line => {
+        if (line.startsWith('[8:45 AM - 10:25 AM] ')) {
+            slots.slot1 = line.substring('[8:45 AM - 10:25 AM] '.length);
+        } else if (line.startsWith('[10:40 AM - 12:30 PM] ')) {
+            slots.slot2 = line.substring('[10:40 AM - 12:30 PM] '.length);
+        } else if (line.startsWith('[1:30 PM - 3:10 PM] ')) {
+            slots.slot3 = line.substring('[1:30 PM - 3:10 PM] '.length);
+        } else if (line.startsWith('[3:25 PM - 4:25 PM] ')) {
+            slots.slot4 = line.substring('[3:25 PM - 4:25 PM] '.length);
+        } else if (line.startsWith('[Custom Slot] ')) {
+            slots.slot5 = line.substring('[Custom Slot] '.length);
+        } else if (line.trim()) {
+            customLines.push(line);
+        }
+    });
+    if (customLines.length > 0) {
+        slots.slot5 = (slots.slot5 ? slots.slot5 + '\n' : '') + customLines.join('\n');
+    }
+    return slots;
+};
+
 window.openWorklogModal = function (editDateStr = null) {
+    const todayObj = new Date();
+    const dd = String(todayObj.getDate()).padStart(2, '0');
+    const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
+    const yyyy = todayObj.getFullYear();
+    const todayFormatted = `${dd}-${mm}-${yyyy}`;
+    
+    const hasTodayLog = (window.WORKLOG_HISTORY || []).some(entry => {
+        const entryDate = entry.date || entry.Date || '';
+        return entryDate === todayFormatted;
+    });
+
+    if (hasTodayLog) {
+        showToast('warning', 'Already Submitted', 'You have already submitted a work log for today. Multiple submissions are not allowed.');
+        return;
+    }
+
     const isMobile = window.innerWidth <= 1024;
     const modal = document.getElementById('worklog-modal-container');
     const card = document.getElementById('worklog-modal-card');
     const datePicker = document.getElementById(isMobile ? 'mobile-log-work-date-picker' : 'worklog-modal-date-picker');
-    const deadlinePicker = document.getElementById(isMobile ? 'mobile-log-work-deadline-picker' : 'worklog-modal-deadline');
     const titleEl = document.getElementById(isMobile ? 'mobile-log-work-title' : 'worklog-modal-title');
     const editHidden = document.getElementById(isMobile ? 'mobile-log-work-edit-date' : 'worklog-modal-edit-date');
-    const descInput = document.getElementById(isMobile ? 'mobile-log-work-desc' : 'worklog-modal-desc');
-    const titleInput = document.getElementById(isMobile ? 'mobile-log-work-title-input' : 'worklog-modal-title-input');
-    const progressElId = isMobile ? 'mobile-log-work-progress-value' : 'worklog-modal-progress-value';
-    const progressDropdownId = isMobile ? 'mobile-log-work-progress-dropdown' : 'worklog-modal-progress-dropdown';
 
-    // (Removed Name Pre-fill)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetDate = editDateStr || todayStr;
+    const locked = window.isWorklogLocked(targetDate);
+
+    // Toggle Warning Banner
+    const warningBanner = document.getElementById(isMobile ? 'mobile-worklog-warning' : 'desktop-worklog-warning');
+    if (warningBanner) {
+        if (locked) warningBanner.classList.remove('hidden');
+        else warningBanner.classList.add('hidden');
+    }
+
+    if (editHidden) editHidden.value = editDateStr || '';
+    if (datePicker) datePicker.value = formatToISODate(targetDate);
 
     if (editDateStr) {
         titleEl.textContent = isMobile ? 'Edit Activity' : 'Edit Work Log';
-        if (editHidden) editHidden.value = editDateStr;
-        if (datePicker) datePicker.value = formatToISODate(editDateStr);
-
         const entry = (window.WORKLOG_HISTORY || []).find(i => i.date === editDateStr);
-        if (entry) {
-            if (descInput) descInput.value = entry.worklog || entry.description || '';
-            if (titleInput) titleInput.value = entry.title || '';
-            if (deadlinePicker) deadlinePicker.value = formatToISODate(entry.deadline);
-
-            const pVal = entry.progress || 'On Going';
-            const colors = { 'Completed': 'p-completed', 'On Going': 'p-ongoing', 'Review Pending': 'p-pending', 'Absent': 'p-absent', 'OD': 'p-od' };
-            setProgressValue(progressElId, pVal, colors[pVal] || 'p-ongoing', progressDropdownId);
+        const parsed = window.parseConsolidatedWorklog(entry ? entry.worklog : '');
+        for (let i = 1; i <= 5; i++) {
+            const textarea = document.getElementById(isMobile ? `mobile-log-work-slot${i}` : `worklog-modal-slot${i}`);
+            if (textarea) {
+                textarea.value = parsed[`slot${i}`] || '';
+                textarea.disabled = locked;
+                textarea.style.cursor = locked ? 'not-allowed' : 'text';
+                textarea.style.background = locked ? '#F1F5F9' : 'transparent';
+            }
         }
     } else {
-        const todayStr = new Date().toISOString().split('T')[0];
         titleEl.textContent = isMobile ? 'Log Activity' : 'Log Work';
-        if (editHidden) editHidden.value = '';
-        if (datePicker) datePicker.value = todayStr;
-        if (deadlinePicker) deadlinePicker.value = '';
-        if (descInput) descInput.value = '';
-        if (titleInput) titleInput.value = '';
-        setProgressValue(progressElId, 'On Going', 'p-ongoing', progressDropdownId);
+        for (let i = 1; i <= 5; i++) {
+            const textarea = document.getElementById(isMobile ? `mobile-log-work-slot${i}` : `worklog-modal-slot${i}`);
+            if (textarea) {
+                textarea.value = '';
+                textarea.disabled = locked;
+                textarea.style.cursor = locked ? 'not-allowed' : 'text';
+                textarea.style.background = locked ? '#F1F5F9' : 'transparent';
+            }
+        }
     }
 
     if (isMobile) {
         window.validateWorklogForm();
         window.show('log-work');
     } else {
+        window.validateWorklogForm();
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
         setTimeout(() => {
@@ -3981,77 +4065,47 @@ window.openWorklogModal = function (editDateStr = null) {
 
 window.validateWorklogForm = function () {
     const isMobile = window.innerWidth <= 1024;
-    if (!isMobile) return;
+    const datePicker = document.getElementById(isMobile ? 'mobile-log-work-date-picker' : 'worklog-modal-date-picker');
+    const dateVal = datePicker ? datePicker.value : new Date().toISOString().split('T')[0];
+    const locked = window.isWorklogLocked(dateVal);
 
-    const date = document.getElementById('mobile-log-work-date-picker')?.value;
-    const btn = document.getElementById('btn-submit-mobile-log-work');
+    const slot1 = document.getElementById(isMobile ? 'mobile-log-work-slot1' : 'worklog-modal-slot1')?.value.trim() || '';
+    const slot2 = document.getElementById(isMobile ? 'mobile-log-work-slot2' : 'worklog-modal-slot2')?.value.trim() || '';
+    const slot3 = document.getElementById(isMobile ? 'mobile-log-work-slot3' : 'worklog-modal-slot3')?.value.trim() || '';
+    const slot4 = document.getElementById(isMobile ? 'mobile-log-work-slot4' : 'worklog-modal-slot4')?.value.trim() || '';
 
+    const btn = document.getElementById(isMobile ? 'btn-submit-mobile-log-work' : 'btn-submit-worklog-modal');
     if (!btn) return;
 
-    if (date) {
+    const isValid = slot1 && slot2 && slot3 && slot4 && !locked;
+
+    if (isValid) {
         btn.style.background = '#2563EB';
         btn.style.opacity = '1';
         btn.style.pointerEvents = 'auto';
-        btn.style.boxShadow = '0 10px 30px rgba(37, 99, 235, 0.2)';
+        if (isMobile) btn.style.boxShadow = '0 10px 30px rgba(37, 99, 235, 0.2)';
     } else {
         btn.style.background = '#94A3B8';
         btn.style.opacity = '0.6';
         btn.style.pointerEvents = 'none';
-        btn.style.boxShadow = 'none';
+        if (isMobile) btn.style.boxShadow = 'none';
     }
 };
 
 window.closeWorklogModal = function () {
-    if (window.innerWidth <= 1024) {
-        window.show('work-log');
-        return;
-    }
     const modal = document.getElementById('worklog-modal-container');
     const card = document.getElementById('worklog-modal-card');
     if (modal) {
         modal.style.opacity = '0';
-        card.style.transform = 'scale(0.95)';
+        if (card) card.style.transform = 'scale(0.95)';
         setTimeout(() => {
             modal.classList.add('hidden');
             modal.style.display = 'none';
         }, 300);
     }
-};
-
-window.toggleProgressDropdown = function (dropdownId) {
-    document.querySelectorAll('.progress-dropdown').forEach(el => {
-        if (el.id !== dropdownId) el.classList.remove('show');
-    });
-    document.getElementById(dropdownId)?.classList.toggle('show');
-};
-
-window.setProgressValue = function (displayTextId, value, pillClass, dropdownId) {
-    const displayEl = document.getElementById(displayTextId);
-    if (!displayEl) return;
-
-    // Update display element (Hidden div for mobile, visible pill for desktop)
-    displayEl.className = `p-pill ${pillClass}`;
-    let span = displayEl.querySelector('span');
-    if (span) {
-        span.innerText = value;
-    } else {
-        displayEl.innerText = value;
+    if (window.innerWidth <= 1024) {
+        window.show('work-log');
     }
-
-    if (dropdownId) document.getElementById(dropdownId)?.classList.remove('show');
-
-    // 🔥 Sync Mobile Chips if this is the mobile form
-    if (displayTextId === 'mobile-log-work-progress-value') {
-        document.querySelectorAll('.progress-chip').forEach(c => {
-            c.classList.remove('active');
-            if (c.innerText.trim() === value) c.classList.add('active');
-        });
-    }
-};
-
-window.selectMobileProgressChip = function (el, value, pillClass) {
-    window.setProgressValue('mobile-log-work-progress-value', value, pillClass);
-    window.validateWorklogForm();
 };
 
 // --- WORKLOG SUBMIT LOGIC (Unified) ---
@@ -4060,23 +4114,51 @@ const handleWorklogSubmit = async (btnId) => {
     if (!user) return;
 
     const isMobile = btnId.includes('mobile');
-    const titleId = isMobile ? 'mobile-log-work-title-input' : 'worklog-modal-title-input';
-    const descId = isMobile ? 'mobile-log-work-desc' : 'worklog-modal-desc';
     const dateId = isMobile ? 'mobile-log-work-date-picker' : 'worklog-modal-date-picker';
-    const deadId = isMobile ? 'mobile-log-work-deadline-picker' : 'worklog-modal-deadline';
-    const progId = isMobile ? 'mobile-log-work-progress-value' : 'worklog-modal-progress-value';
     const editId = isMobile ? 'mobile-log-work-edit-date' : 'worklog-modal-edit-date';
 
-    const title = document.getElementById(titleId)?.value.trim();
-    const desc = document.getElementById(descId)?.value.trim();
     const pickerDate = document.getElementById(dateId)?.value;
-    const deadline = document.getElementById(deadId)?.value;
-    const progress = document.getElementById(progId)?.innerText.trim() || 'On Going';
     const originalDate = document.getElementById(editId)?.value;
 
     if (!pickerDate) {
         return showToast('error', 'Missing Date', "Please select an activity date.");
     }
+
+    if (window.isWorklogLocked(pickerDate)) {
+        return showToast('error', 'Submission Closed', "Today's worklog submission deadline has passed.");
+    }
+
+    const parts = pickerDate.split('-');
+    const selectedFormatted = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : pickerDate;
+    const hasExisting = (window.WORKLOG_HISTORY || []).some(entry => {
+        const entryDate = entry.date || entry.Date || '';
+        return entryDate === selectedFormatted;
+    });
+    if (hasExisting) {
+        return showToast('error', 'Already Submitted', 'You have already submitted a work log for this date.');
+    }
+
+    const slot1 = document.getElementById(isMobile ? 'mobile-log-work-slot1' : 'worklog-modal-slot1')?.value.trim() || '';
+    const slot2 = document.getElementById(isMobile ? 'mobile-log-work-slot2' : 'worklog-modal-slot2')?.value.trim() || '';
+    const slot3 = document.getElementById(isMobile ? 'mobile-log-work-slot3' : 'worklog-modal-slot3')?.value.trim() || '';
+    const slot4 = document.getElementById(isMobile ? 'mobile-log-work-slot4' : 'worklog-modal-slot4')?.value.trim() || '';
+    const slot5 = document.getElementById(isMobile ? 'mobile-log-work-slot5' : 'worklog-modal-slot5')?.value.trim() || '';
+
+    if (!slot1 || !slot2 || !slot3 || !slot4) {
+        return showToast('error', 'Incomplete Worklog', 'Please fill out all 4 required hourly slots.');
+    }
+
+    const consolidatedDesc = [
+        `[8:45 AM - 10:25 AM] ${slot1}`,
+        `[10:40 AM - 12:30 PM] ${slot2}`,
+        `[1:30 PM - 3:10 PM] ${slot3}`,
+        `[3:25 PM - 4:25 PM] ${slot4}`,
+        slot5 ? `[Custom Slot] ${slot5}` : ''
+    ].filter(Boolean).join('\n');
+
+    const title = 'Hourly Log';
+    const deadline = '';
+    const progress = 'On going';
 
     const btn = document.getElementById(btnId);
 
@@ -4095,9 +4177,9 @@ const handleWorklogSubmit = async (btnId) => {
     const formattedDate = convertToDDMMYYYY(pickerDate);
     const newLog = {
         date: formattedDate,
-        title: title || 'Work Log Phase',
-        worklog: desc || '',
-        deadline: deadline || '',
+        title: title,
+        worklog: consolidatedDesc,
+        deadline: deadline,
         progress: progress
     };
 
@@ -4138,10 +4220,20 @@ const handleWorklogSubmit = async (btnId) => {
         type: 'worklog',
         date: payloadDate,
         rollNo: user.reg_num || user.roll_num || user.roll_no || user.reg_no || user.roll || user.reg || '',
+        name: user.name || '',
+        mail: user.email || user.email_id || '',
+        year: user.year || '',
+        s1: slot1,
+        s2: slot2,
+        s3: slot3,
+        s4: slot4,
+        s5: slot5,
+        status: 'Review Pending',
+        remarks: '',
         title: title,
-        worklog: desc,
+        worklog: consolidatedDesc,
         deadline: deadline,
-        progress: progress,
+        progress: 'Review Pending',
         oldDate: oldDateToDelete,
         batch: user.batch || user.section || "N/A"
     };
@@ -4294,32 +4386,22 @@ function buildWorklogCardHTML(i) {
               <i data-lucide="${statusInfo.icon}" style="width: 11px; height: 11px;"></i>
               ${statusInfo.text}
             </span>
-            <button onclick="event.stopPropagation(); openWorklogModal('${i.date || i.Date}')" class="btn-icon-subtle" style="background: none; border: none; color: #94A3B8; cursor: pointer; padding: 4px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.color='#2563EB'; this.style.background='#F1F5F9';" onmouseout="this.style.color='#94A3B8'; this.style.background='none';">
-              <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
-            </button>
           </div>
         </div>
         
         <!-- Description -->
-        <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; font-weight: 500; margin: 8px 0 12px 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${i.worklog || 'No description provided.'}</p>
+        <div style="margin: 8px 0 12px 0;">
+            ${window.formatWorklogDescriptionPreview ? window.formatWorklogDescriptionPreview(i.worklog) : window.formatWorklogDescription(i.worklog)}
+        </div>
       </div>
       
       <div>
         <!-- Divider -->
         <div style="border-top: 1.5px solid #F8FAFC; margin-bottom: 10px; width: 100%;"></div>
         
-        <!-- Bottom Row: Deadline Only -->
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <!-- Deadline Column -->
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="background: #F1F5F9; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i data-lucide="calendar" style="width: 16px; height: 16px; color: #475569;"></i>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 0.75rem; font-weight: 600; color: #64748B; line-height: 1;">Deadline</span>
-              <span style="font-size: 0.95rem; font-weight: 850; color: #2563EB; margin-top: 4px; letter-spacing: -0.2px;">${formatDeadline(i.deadline)}</span>
-            </div>
-          </div>
+        <!-- Bottom Row: Admin Remarks -->
+        <div style="font-size: 0.8rem; color: #475569; font-weight: 600; line-height: 1.4;">
+          <strong style="color: #0D9488;">Admin Remarks:</strong> ${i.remarks ? (i.remarks.length > 25 ? i.remarks.substring(0, 22) + '...' : i.remarks) : '-'}
         </div>
       </div>
     </div>
@@ -4347,6 +4429,256 @@ function parseDateToLocalDate(dateStr) {
     const d = new Date(str);
     return isNaN(d.getTime()) ? null : d;
 }
+
+window.formatWorklogDescription = function (text) {
+    if (!text) return 'No description provided.';
+    const textStr = String(text);
+    if (textStr.includes('[8:45 AM') || textStr.includes('[10:40 AM') || textStr.includes('[1:30 PM') || textStr.includes('[3:25 PM') || textStr.includes('[Custom Slot]')) {
+        const slots = [
+            { label: '8:45 AM - 10:25 AM', pattern: /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '10:40 AM - 12:30 PM', pattern: /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '1:30 PM - 3:10 PM', pattern: /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '3:25 PM - 4:25 PM', pattern: /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: 'Custom Time Slot', pattern: /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i }
+        ];
+
+        let html = '<div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">';
+        slots.forEach(slot => {
+            const match = textStr.match(slot.pattern);
+            if (match && match[1].trim()) {
+                html += `
+                    <div style="font-size: 0.82rem; line-height: 1.4; display: flex; flex-direction: column; text-align: left;">
+                        <span style="font-weight: 800; color: #4F46E5; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.3px;">${slot.label}</span>
+                        <span style="color: #1E293B; margin-top: 1px; font-weight: 600; white-space: pre-wrap; word-break: break-word;">${match[1].trim()}</span>
+                    </div>
+                `;
+            }
+        });
+        html += '</div>';
+        return html;
+    }
+    return textStr;
+};
+
+window.formatWorklogDescriptionPreview = function (text) {
+    if (!text) return 'No description provided.';
+    const textStr = String(text);
+    if (textStr.includes('[8:45 AM') || textStr.includes('[10:40 AM') || textStr.includes('[1:30 PM') || textStr.includes('[3:25 PM') || textStr.includes('[Custom Slot]')) {
+        const slots = [
+            { label: '8:45 AM - 10:25 AM', pattern: /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '10:40 AM - 12:30 PM', pattern: /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '1:30 PM - 3:10 PM', pattern: /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: '3:25 PM - 4:25 PM', pattern: /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i },
+            { label: 'Custom Time Slot', pattern: /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i }
+        ];
+
+        let html = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">';
+        slots.forEach(slot => {
+            const match = textStr.match(slot.pattern);
+            if (match && match[1].trim()) {
+                const val = match[1].trim();
+                html += `
+                    <div style="font-size: 0.82rem; line-height: 1.4; display: flex; flex-direction: column; text-align: left;">
+                        <span style="font-weight: 800; color: #4F46E5; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.3px;">${slot.label}</span>
+                        <span style="color: #1E293B; margin-top: 1px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-word; white-space: pre-wrap;">${val}</span>
+                    </div>
+                `;
+            }
+        });
+        html += '</div>';
+        return html;
+    }
+    return textStr.length > 30 ? textStr.substring(0, 27) + '...' : textStr;
+};
+
+window.updateWorklogStatus = async function (globalIdx, newStatus) {
+    if (globalIdx === undefined || globalIdx === null || globalIdx < 0) return;
+    const logEntry = (window.cachedWorklogData || [])[globalIdx];
+    if (!logEntry) return;
+    
+    const email = logEntry.email || logEntry.rollNo || '';
+    const date = logEntry.date || '';
+    const timestamp = logEntry.timestamp || '';
+    const oldStatus = logEntry.progress || '';
+    logEntry.progress = newStatus;
+    
+    // Instantly update DOM styles for all selects sharing the same index
+    const selects = document.querySelectorAll('.status-select-' + globalIdx);
+    let statusBg = '#0D9488'; // teal for completed
+    let statusColor = 'white';
+    const lowerProg = newStatus.toLowerCase().trim();
+    if (lowerProg.includes('ongoing') || lowerProg.includes('on going') || lowerProg.includes('absent')) {
+        statusBg = '#F59E0B'; // yellow/gold for ongoing
+    } else if (lowerProg.includes('pending') || lowerProg.includes('pendening')) {
+        statusBg = '#EF4444'; // red for pending
+    }
+    selects.forEach(select => {
+        select.value = newStatus;
+        select.style.background = statusBg;
+        select.style.color = statusColor;
+    });
+
+    // Also update status pill inside active details modal if open
+    const modalPill = document.querySelector('#worklog-details-modal span');
+    if (modalPill) {
+        modalPill.style.background = statusBg;
+        modalPill.style.color = statusColor;
+        modalPill.innerHTML = `<i data-lucide="${getStatusDetails(newStatus).icon}" style="width: 12px; height: 12px;"></i> ${newStatus}`;
+        if (window.lucide) lucide.createIcons();
+    }
+    
+    // Show inline saving status
+    const syncStatusElements = document.querySelectorAll('.sync-status-' + globalIdx);
+    syncStatusElements.forEach(el => {
+        el.style.display = 'inline-flex';
+        el.innerHTML = '<span style="color: #64748B; display: flex; align-items: center; gap: 4px; font-weight: 600;"><div style="width: 10px; height: 10px; border: 2px solid #CBD5E1; border-top-color: #6366F1; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></div> Syncing...</span>';
+    });
+    
+    const payload = {
+        type: 'updateStatus',
+        email: email,
+        date: date,
+        timestamp: timestamp,
+        status: newStatus
+    };
+    
+    // Sync with Google Sheets in background
+    try {
+        const response = await fetch(WORKLOG_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            syncStatusElements.forEach(el => {
+                el.innerHTML = '<span style="color: #10B981; display: flex; align-items: center; gap: 4px; font-weight: 600;">✓ Saved</span>';
+                setTimeout(() => { el.style.display = 'none'; }, 2000);
+            });
+        } else {
+            // Revert on failure
+            logEntry.progress = oldStatus;
+            let revertBg = '#0D9488';
+            const lowerOld = oldStatus.toLowerCase().trim();
+            if (lowerOld.includes('ongoing') || lowerOld.includes('on going') || lowerOld.includes('absent')) {
+                revertBg = '#F59E0B';
+            } else if (lowerOld.includes('pending') || lowerOld.includes('pendening')) {
+                revertBg = '#EF4444';
+            }
+            selects.forEach(select => {
+                select.value = oldStatus;
+                select.style.background = revertBg;
+            });
+            if (modalPill) {
+                modalPill.style.background = revertBg;
+                modalPill.innerHTML = `<i data-lucide="${getStatusDetails(oldStatus).icon}" style="width: 12px; height: 12px;"></i> ${oldStatus}`;
+                if (window.lucide) lucide.createIcons();
+            }
+            syncStatusElements.forEach(el => {
+                el.innerHTML = '<span style="color: #EF4444; display: flex; align-items: center; gap: 4px; font-weight: 600;">⚠ Failed</span>';
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            });
+            showToast('error', 'Update Failed', data.message || 'Failed to sync status change to database.');
+        }
+    } catch (err) {
+        console.error("Status update error:", err);
+        // Revert on failure
+        logEntry.progress = oldStatus;
+        let revertBg = '#0D9488';
+        const lowerOld = oldStatus.toLowerCase().trim();
+        if (lowerOld.includes('ongoing') || lowerOld.includes('on going') || lowerOld.includes('absent')) {
+            revertBg = '#F59E0B';
+        } else if (lowerOld.includes('pending') || lowerOld.includes('pendening')) {
+            revertBg = '#EF4444';
+        }
+        selects.forEach(select => {
+            select.value = oldStatus;
+            select.style.background = revertBg;
+        });
+        if (modalPill) {
+            modalPill.style.background = revertBg;
+            modalPill.innerHTML = `<i data-lucide="${getStatusDetails(oldStatus).icon}" style="width: 12px; height: 12px;"></i> ${oldStatus}`;
+            if (window.lucide) lucide.createIcons();
+        }
+        syncStatusElements.forEach(el => {
+            el.innerHTML = '<span style="color: #EF4444; display: flex; align-items: center; gap: 4px; font-weight: 600;">⚠ Failed</span>';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        });
+        showToast('error', 'Sync Failed', 'Connection failed. Status change not saved.');
+    }
+};
+
+window.updateWorklogRemarks = async function (globalIdx, newRemarks) {
+    if (globalIdx === undefined || globalIdx === null || globalIdx < 0) return;
+    const logEntry = (window.cachedWorklogData || [])[globalIdx];
+    if (!logEntry) return;
+    
+    const email = logEntry.email || logEntry.rollNo || '';
+    const date = logEntry.date || '';
+    const timestamp = logEntry.timestamp || '';
+    const oldRemarks = logEntry.remarks || '';
+    logEntry.remarks = newRemarks;
+    
+    // Instantly update DOM for all remarks inputs sharing the same index
+    const inputs = document.querySelectorAll('.remarks-input-' + globalIdx);
+    inputs.forEach(input => {
+        if (document.activeElement !== input) {
+            input.value = newRemarks;
+        }
+    });
+
+    // Show inline saving status
+    const syncStatusElements = document.querySelectorAll('.sync-status-' + globalIdx);
+    syncStatusElements.forEach(el => {
+        el.style.display = 'inline-flex';
+        el.innerHTML = '<span style="color: #64748B; display: flex; align-items: center; gap: 4px; font-weight: 600;"><div style="width: 10px; height: 10px; border: 2px solid #CBD5E1; border-top-color: #6366F1; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></div> Syncing...</span>';
+    });
+    
+    const payload = {
+        type: 'updateRemarks',
+        email: email,
+        date: date,
+        timestamp: timestamp,
+        remarks: newRemarks
+    };
+    
+    // Sync with Google Sheets in background
+    try {
+        const response = await fetch(WORKLOG_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            syncStatusElements.forEach(el => {
+                el.innerHTML = '<span style="color: #10B981; display: flex; align-items: center; gap: 4px; font-weight: 600;">✓ Saved</span>';
+                setTimeout(() => { el.style.display = 'none'; }, 2000);
+            });
+        } else {
+            // Revert on failure
+            logEntry.remarks = oldRemarks;
+            inputs.forEach(input => {
+                input.value = oldRemarks;
+            });
+            syncStatusElements.forEach(el => {
+                el.innerHTML = '<span style="color: #EF4444; display: flex; align-items: center; gap: 4px; font-weight: 600;">⚠ Failed</span>';
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            });
+            showToast('error', 'Update Failed', data.message || 'Failed to sync remarks to database.');
+        }
+    } catch (err) {
+        console.error("Remarks update error:", err);
+        // Revert on failure
+        logEntry.remarks = oldRemarks;
+        inputs.forEach(input => {
+            input.value = oldRemarks;
+        });
+        syncStatusElements.forEach(el => {
+            el.innerHTML = '<span style="color: #EF4444; display: flex; align-items: center; gap: 4px; font-weight: 600;">⚠ Failed</span>';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        });
+        showToast('error', 'Sync Failed', 'Connection failed. Remarks not saved.');
+    }
+};
 
 // --- WORKLOG RENDERING ---
 window.renderWorklogHistory = function (searchTerm = '') {
@@ -4430,55 +4762,78 @@ window.renderWorklogHistory = function (searchTerm = '') {
             const idx = window.WORKLOG_HISTORY ? window.WORKLOG_HISTORY.indexOf(i) : -1;
             const displayDate = `${dateInfo.day} ${dateInfo.month} ${dateInfo.year}`;
 
+            const getWorklogSlot = (text, slotIndex) => {
+                if (!text) return '';
+                const textStr = String(text);
+                const slots = [
+                    /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                    /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                    /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                    /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                    /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                ];
+                const match = textStr.match(slots[slotIndex]);
+                return match ? match[1].trim() : '';
+            };
+
+            const s1 = i.s1 || getWorklogSlot(i.worklog, 0);
+            const s2 = i.s2 || getWorklogSlot(i.worklog, 1);
+            const s3 = i.s3 || getWorklogSlot(i.worklog, 2);
+            const s4 = i.s4 || getWorklogSlot(i.worklog, 3);
+            const s5 = i.s5 || getWorklogSlot(i.worklog, 4);
+
+            const wrapVal = (val) => {
+                const clean = String(val || '-').trim();
+                return `<div style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550;" title="${clean.replace(/"/g, '&quot;')}">${clean}</div>`;
+            };
+
             return `
-                <tr onclick="window.showWorklogDetailsByIndex(${idx})" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='none';">
-                    <td style="padding: 16px 20px; font-size: 0.88rem; font-weight: 700; color: #1E293B; white-space: nowrap;">
+                <tr onclick="window.showWorklogDetailsByIndex(${idx})" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='transparent';">
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; font-weight: 700; color: #1E293B; white-space: nowrap; vertical-align: top;">
                         <div style="display: flex; flex-direction: column;">
                             <span>${displayDate}</span>
                             <span style="font-size: 0.72rem; font-weight: 600; color: #3B82F6; margin-top: 2px;">${dateInfo.dayOfWeek}</span>
                         </div>
                     </td>
-                    <td style="padding: 16px 20px; font-size: 0.9rem; font-weight: 800; color: #0F172A; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${i.title || 'Work Log Phase'}
-                    </td>
-                    <td style="padding: 16px 20px; font-size: 0.85rem; color: #475569; font-weight: 550; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${i.worklog || 'No description provided.'}
-                    </td>
-                    <td style="padding: 16px 20px; font-size: 0.88rem; font-weight: 800; color: #2563EB; white-space: nowrap;">
-                        ${formatDeadline(i.deadline)}
-                    </td>
-                    <td style="padding: 16px 20px; white-space: nowrap;">
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s1)}</td>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s2)}</td>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s3)}</td>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s4)}</td>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s5)}</td>
+                    <td style="padding: 1.1rem 1.5rem; white-space: nowrap; vertical-align: top;">
                         <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 100px; background: ${statusInfo.pillBg}; color: ${statusInfo.pillColor}; text-transform: capitalize; border: 1px solid rgba(0,0,0,0.02);">
                             <i data-lucide="${statusInfo.icon}" style="width: 11px; height: 11px;"></i>
                             ${statusInfo.text}
                         </span>
                     </td>
-                    <td style="padding: 16px 20px; text-align: right; white-space: nowrap;" onclick="event.stopPropagation();">
-                        <button onclick="openWorklogModal('${i.date || i.Date}')" class="btn-icon-subtle" style="background: none; border: none; color: #94A3B8; cursor: pointer; padding: 6px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.color='#2563EB'; this.style.background='#EFF6FF';" onmouseout="this.style.color='#94A3B8'; this.style.background='none';">
-                            <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i>
-                        </button>
+                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #475569; font-weight: 600; vertical-align: top;">
+                        ${wrapVal(i.remarks)}
                     </td>
                 </tr>
             `;
         }).join('');
 
         return `
-            <div style="width: 100%; overflow-x: auto; background: white; border: 1px solid #E2E8F0; border-radius: 16px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: inherit;">
-                    <thead>
-                        <tr style="background: #F8FAFC; border-bottom: 1.5px solid #E2E8F0;">
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; width: 15%;">Date</th>
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; width: 20%;">Task</th>
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; width: 35%;">Worklog Description</th>
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; width: 15%;">Deadline</th>
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; width: 10%;">Status</th>
-                            <th style="padding: 14px 20px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; text-align: right; width: 5%;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHTML}
-                    </tbody>
-                </table>
+            <div style="overflow: hidden; padding: 0; margin-bottom: 2rem; background: white; border: 1.5px solid #F1F5F9; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);">
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 1500px; text-align: left; font-family: inherit;">
+                        <thead>
+                            <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 10%;">Date</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S1 (8:45-10:25)</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S2 (10:40-12:30)</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S3 (1:30-3:10)</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S4 (3:25-4:25)</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">S5 (Custom)</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 8%;">Status</th>
+                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         `;
     };
@@ -4596,7 +4951,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-window.openWorklogDetailsModal = function (date, title, statusText, description, deadline, pillBg, pillColor, icon) {
+window.openWorklogDetailsModal = function (date, title, statusText, description, deadline, pillBg, pillColor, icon, email = '', remarks = '', globalIdx = -1) {
     let modal = document.getElementById('worklog-details-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -4619,6 +4974,9 @@ window.openWorklogDetailsModal = function (date, title, statusText, description,
     }
 
     const dateInfo = parseWorklogDate(date);
+    const user = JSON.parse(localStorage.getItem('user'));
+    const role = (user && user.role || "").toLowerCase().trim();
+    const isAdmin = user && (role === 'admin' || (user.email && user.email.toLowerCase() === SUPER_ADMIN.toLowerCase()));
 
     modal.innerHTML = `
     <div style="background: white; border-radius: 28px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); border: 1px solid #F1F5F9; box-sizing: border-box;">
@@ -4651,32 +5009,50 @@ window.openWorklogDetailsModal = function (date, title, statusText, description,
         <!-- Description Header -->
         <h4 style="font-size: 0.75rem; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Description</h4>
         <!-- Description Content -->
-        <p style="font-size: 0.95rem; color: #334155; line-height: 1.6; font-weight: 500; margin: 0 0 2rem 0; white-space: pre-wrap; word-break: break-word; background: #F8FAFC; padding: 1.25rem; border-radius: 16px; border: 1px solid #F1F5F9;">
-          ${description || 'No description provided.'}
-        </p>
-        
-        <!-- Divider -->
-        <div style="border-top: 1.5px solid #F1F5F9; margin-bottom: 1.5rem; width: 100%;"></div>
-        
-        <!-- Bottom Row: Deadline & Edit button side-by-side -->
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <!-- Deadline details -->
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: #F1F5F9; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i data-lucide="calendar" style="width: 18px; height: 18px; color: #475569;"></i>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 0.75rem; font-weight: 600; color: #64748B; line-height: 1;">Deadline</span>
-              <span style="font-size: 1.05rem; font-weight: 850; color: #2563EB; margin-top: 4px; letter-spacing: -0.2px;">${deadline}</span>
-            </div>
-          </div>
-          
-          <!-- Editable Action Button -->
-          <button onclick="window.closeWorklogDetailsModal(); window.openWorklogModal('${date}')" style="background: #2563EB; color: white; border: none; padding: 12px 22px; border-radius: 14px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 20px rgba(37,99,235,0.2); transform: translateY(0);" onmouseover="this.style.background='#1D4ED8'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#2563EB'; this.style.transform='translateY(0)';">
-            <i data-lucide="edit-3" style="width: 16px; height: 16px; color: white;"></i>
-            Edit Log
-          </button>
+        <div style="font-size: 0.95rem; color: #334155; line-height: 1.6; font-weight: 500; margin: 0 0 2rem 0; background: #F8FAFC; padding: 1.25rem; border-radius: 16px; border: 1px solid #F1F5F9;">
+          ${window.formatWorklogDescription(description)}
         </div>
+        
+        ${isAdmin && globalIdx !== -1 ? `
+        <!-- Admin Actions Divider -->
+        <div style="border-top: 1.5px solid #F1F5F9; margin-top: 1.5rem; padding-top: 1.5rem; width: 100%;"></div>
+        
+        <h4 style="font-size: 0.75rem; font-weight: 800; color: #4F46E5; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Admin Actions</h4>
+        
+        <!-- Status Dropdown -->
+        <div style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Update Status</label>
+            <select class="status-select-${globalIdx}" onchange="window.updateWorklogStatus(${globalIdx}, this.value)" 
+                    style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; outline: none; width: 100%;">
+                <option value="Review Pending" ${statusText === 'Review Pending' ? 'selected' : ''}>Review Pending</option>
+                <option value="Review Completed" ${statusText === 'Review Completed' ? 'selected' : ''}>Review Completed</option>
+                <option value="Completed" ${statusText === 'Completed' ? 'selected' : ''}>Completed</option>
+                <option value="On going" ${statusText === 'On going' ? 'selected' : ''}>On going</option>
+            </select>
+        </div>
+        
+        <!-- Remarks input -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Update Remarks</label>
+                <span class="sync-status-${globalIdx}" style="font-size: 0.75rem; display: none; align-items: center; white-space: nowrap;"></span>
+            </div>
+            <textarea class="remarks-input-${globalIdx}" 
+                   onchange="window.updateWorklogRemarks(${globalIdx}, this.value)" 
+                   onkeydown="if(event.key === 'Enter' && !event.shiftKey) { this.blur(); window.closeWorklogDetailsModal(); }"
+                   style="border: 1.5px solid #E2E8F0; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; outline: none; font-family: inherit; font-weight: 600; width: 100%; box-sizing: border-box; resize: vertical; min-height: 46px; background: #F8FAFC;" 
+                   placeholder="Add remarks...">${remarks || ''}</textarea>
+        </div>
+        ` : `
+        <!-- Student Read-Only Remarks -->
+        ${remarks ? `
+        <h4 style="font-size: 0.75rem; font-weight: 800; color: #0D9488; text-transform: uppercase; letter-spacing: 1px; margin: 1.5rem 0 8px 0;">Admin Remarks</h4>
+        <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; font-weight: 600; background: #F0FDFA; padding: 1rem; border-radius: 12px; border: 1px solid #CCFBF1; margin-bottom: 1.5rem;">
+            ${remarks}
+        </div>
+        ` : ''}
+        `}
+
       </div>
     </div>
   `;
@@ -4715,7 +5091,28 @@ window.showWorklogDetailsByIndex = function (idx) {
         formatDeadline(i.deadline),
         statusInfo.pillBg,
         statusInfo.pillColor,
-        statusInfo.icon
+        statusInfo.icon,
+        '', // email
+        i.remarks || '' // remarks passed to modal
+    );
+};
+
+window.showAdminWorklogDetails = function (globalIdx) {
+    const entry = (window.cachedWorklogData || [])[globalIdx];
+    if (!entry) return;
+    const statusInfo = getStatusDetails(entry.progress);
+    window.openWorklogDetailsModal(
+        entry.date || entry.Date,
+        entry.title || 'Work Log Phase',
+        statusInfo.text,
+        entry.worklog || 'No description provided.',
+        formatDeadline(entry.deadline),
+        statusInfo.pillBg,
+        statusInfo.pillColor,
+        statusInfo.icon,
+        entry.email || entry.rollNo || '',
+        entry.remarks || '',
+        globalIdx
     );
 };
 
@@ -5326,7 +5723,8 @@ window.loadAdminData = async function (force = false) {
                     'attendance_logs',
                     'worklogs',
                     'extension_requests',
-                    'linkedin_tracker'
+                    'linkedin_tracker',
+                    'activity_approval'
                 ];
                 permissionKeys.forEach(key => {
                     if (key in meObj) {
@@ -5672,7 +6070,8 @@ window.renderAdminList = function (admins, d, m) {
         { id: 'attendance-logs', name: 'Attendance Logs' },
         { id: 'worklogs', name: 'Worklogs' },
         { id: 'extension-requests', name: 'Extension Requests' },
-        { id: 'linkedin-tracker', name: 'LinkedIn Tracker' }
+        { id: 'linkedin-tracker', name: 'LinkedIn Tracker' },
+        { id: 'activity-approval', name: 'Activity Approval' }
     ];
 
     admins.forEach(u => {
@@ -5975,7 +6374,8 @@ window.toggleAdminSubView = function (viewId) {
                 'attendance-logs': 'attendance_logs',
                 'worklogs': 'worklogs',
                 'extension-requests': 'extension_requests',
-                'linkedin-tracker': 'linkedin_tracker'
+                'linkedin-tracker': 'linkedin_tracker',
+                'activity-approval': 'activity_approval'
             };
             const permKey = viewToHeaderKey[viewId];
             if (permKey) {
@@ -6222,17 +6622,35 @@ window.loadAnalyticsData = async function (force = false) {
     const wlDesk = document.getElementById('admin-worklog-list-desktop');
     const wlMob = document.getElementById('admin-worklog-list-mobile');
 
-    const loadingHtml = `
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4rem; gap:12px; width:100%; position: sticky; left: 0; margin: 0 auto;">
-            <div style="width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top: 3px solid #000000; border-radius: 50%; display: inline-block; animation: analytics-spin 1s linear infinite;"></div>
-            <p style="font-weight: 700; color: #000000; font-size: 0.95rem; margin:0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading...</p>
-        </div>
+    const attSkeletonRowHtml = `
+        <tr style="border-bottom: 1px solid #F1F5F9;">
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 120px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 80px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 70px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 70px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 110px; height: 28px; border-radius: 100px;"></span></td>
+        </tr>
+    `;
+    const wlSkeletonRowHtml = `
+        <tr style="border-bottom: 1px solid #F1F5F9;">
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 120px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 80px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 90px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 130px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 110px; height: 28px; border-radius: 100px;"></span></td>
+            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 130px; height: 32px; border-radius: 8px;"></span></td>
+        </tr>
     `;
 
-    if (listDesk) listDesk.innerHTML = `<tr><td colspan="100" style="text-align: center;">${loadingHtml}</td></tr>`;
-    if (listMob) listMob.innerHTML = loadingHtml;
-    if (wlDesk) wlDesk.innerHTML = `<tr><td colspan="100" style="text-align: center;">${loadingHtml}</td></tr>`;
-    if (wlMob) wlMob.innerHTML = loadingHtml;
+    if (listDesk) listDesk.innerHTML = Array(5).fill(attSkeletonRowHtml).join('');
+    if (listMob) listMob.innerHTML = Array(4).fill('<div class="skeleton-card"></div>').join('');
+    if (wlDesk) wlDesk.innerHTML = Array(5).fill(wlSkeletonRowHtml).join('');
+    if (wlMob) wlMob.innerHTML = Array(4).fill('<div class="skeleton-card"></div>').join('');
 
     let adminEmail = "";
     try {
@@ -6304,6 +6722,20 @@ window.renderAdminAnalytics = function () {
     const listMob = document.getElementById('admin-analytics-list-mobile');
     const wlListDesk = document.getElementById('admin-worklog-list-desktop');
     const wlListMob = document.getElementById('admin-worklog-list-mobile');
+
+    // Dynamically populate worklog year select from cachedAdminData if available
+    const worklogYearSelect = document.getElementById('worklog-year-select');
+    if (worklogYearSelect && window.cachedAdminData && window.cachedAdminData.length > 0 && !worklogYearSelect.dataset.populated) {
+        const uniqueYears = [...new Set(window.cachedAdminData.map(s => s.year || s.current_year || '').filter(y => y.trim() !== ''))].sort();
+        let optionsHtml = '<option value="all">All Years</option>';
+        uniqueYears.forEach(year => {
+            optionsHtml += `<option value="${year}">${year}</option>`;
+        });
+        const currentSelected = worklogYearSelect.value;
+        worklogYearSelect.innerHTML = optionsHtml;
+        worklogYearSelect.value = currentSelected || 'all';
+        worklogYearSelect.dataset.populated = "true";
+    }
 
     const attendanceSearch = document.getElementById('attendance-search-input')?.value.toLowerCase() || '';
     const attendanceDateFilter = document.getElementById('attendance-date-select')?.value || 'all';
@@ -6529,23 +6961,22 @@ window.renderAdminAnalytics = function () {
             if (worklogProgressFilter !== 'all') {
                 logs = logs.filter(log => {
                     const prog = (log.progress || '').toLowerCase().trim();
-                    if (worklogProgressFilter === 'completed') {
-                        return prog.includes('completed') || prog === 'complete';
-                    } else if (worklogProgressFilter === 'ongoing') {
-                        return prog.includes('ongoing') || prog.includes('on going') || prog.includes('absent');
-                    } else if (worklogProgressFilter === 'pending') {
-                        return prog.includes('pending') || prog.includes('pendening');
-                    }
-                    return true;
+                    const filterVal = worklogProgressFilter.toLowerCase().trim();
+                    return prog === filterVal;
                 });
             }
 
             if (worklogYearFilter !== 'all') {
                 logs = logs.filter(log => {
                     const reqEmailSafe = (log.email || '').toLowerCase().trim();
-                    const studentObj = (window.cachedAdminData || []).find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafe);
-                    const studentYear = studentObj ? String(studentObj.year || '') : '';
-                    return studentYear.includes(worklogYearFilter);
+                    const reqRollSafe = (log.rollNo || '').toLowerCase().trim();
+                    const studentObj = (window.cachedAdminData || []).find(u => {
+                        const uEmail = (u.email || u.email_id || '').toLowerCase().trim();
+                        const uRoll = (u.rollNo || u.roll_number || u.roll_no || '').toLowerCase().trim();
+                        return (reqEmailSafe && uEmail === reqEmailSafe) || (reqRollSafe && uRoll === reqRollSafe);
+                    });
+                    const studentYear = studentObj ? String(studentObj.year || studentObj.current_year || '') : '';
+                    return studentYear === worklogYearFilter;
                 });
             }
 
@@ -6600,6 +7031,7 @@ window.renderAdminAnalytics = function () {
         if (wlListDesk) {
             wlListDesk.innerHTML = logs.map(log => {
                 const formattedDate = formatDateStr(log.date);
+                const key = String(log.email || log.rollNo || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + String(log.date || '').replace(/[^a-z0-9]/g, '');
 
                 let badgeBg = '#E8F0FE', badgeFg = '#1A73E8', badgeBorder = '#D2E3FC';
                 const lowerProg = (log.progress || '').toLowerCase().trim();
@@ -6621,37 +7053,80 @@ window.renderAdminAnalytics = function () {
                     statusColor = 'white';
                 }
 
+                const getWorklogSlot = (text, slotIndex) => {
+                    if (!text) return '';
+                    const textStr = String(text);
+                    const slots = [
+                        /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                    ];
+                    const match = textStr.match(slots[slotIndex]);
+                    return match ? match[1].trim() : '';
+                };
+
+                const s1 = log.s1 || getWorklogSlot(log.worklog, 0);
+                const s2 = log.s2 || getWorklogSlot(log.worklog, 1);
+                const s3 = log.s3 || getWorklogSlot(log.worklog, 2);
+                const s4 = log.s4 || getWorklogSlot(log.worklog, 3);
+                const s5 = log.s5 || getWorklogSlot(log.worklog, 4);
+
+                const wrapVal = (val) => {
+                    const clean = String(val || '-').trim();
+                    let truncated = clean;
+                    if (clean.length > 20) {
+                        truncated = clean.substring(0, 17) + '...';
+                    }
+                    return `<div style="white-space: nowrap; font-weight: 550; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155;" title="${clean.replace(/"/g, '&quot;')}">${truncated}</div>`;
+                };
+
+                const globalIdx = (window.cachedWorklogData || []).indexOf(log);
+
                 return `
-                <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                <tr onclick="window.showAdminWorklogDetails(${globalIdx})" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                    <!-- Time Stamp -->
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.8rem; color: #64748B; font-weight: 600; white-space: nowrap;">
+                        ${log.timestamp || '-'}
+                    </td>
                     <!-- Name -->
-                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
-                        <div style="font-weight: 700; color: #334155; font-size: 0.9rem;">${log.name || 'Unknown'}</div>
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; white-space: nowrap;">
+                        <div style="font-weight: 700; color: #334155; font-size: 0.9rem; white-space: nowrap;">${log.name || 'Unknown'}</div>
                     </td>
                     <!-- Reg Number -->
-                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155; font-weight: 800;">
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155; font-weight: 800; white-space: nowrap;">
                         ${log.rollNo || ''}
                     </td>
-                    <!-- Date -->
-                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; white-space: nowrap;">
-                        <span style="background: #F1F5F9; color: #334155; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid #E2E8F0; white-space: nowrap;">${formattedDate}</span>
+                    <!-- Year -->
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155; font-weight: 800; white-space: nowrap;">
+                        ${log.year || '-'}
                     </td>
-                    <!-- Title -->
-                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.82rem; font-weight: 800; color: #334155;">
-                        ${log.title || ''}
+                    <!-- Timings Slots -->
+                    <td style="padding: 1.1rem 1rem; vertical-align: top;">${wrapVal(s1)}</td>
+                    <td style="padding: 1.1rem 1rem; vertical-align: top;">${wrapVal(s2)}</td>
+                    <td style="padding: 1.1rem 1rem; vertical-align: top;">${wrapVal(s3)}</td>
+                    <td style="padding: 1.1rem 1rem; vertical-align: top;">${wrapVal(s4)}</td>
+                    <td style="padding: 1.1rem 1rem; vertical-align: top;">${wrapVal(s5)}</td>
+                    <!-- Progress (Status Dropdown) -->
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top;" onclick="event.stopPropagation();">
+                        <select class="status-select-${globalIdx}" onchange="window.updateWorklogStatus(${globalIdx}, this.value)" 
+                                style="background: ${statusBg}; color: ${statusColor}; border: none; padding: 6px 14px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; cursor: pointer; outline: none;">
+                            <option value="Review Pending" ${log.progress === 'Review Pending' ? 'selected' : ''}>Review Pending</option>
+                            <option value="Review Completed" ${log.progress === 'Review Completed' ? 'selected' : ''}>Review Completed</option>
+                            <option value="Completed" ${log.progress === 'Completed' ? 'selected' : ''}>Completed</option>
+                            <option value="On going" ${log.progress === 'On going' ? 'selected' : ''}>On going</option>
+                        </select>
                     </td>
-                    <!-- Worklog -->
-                    <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; line-height: 1.5; max-width: 280px; word-break: break-word; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
-                        ${log.worklog || '-'}
-                    </td>
-                    <!-- Deadline -->
-                    <td style="padding: 1.1rem 1rem; color: #334155; font-size: 0.85rem; font-weight: 700; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
-                        ${log.deadline ? formatDateStr(log.deadline) : '-'}
-                    </td>
-                    <!-- Progress -->
-                    <td style="padding: 1.1rem 1rem; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
-                        <span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 12px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;">
-                            ${log.progress || 'Ongoing'}
-                        </span>
+                    <!-- Remarks (Editable Input) -->
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top;" onclick="event.stopPropagation();">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <textarea class="remarks-input-${globalIdx}" 
+                                   onchange="window.updateWorklogRemarks(${globalIdx}, this.value)" 
+                                   style="border: 1px solid #E2E8F0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; outline: none; width: 140px; min-height: 36px; font-family: inherit; font-weight: 600; resize: vertical;" 
+                                   placeholder="Add remarks...">${log.remarks || ''}</textarea>
+                            <span class="sync-status-${globalIdx}" style="font-size: 0.75rem; display: none; align-items: center; white-space: nowrap;"></span>
+                        </div>
                     </td>
                 </tr>`;
             }).join('');
@@ -6660,6 +7135,7 @@ window.renderAdminAnalytics = function () {
         if (wlListMob) {
             wlListMob.innerHTML = logs.map(log => {
                 const formattedDate = formatDateStr(log.date);
+                const key = String(log.email || log.rollNo || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + String(log.date || '').replace(/[^a-z0-9]/g, '');
 
                 let badgeBg = '#E8F0FE', badgeFg = '#1A73E8', badgeBorder = '#D2E3FC';
                 const lowerProg = (log.progress || '').toLowerCase().trim();
@@ -6671,24 +7147,63 @@ window.renderAdminAnalytics = function () {
                     badgeBg = '#FEF7E0'; badgeFg = '#B06000'; badgeBorder = '#FEEFC3';
                 }
 
+                const getWorklogSlot = (text, slotIndex) => {
+                    if (!text) return '';
+                    const textStr = String(text);
+                    const slots = [
+                        /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                    ];
+                    const match = textStr.match(slots[slotIndex]);
+                    return match ? match[1].trim() : '';
+                };
+
+                const s1 = log.s1 || getWorklogSlot(log.worklog, 0);
+                const s2 = log.s2 || getWorklogSlot(log.worklog, 1);
+                const s3 = log.s3 || getWorklogSlot(log.worklog, 2);
+                const s4 = log.s4 || getWorklogSlot(log.worklog, 3);
+                const s5 = log.s5 || getWorklogSlot(log.worklog, 4);
+
+                const globalIdx = (window.cachedWorklogData || []).indexOf(log);
+
                 return `
-                <div class="card" style="padding: 1rem; border-radius: 14px; background: white; border: 1.5px solid #E2E8F0; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 8px;">
+                <div class="card" onclick="window.showAdminWorklogDetails(${globalIdx})" style="padding: 1rem; border-radius: 14px; background: white; border: 1.5px solid #E2E8F0; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 8px; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                         <div style="flex: 1;">
                             <div style="font-weight: 800; color: #000000; font-size: 1.05rem;">${log.name || 'Unknown'}</div>
-                            <div style="font-size: 0.85rem; color: #334155; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                            <div style="font-size: 0.85rem; color: #334155; margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span style="font-weight: 700;">${log.rollNo || ''}</span>
                                 <span style="background: #F1F5F9; color: #000000; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid #CBD5E1;">${formattedDate}</span>
                             </div>
                         </div>
-                        <span style="background: ${badgeBg}; color: ${badgeFg}; border: 1px solid ${badgeBorder}; padding: 3px 10px; border-radius: 99px; font-weight: 700; font-size: 0.75rem; white-space: nowrap; flex-shrink:0;">
-                            ${log.progress || 'Ongoing'}
-                        </span>
+                        <select class="status-select-${globalIdx}" onchange="window.updateWorklogStatus(${globalIdx}, this.value)" onclick="event.stopPropagation();"
+                                style="background: ${badgeBg}; color: ${badgeFg}; border: 1px solid ${badgeBorder}; padding: 4px 10px; border-radius: 99px; font-weight: 700; font-size: 0.75rem; cursor: pointer; outline: none;">
+                            <option value="Review Pending" ${log.progress === 'Review Pending' ? 'selected' : ''}>Review Pending</option>
+                            <option value="Review Completed" ${log.progress === 'Review Completed' ? 'selected' : ''}>Review Completed</option>
+                            <option value="Completed" ${log.progress === 'Completed' ? 'selected' : ''}>Completed</option>
+                            <option value="On going" ${log.progress === 'On going' ? 'selected' : ''}>On going</option>
+                        </select>
                     </div>
                     <div style="font-size: 0.85rem; color: #000000; margin-top: 4px; padding-top: 8px; border-top: 1px solid #E2E8F0; line-height: 1.5; display:flex; flex-direction:column; gap:6px;">
-                        <div><strong style="color: #000000;">Task Title:</strong> ${log.title || '-'}</div>
-                        <div><strong style="color: #000000;">Worklog:</strong> ${log.worklog || '-'}</div>
-                        <div><strong style="color: #000000;">Deadline:</strong> ${log.deadline ? formatDateStr(log.deadline) : '-'}</div>
+                        <div><strong style="color: #64748B;">Submitted At:</strong> ${log.timestamp || '-'}</div>
+                        <div><strong style="color: #6366F1;">S1 (8:45-10:25):</strong> ${s1 ? (s1.length > 20 ? s1.substring(0, 17) + '...' : s1) : '-'}</div>
+                        <div><strong style="color: #6366F1;">S2 (10:40-12:30):</strong> ${s2 ? (s2.length > 20 ? s2.substring(0, 17) + '...' : s2) : '-'}</div>
+                        <div><strong style="color: #6366F1;">S3 (1:30-3:10):</strong> ${s3 ? (s3.length > 20 ? s3.substring(0, 17) + '...' : s3) : '-'}</div>
+                        <div><strong style="color: #6366F1;">S4 (3:25-4:25):</strong> ${s4 ? (s4.length > 20 ? s4.substring(0, 17) + '...' : s4) : '-'}</div>
+                        <div><strong style="color: #6366F1;">S5 (Custom):</strong> ${s5 ? (s5.length > 20 ? s5.substring(0, 17) + '...' : s5) : '-'}</div>
+                        <div style="margin-top: 4px;" onclick="event.stopPropagation();">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #0D9488;">Remarks:</strong>
+                                <span class="sync-status-${globalIdx}" style="font-size: 0.75rem; display: none; align-items: center; white-space: nowrap;"></span>
+                            </div>
+                            <textarea class="remarks-input-${globalIdx}" 
+                                   onchange="window.updateWorklogRemarks(${globalIdx}, this.value)" onclick="event.stopPropagation();" 
+                                   style="border: 1px solid #E2E8F0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; outline: none; width: 100%; font-family: inherit; font-weight: 600; margin-top: 4px; display: block; box-sizing: border-box; resize: vertical; min-height: 38px;" 
+                                   placeholder="Add remarks...">${log.remarks || ''}</textarea>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -10248,25 +10763,12 @@ window.logWorkFromTaskModal = function (title) {
 };;
 
 window.openWorklogModalWithTask = function (taskTitle) {
+    window.openWorklogModal();
     const isMobile = window.innerWidth <= 1024;
-    if (isMobile) {
-        if (typeof window.show === 'function') window.show('add');
-        const descField = document.getElementById('mobile-task-desc');
-        if (descField) {
-            descField.value = `Completed Task: ${taskTitle}\n\n`;
-            descField.focus();
-        }
-    } else {
-        const modal = document.getElementById('modal-container');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.style.display = 'flex';
-            const descField = document.getElementById('desktop-task-desc');
-            if (descField) {
-                descField.value = `Completed Task: ${taskTitle}\n\n`;
-                descField.focus();
-            }
-        }
+    const customSlot = document.getElementById(isMobile ? 'mobile-log-work-slot5' : 'worklog-modal-slot5');
+    if (customSlot) {
+        customSlot.value = `Completed Task: ${taskTitle}\n\n`;
+        customSlot.focus();
     }
 };
 
@@ -13091,7 +13593,8 @@ window.checkModuleAccessAndHideNav = function () {
             'attendance-logs': 'attendance_logs',
             'worklogs': 'worklogs',
             'extension-requests': 'extension_requests',
-            'linkedin-tracker': 'linkedin_tracker'
+            'linkedin-tracker': 'linkedin_tracker',
+            'activity-approval': 'activity_approval'
         };
         const permKey = viewToHeaderKey[subviewId];
         if (!permKey) return true;
@@ -13116,3 +13619,19 @@ window.checkModuleAccessAndHideNav = function () {
         }
     });
 };
+
+// 📅 Auto-initialize worklog date pickers to today's date
+(function() {
+    const initDatePickers = () => {
+        const todayISO = new Date().toISOString().split('T')[0];
+        const mDatePicker = document.getElementById('mobile-log-work-date-picker');
+        const dDatePicker = document.getElementById('worklog-modal-date-picker');
+        if (mDatePicker) mDatePicker.value = todayISO;
+        if (dDatePicker) dDatePicker.value = todayISO;
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDatePickers);
+    } else {
+        initDatePickers();
+    }
+})();

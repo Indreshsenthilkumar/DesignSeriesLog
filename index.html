@@ -267,8 +267,7 @@
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1) !important;
             transition: transform 0.3s ease !important;
             position: relative !important;
-            overflow-y: visible !important;
-            /* Critical for dropdown */
+            overflow-y: auto !important;
             max-height: 90vh !important;
         }
 
@@ -1296,61 +1295,72 @@
                 <!-- Date Selector Display -->
                 <div style="margin-bottom: 1.75rem;">
                     <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Activity Date <span style="color: #EF4444;">*</span></label>
-                    <div style="position: relative; background: white; border: 1.5px solid #F1F5F9; border-radius: 18px; height: 62px; display: flex; align-items: center; padding: 0 1.25rem; gap: 12px; transition: border-color 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                        <i data-lucide="calendar" style="width: 20px; color: #6366F1;"></i>
-                        <input type="date" id="mobile-log-work-date-picker"
-                            style="border: none; background: transparent; font-size: 1.05rem; font-weight: 700; color: #1E293B; font-family: inherit; width: 100%; outline: none;"
-                            oninput="window.validateWorklogForm()">
+                    <div style="position: relative; background: #F1F5F9; border: 1.5px solid #E2E8F0; border-radius: 18px; height: 62px; display: flex; align-items: center; padding: 0 1.25rem; gap: 12px; box-shadow: none; cursor: not-allowed;">
+                        <i data-lucide="calendar" style="width: 20px; color: #94A3B8;"></i>
+                        <input type="date" id="mobile-log-work-date-picker" disabled
+                            style="border: none; background: transparent; font-size: 1.05rem; font-weight: 700; color: #64748B; font-family: inherit; width: 100%; outline: none; cursor: not-allowed;">
                     </div>
                 </div>
 
-                <!-- Fields -->
-                <div class="form-group" style="margin-bottom: 1.75rem;">
-                    <div class="input-group" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem; padding-left: 0.25rem;">
-                            Task / Log Title <span style="color: #EF4444;">*</span>
-                        </label>
-                        <div style="position: relative; background: white; border: 1.5px solid #F1F5F9; border-radius: 18px; height: 62px; display: flex; align-items: center; padding: 0 1.25rem; gap: 12px; transition: border-color 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                            <i data-lucide="type" style="width: 20px; color: #6366F1;"></i>
-                            <input type="text" id="mobile-log-work-title-input" 
-                                placeholder="E.g., Component Design, Phase 1..."
-                                style="border: none; background: transparent; font-size: 1rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none;">
-                        </div>
+                <!-- Submission Deadline Warning Banner -->
+                <div id="mobile-worklog-warning" class="hidden" style="margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: #FEF2F2; border: 1.5px solid #FCA5A5; border-radius: 18px; display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="alert-triangle" style="color: #EF4444; width: 22px; flex-shrink: 0;"></i>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #991B1B;">Submission closed. Today's 11:59 PM deadline has passed.</span>
+                </div>
+
+                <!-- Hourly Slots -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">8:45 AM to 10:25 AM <span style="color: #EF4444;">*</span></label>
+                    <div style="position: relative; background: white; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: flex-start; padding: 1rem; gap: 10px; box-shadow: none;">
+                        <i data-lucide="clock" style="width: 18px; color: #6366F1; margin-top: 2px;"></i>
+                        <textarea id="mobile-log-work-slot1" class="worklog-textarea" rows="2"
+                            placeholder="What did you work on during this slot?"
+                            style="border: none; background: transparent; font-size: 0.95rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 50px; resize: vertical;"
+                            oninput="window.validateWorklogForm()"></textarea>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.75rem;">
-                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Detailed Description</label>
-                    <div style="position: relative; background: white; border: 1.5px solid #F1F5F9; border-radius: 18px; display: flex; align-items: flex-start; padding: 1.25rem; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                        <i data-lucide="align-left" style="width: 20px; color: #6366F1; margin-top: 2px;"></i>
-                        <textarea id="mobile-log-work-desc" rows="4"
-                            placeholder="Briefly describe the work completed..."
-                            style="border: none; background: transparent; font-size: 1rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 120px; resize: none;"></textarea>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">10:40 AM to 12:30 PM <span style="color: #EF4444;">*</span></label>
+                    <div style="position: relative; background: white; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: flex-start; padding: 1rem; gap: 10px; box-shadow: none;">
+                        <i data-lucide="clock" style="width: 18px; color: #6366F1; margin-top: 2px;"></i>
+                        <textarea id="mobile-log-work-slot2" class="worklog-textarea" rows="2"
+                            placeholder="What did you work on during this slot?"
+                            style="border: none; background: transparent; font-size: 0.95rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 50px; resize: vertical;"
+                            oninput="window.validateWorklogForm()"></textarea>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.75rem;">
-                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Project Deadline</label>
-                    <div style="position: relative; background: white; border: 1.5px solid #F1F5F9; border-radius: 18px; height: 62px; display: flex; align-items: center; padding: 0 1.25rem; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                        <i data-lucide="timer" style="width: 20px; color: #6366F1;"></i>
-                        <input type="date" id="mobile-log-work-deadline-picker" 
-                            style="border: none; background: transparent; font-size: 1.05rem; font-weight: 700; color: #1E293B; font-family: inherit; width: 100%; outline: none;">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">1:30 PM to 3:10 PM <span style="color: #EF4444;">*</span></label>
+                    <div style="position: relative; background: white; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: flex-start; padding: 1rem; gap: 10px; box-shadow: none;">
+                        <i data-lucide="clock" style="width: 18px; color: #6366F1; margin-top: 2px;"></i>
+                        <textarea id="mobile-log-work-slot3" class="worklog-textarea" rows="2"
+                            placeholder="What did you work on during this slot?"
+                            style="border: none; background: transparent; font-size: 0.95rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 50px; resize: vertical;"
+                            oninput="window.validateWorklogForm()"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">3:25 PM to 4:25 PM <span style="color: #EF4444;">*</span></label>
+                    <div style="position: relative; background: white; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: flex-start; padding: 1rem; gap: 10px; box-shadow: none;">
+                        <i data-lucide="clock" style="width: 18px; color: #6366F1; margin-top: 2px;"></i>
+                        <textarea id="mobile-log-work-slot4" class="worklog-textarea" rows="2"
+                            placeholder="What did you work on during this slot?"
+                            style="border: none; background: transparent; font-size: 0.95rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 50px; resize: vertical;"
+                            oninput="window.validateWorklogForm()"></textarea>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 12px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Progress Status <span style="color: #EF4444;">*</span></label>
-                    
-                    <!-- State Storage (Hidden) -->
-                    <div id="mobile-log-work-progress-value" style="display: none;">On going</div>
-
-                    <div class="progress-chips-container" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; -ms-overflow-style: none; scrollbar-width: none;">
-                        <div class="progress-chip p-completed" onclick="window.selectMobileProgressChip(this, 'Completed', 'p-completed')">Completed</div>
-                        <div class="progress-chip p-completed" onclick="window.selectMobileProgressChip(this, 'Review Completed', 'p-completed')">Review Completed</div>
-                        <div class="progress-chip p-ongoing active" onclick="window.selectMobileProgressChip(this, 'On going', 'p-ongoing')">On going</div>
-                        <div class="progress-chip p-pending" onclick="window.selectMobileProgressChip(this, 'Review Pendening', 'p-pending')">Review Pendening</div>
-                        <div class="progress-chip p-absent" onclick="window.selectMobileProgressChip(this, 'Absent', 'p-absent')">Absent</div>
-                        <div class="progress-chip p-od" onclick="window.selectMobileProgressChip(this, 'On duty', 'p-od')">On duty</div>
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #64748B; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Custom Time Slot (Optional)</label>
+                    <div style="position: relative; background: white; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: flex-start; padding: 1rem; gap: 10px; box-shadow: none;">
+                        <i data-lucide="edit-3" style="width: 18px; color: #6366F1; margin-top: 2px;"></i>
+                        <textarea id="mobile-log-work-slot5" class="worklog-textarea" rows="2"
+                            placeholder="Optional custom activities/hours..."
+                            style="border: none; background: transparent; font-size: 0.95rem; font-weight: 600; color: #1E293B; font-family: inherit; width: 100%; outline: none; min-height: 50px; resize: vertical;"
+                            oninput="window.validateWorklogForm()"></textarea>
                     </div>
                 </div>
 
@@ -1385,6 +1395,10 @@
                 <i data-lucide="user"></i>
                 <span>Profile</span>
             </button>
+            <button class="btn-nav" id="nav-activity-approval-mobile">
+                <i data-lucide="check-square"></i>
+                <span>Approval</span>
+            </button>
             <!-- Admin Section (Hidden by default) -->
             <button class="btn-nav hidden" id="nav-admin-mobile">
                 <i data-lucide="shield-check"></i>
@@ -1404,6 +1418,26 @@
             onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">
             <i data-lucide="plus" style="width: 28px; height: 28px; stroke-width: 3px; color: white;"></i>
         </button>
+
+        <!-- Activity Approval Screen (Mobile) -->
+        <div id="mobile-activity-approval" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem; padding-bottom: 120px; overflow-y: auto;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <button class="btn-icon" 
+                    style="background: white; border-radius: 16px; width: 48px; height: 48px; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer;" 
+                    onclick="window.show('dash');">
+                    <i data-lucide="chevron-left" style="color: #1E293B; width: 24px; stroke-width: 2.5px;"></i>
+                </button>
+                <h2 style="font-size: 1.6rem; font-weight: 800; color: #1E293B; letter-spacing: -0.8px; margin: 0;">Activity Approval</h2>
+            </div>
+            
+            <div class="card" style="padding: 1.5rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; text-align: center; box-shadow: var(--shadow-sm);">
+                <div style="width: 52px; height: 52px; border-radius: 16px; background: #F0FDF4; color: #16A34A; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto;">
+                    <i data-lucide="check-square" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: #1E293B; margin-bottom: 6px;">Activity Approval</h3>
+                <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0;">No activities submitted for approval yet.</p>
+            </div>
+        </div>
 
         <!-- Admin Management Screen (Mobile) -->
         <div id="mobile-admin" class="screen hidden"
@@ -1548,6 +1582,20 @@
                         </div>
                         <span style="display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #2563EB; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
                             Explore <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
+                    </div>
+
+                    <!-- Activity Approval Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('activity-approval')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="check-square" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Activity Approval</h4>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #10B981; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Manage <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
                         </span>
                     </div>
                 </div>
@@ -2016,6 +2064,30 @@
                     <!-- Populated dynamically -->
                 </div>
             </div>
+
+            <!-- Activity Approval Subview Mobile -->
+            <div id="admin-subview-activity-approval-mobile" class="hidden" style="padding-bottom: 5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button onclick="window.toggleAdminSubView('menu')"
+                            style="width: 42px; height: 42px; border-radius: 14px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
+                            <i data-lucide="chevron-left" style="width: 20px; color: #64748B;"></i>
+                        </button>
+                        <div>
+                            <h2 style="font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; color: #1E293B;">Activity Approval</h2>
+                            <p style="font-size: 0.75rem; color: #94A3B8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Verifications</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 1.5rem; border-radius: 20px; text-align: center; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm);">
+                    <div style="width: 52px; height: 52px; border-radius: 16px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto;">
+                        <i data-lucide="check-square" style="width: 24px; height: 24px;"></i>
+                    </div>
+                    <h3 style="font-size: 1.1rem; font-weight: 800; color: #1E293B; margin-bottom: 6px;">Activity Verification</h3>
+                    <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0;">No activities require review at this time.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2045,6 +2117,10 @@
                 <li class="nav-item" id="nav-profile-desktop">
                     <i data-lucide="user"></i>
                     <span>Profile</span>
+                </li>
+                <li class="nav-item" id="nav-activity-approval-desktop">
+                    <i data-lucide="check-square"></i>
+                    <span>Activity Approval</span>
                 </li>
                 <!-- Admin Section (Hidden by default) -->
                 <li class="nav-item hidden" id="nav-admin-desktop">
@@ -3009,6 +3085,24 @@
                 </div>
             </div>
 
+            <!-- Activity Approval Screen (Desktop) -->
+            <div id="desktop-activity-approval" class="desktop-screen hidden" style="padding: 2rem 2.5rem; overflow-y: auto; height: auto; min-height: 100%; background: #F8FAFC;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h2 style="font-size: 1.85rem; font-weight: 900; color: #0F172A; margin: 0; letter-spacing: -0.8px;">Activity Approval</h2>
+                        <p style="font-size: 0.9rem; color: #64748B; margin: 6px 0 0 0; font-weight: 500;">Submit new activities and track approval status.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 2rem; border-radius: 24px; background: white; border: 1.5px solid #E2E8F0; text-align: center;">
+                    <div style="width: 64px; height: 64px; border-radius: 20px; background: #F0FDF4; color: #16A34A; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
+                        <i data-lucide="check-square" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Activity Approval Panel</h3>
+                    <p style="font-size: 0.9rem; color: #64748B; max-width: 450px; margin: 0 auto 1.5rem auto; line-height: 1.6;">No activities submitted for approval yet. Use this section to review, manage, and verify activity status logs.</p>
+                </div>
+            </div>
+
     <!-- Admin Management Screen (Desktop) -->
     <div id="desktop-admin" class="desktop-screen hidden" style="padding: 2rem 2.5rem; overflow-y: auto; height: auto; min-height: 100%; background: #F8FAFC;">
         <!-- Admin Menu -->
@@ -3177,6 +3271,23 @@
                         Explore <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
                     </span>
                 </div>
+
+                <!-- Activity Approval Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('activity-approval')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="check-square" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Activity Approval</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Review student activity submissions, pending verifications, and approve tasks.</p>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #10B981; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Manage Approvals <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -3288,18 +3399,15 @@
                     <input type="date" id="worklog-custom-date" onchange="window.renderAdminAnalytics()" style="display: none; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif;">
                     <!-- Progress Filter Select -->
                     <select id="worklog-progress-select" onchange="window.renderAdminAnalytics()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
-                        <option value="all" selected>All Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="ongoing">Ongoing</option>
-                        <option value="pending">Pending</option>
+                        <option value="all" selected>All Status</option>
+                        <option value="Review Pending">Review Pending</option>
+                        <option value="Review Completed">Review Completed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="On going">On going</option>
                     </select>
                     <!-- Year Filter Select -->
                     <select id="worklog-year-select" onchange="window.renderAdminAnalytics()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
                         <option value="all" selected>All Years</option>
-                        <option value="1">1st Year</option>
-                        <option value="2">2nd Year</option>
-                        <option value="3">3rd Year</option>
-                        <option value="4">4th Year</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -3316,16 +3424,20 @@
             
             <div id="admin-analytics-worklog-container" class="hidden ds-card" style="overflow: hidden; padding: 0; margin-bottom: 2rem;">
                 <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 1500px;">
                         <thead>
-                            <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Name</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Reg Number</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Title</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Work Log</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Deadline</th>
-                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Progress</th>
+                            <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Time Stamp</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Name</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Reg Number</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Year</th>
+                                <th style="padding: 1.25rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">S1 (8:45 AM - 10:25 AM)</th>
+                                <th style="padding: 1.25rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">S2 (10:40 AM - 12:30 PM)</th>
+                                <th style="padding: 1.25rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">S3 (1:30 PM - 3:10 PM)</th>
+                                <th style="padding: 1.25rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">S4 (3:25 PM - 4:25 PM)</th>
+                                <th style="padding: 1.25rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">S5 (Custom Slot)</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Status</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Remarks</th>
                             </tr>
                         </thead>
                         <tbody id="admin-worklog-list-desktop">
@@ -4370,6 +4482,30 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Activity Approval Subview -->
+            <div id="admin-subview-activity-approval" class="hidden">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <button onclick="window.toggleAdminSubView('menu')"
+                            style="width: 48px; height: 48px; border-radius: 14px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i data-lucide="chevron-left" style="width:20px;"></i>
+                        </button>
+                        <div>
+                            <h2 style="font-size: 1.75rem; font-weight: 800;">Activity Approval Center</h2>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Review and process student activity submissions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 2.5rem; border-radius: 24px !important; text-align: center; background: white; border: 1.5px solid #F1F5F9;">
+                    <div style="width: 64px; height: 64px; border-radius: 20px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
+                        <i data-lucide="check-square" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Activity Verification System</h3>
+                    <p style="font-size: 0.9rem; color: #64748B; max-width: 450px; margin: 0 auto; line-height: 1.6;">No activity submissions require review at this time. When students submit activities for verification, they will appear here.</p>
+                </div>
+            </div>
         </div>
     </div>
     </main>
@@ -4403,85 +4539,49 @@
                 style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Activity
                 Date <span style="color:#EF4444">*</span></label>
             <div
-                style="display:flex;align-items:center;gap:10px;margin-bottom:2rem;background:#F8FAFC;padding:12px 18px;border-radius:14px;width:fit-content;border:1.5px solid rgba(226, 232, 240, 0.6);">
-                <input type="date" id="worklog-modal-date-picker"
-                    style="font-weight:700; color:var(--text-primary); font-size:1rem; border:none; background:transparent; outline:none; font-family:inherit;">
+                style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;background:#E2E8F0;padding:12px 18px;border-radius:14px;width:fit-content;border:1.5px solid rgba(226, 232, 240, 0.6);cursor:not-allowed;">
+                <input type="date" id="worklog-modal-date-picker" disabled
+                    style="font-weight:700; color:#64748B; font-size:1rem; border:none; background:transparent; outline:none; font-family:inherit; cursor:not-allowed;">
             </div>
 
             <input type="hidden" id="worklog-modal-edit-date">
 
-            <div class="worklog-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <!-- Submission Deadline Warning Banner -->
+            <div id="desktop-worklog-warning" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: #FEF2F2; border: 1.5px solid #FCA5A5; border-radius: 14px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="alert-triangle" style="color: #EF4444; width: 20px; flex-shrink: 0;"></i>
+                <span style="font-size: 0.85rem; font-weight: 700; color: #991B1B;">Submission closed. Today's 11:59 PM deadline has passed.</span>
+            </div>
+
+            <div class="worklog-form" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
-                    <label
-                        style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Task
-                        / Log Title</label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="text" id="worklog-modal-title-input" class="input-field"
-                            placeholder="E.g., Component Design, Web Dev Phase 1...">
-                        <button onclick="window.startVoiceAssist('worklog-modal-title-input', this)" 
-                            class="btn-icon voice-btn"
-                            style="background: #F1F5F9; border: none; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s ease;">
-                            <i data-lucide="mic" style="width: 20px; color: #6366F1;"></i>
-                            <span style="font-size: 10px; display: none;">MIC</span>
-                        </button>
-                    </div>
+                    <label style="font-weight:700;margin-bottom:0.4rem;display:block;font-size:0.85rem;color:var(--text-primary);">8:45 AM to 10:25 AM <span style="color:#EF4444">*</span></label>
+                    <textarea id="worklog-modal-slot1" class="textarea-field worklog-textarea" rows="2"
+                        placeholder="What did you work on during this slot?" style="width: 100%; border-radius: 12px; font-family: inherit; font-size: 0.9rem; padding: 10px; resize: vertical;"
+                        oninput="window.validateWorklogForm()"></textarea>
                 </div>
                 <div>
-                    <label
-                        style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Detailed
-                        Description</label>
-                    <div style="display: flex; gap: 8px; align-items: flex-end;">
-                        <textarea id="worklog-modal-desc" class="textarea-field" rows="4"
-                            placeholder="Briefly describe the work completed..." style="flex: 1;"></textarea>
-                        <button onclick="window.startVoiceAssist('worklog-modal-desc', this)" 
-                            class="btn-icon voice-btn"
-                            style="background: #F1F5F9; border: none; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-bottom: 2px; transition: all 0.3s ease;">
-                            <i data-lucide="mic" style="width: 20px; color: #6366F1;"></i>
-                            <span style="font-size: 10px; display: none;">MIC</span>
-                        </button>
-                    </div>
+                    <label style="font-weight:700;margin-bottom:0.4rem;display:block;font-size:0.85rem;color:var(--text-primary);">10:40 AM to 12:30 PM <span style="color:#EF4444">*</span></label>
+                    <textarea id="worklog-modal-slot2" class="textarea-field worklog-textarea" rows="2"
+                        placeholder="What did you work on during this slot?" style="width: 100%; border-radius: 12px; font-family: inherit; font-size: 0.9rem; padding: 10px; resize: vertical;"
+                        oninput="window.validateWorklogForm()"></textarea>
                 </div>
-                <div class="worklog-modal-grid">
-                    <div>
-                        <label
-                            style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Deadline</label>
-                        <input type="date" id="worklog-modal-deadline" class="input-field"
-                            style="color:var(--text-primary);">
-                    </div>
-                    <div>
-                        <label
-                            style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Progress
-                            Status <span style="color:#EF4444">*</span></label>
-                        <div class="progress-selector" style="position: relative;">
-                            <div id="worklog-modal-progress-value" class="p-pill p-ongoing"
-                                style="height: 52px; width: 100%; display: flex; align-items: center; justify-content: space-between; border-radius: 14px; cursor: pointer; font-weight: 700; padding: 0 1.25rem; border: 1.5px solid #E2E8F0; background: white;"
-                                onclick="window.toggleProgressDropdown('worklog-modal-progress-dropdown')">
-                                <span>On going</span>
-                                <i data-lucide="chevron-down" style="color: #64748B; width: 18px;"></i>
-                            </div>
-                            <div id="worklog-modal-progress-dropdown" class="progress-dropdown"
-                                style="top: 58px; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid #E2E8F0; background: white; width: 100%;">
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'Completed', 'p-completed', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-completed">Completed</span></div>
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'Review Completed', 'p-completed', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-completed">Review Completed</span></div>
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'On going', 'p-ongoing', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-ongoing">On going</span></div>
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'Review Pendening', 'p-pending', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-pending">Review Pendening</span></div>
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'Absent', 'p-absent', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-absent">Absent</span></div>
-                                <div class="progress-option"
-                                    onclick="window.setProgressValue('worklog-modal-progress-value', 'On duty', 'p-od', 'worklog-modal-progress-dropdown')">
-                                    <span class="p-pill p-od">On duty</span></div>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <label style="font-weight:700;margin-bottom:0.4rem;display:block;font-size:0.85rem;color:var(--text-primary);">1:30 PM to 3:10 PM <span style="color:#EF4444">*</span></label>
+                    <textarea id="worklog-modal-slot3" class="textarea-field worklog-textarea" rows="2"
+                        placeholder="What did you work on during this slot?" style="width: 100%; border-radius: 12px; font-family: inherit; font-size: 0.9rem; padding: 10px; resize: vertical;"
+                        oninput="window.validateWorklogForm()"></textarea>
+                </div>
+                <div>
+                    <label style="font-weight:700;margin-bottom:0.4rem;display:block;font-size:0.85rem;color:var(--text-primary);">3:25 PM to 4:25 PM <span style="color:#EF4444">*</span></label>
+                    <textarea id="worklog-modal-slot4" class="textarea-field worklog-textarea" rows="2"
+                        placeholder="What did you work on during this slot?" style="width: 100%; border-radius: 12px; font-family: inherit; font-size: 0.9rem; padding: 10px; resize: vertical;"
+                        oninput="window.validateWorklogForm()"></textarea>
+                </div>
+                <div>
+                    <label style="font-weight:700;margin-bottom:0.4rem;display:block;font-size:0.85rem;color:var(--text-primary);">Custom Time Slot (Optional)</label>
+                    <textarea id="worklog-modal-slot5" class="textarea-field worklog-textarea" rows="2"
+                        placeholder="Optional custom activities/hours..." style="width: 100%; border-radius: 12px; font-family: inherit; font-size: 0.9rem; padding: 10px; resize: vertical;"
+                        oninput="window.validateWorklogForm()"></textarea>
                 </div>
             </div>
 
@@ -4642,7 +4742,7 @@
             
             <div style="margin-bottom: 1.5rem;">
                 <textarea id="student-ext-reason" placeholder="Type your reason here... (minimum 5 characters)" 
-                    style="width: 100%; height: 110px; padding: 14px; border-radius: 16px; border: 1.5px solid #E2E8F0; outline: none; resize: none; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s;"
+                    style="width: 100%; height: 110px; padding: 14px; border-radius: 16px; border: 1.5px solid #E2E8F0; outline: none; resize: vertical; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s;"
                     onfocus="this.style.borderColor='#4F46E5'" onblur="this.style.borderColor='#E2E8F0'"></textarea>
             </div>
             
