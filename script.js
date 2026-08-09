@@ -1880,7 +1880,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 🔙 Browser Back Button Handling (Global)
         const handlePopState = (event) => {
+            if (window.isClosingModal) {
+                window.isClosingModal = false;
+                return;
+            }
             // Close modals in reverse priority (Top-most first)
+
+            // Activity Pass Detail Modals (Top priority)
+            const adminPassModal = document.getElementById('admin-activity-pass-detail-modal');
+            if (adminPassModal && !adminPassModal.classList.contains('hidden')) {
+                if (typeof window.closeActivityPassDetailModal === 'function') {
+                    window.closeActivityPassDetailModal();
+                } else {
+                    adminPassModal.classList.add('hidden');
+                }
+                return;
+            }
+
+            const userPassModal = document.getElementById('user-activity-pass-detail-modal');
+            if (userPassModal && !userPassModal.classList.contains('hidden')) {
+                if (typeof window.closeUserActivityPassDetailModal === 'function') {
+                    window.closeUserActivityPassDetailModal();
+                } else {
+                    userPassModal.classList.add('hidden');
+                }
+                return;
+            }
+
+            const requestPassModal = document.getElementById('activity-pass-modal-container');
+            if (requestPassModal && !requestPassModal.classList.contains('hidden')) {
+                if (typeof window.toggleActivityPassModal === 'function') {
+                    window.toggleActivityPassModal(false);
+                } else {
+                    requestPassModal.classList.add('hidden');
+                }
+                return;
+            }
 
             // 1. Scan Actions / Quick Menus
             const scanActions = document.getElementById('scan-actions-modal');
@@ -6500,10 +6535,29 @@ window.toggleAdminSubView = function (viewId) {
         } else if (viewId === 'worklogs') {
             subviewTitle = "Worklog Analytics";
             subviewDesc = "Review student progress, task descriptions, and work logs.";
-            if (worklogCont) worklogCont.classList.remove('hidden');
+            
+            const viewMode = document.getElementById('worklog-view-mode')?.value || 'detailed';
+            const monthlyCont = document.getElementById('admin-analytics-monthly-grid-container');
+            const pickers = document.getElementById('monthly-overview-pickers');
+
+            if (viewMode === 'monthly') {
+                if (worklogCont) worklogCont.classList.add('hidden');
+                if (monthlyCont) monthlyCont.classList.remove('hidden');
+                if (pickers) pickers.style.display = 'flex';
+            } else {
+                if (worklogCont) worklogCont.classList.remove('hidden');
+                if (monthlyCont) monthlyCont.classList.add('hidden');
+                if (pickers) pickers.style.display = 'none';
+            }
+
             if (worklogContMob) worklogContMob.classList.remove('hidden');
             if (typeof window.loadAnalyticsData === 'function') window.loadAnalyticsData(false);
-            if (typeof window.renderAdminAnalytics === 'function') window.renderAdminAnalytics();
+            
+            if (viewMode === 'monthly') {
+                window.renderMonthlyOverviewGrid();
+            } else {
+                if (typeof window.renderAdminAnalytics === 'function') window.renderAdminAnalytics();
+            }
         } else if (viewId === 'extension-requests') {
             subviewTitle = "Extension Requests";
             subviewDesc = "Review pending deadline extension requests and approve/reject them.";
@@ -6952,6 +7006,11 @@ window.renderAdminAnalytics = function () {
 
     // 2. Worklog Rendering Block
     {
+        const viewMode = document.getElementById('worklog-view-mode')?.value || 'detailed';
+        if (viewMode === 'monthly') {
+            window.renderMonthlyOverviewGrid();
+            return;
+        }
         let logs = window.cachedWorklogData || [];
 
         if (isDesktop) {
@@ -7099,6 +7158,10 @@ window.renderAdminAnalytics = function () {
                     <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.8rem; color: #64748B; font-weight: 600; white-space: nowrap;">
                         ${log.timestamp || '-'}
                     </td>
+                    <!-- Date -->
+                    <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-size: 0.85rem; color: #334155; font-weight: 700; white-space: nowrap;">
+                        ${log.date || ''}
+                    </td>
                     <!-- Name -->
                     <td style="padding: 1.1rem 1.5rem; vertical-align: top; font-family: 'Google Sans', 'Google Sans Text', sans-serif; white-space: nowrap;">
                         <div style="font-weight: 700; color: #334155; font-size: 0.9rem; white-space: nowrap;">${log.name || 'Unknown'}</div>
@@ -7218,6 +7281,278 @@ window.renderAdminAnalytics = function () {
             }).join('');
         }
     }
+};
+
+window.handleWorklogViewModeChange = function(mode) {
+    const worklogCont = document.getElementById('admin-analytics-worklog-container');
+    const monthlyCont = document.getElementById('admin-analytics-monthly-grid-container');
+    const pickers = document.getElementById('monthly-overview-pickers');
+
+    if (mode === 'monthly') {
+        if (worklogCont) worklogCont.classList.add('hidden');
+        if (monthlyCont) monthlyCont.classList.remove('hidden');
+        if (pickers) pickers.style.display = 'flex';
+
+        // Default pickers to current date if not set
+        const monthSelect = document.getElementById('monthly-overview-month');
+        const yearSelect = document.getElementById('monthly-overview-year');
+        const curr = new Date();
+        if (monthSelect && !monthSelect.dataset.initialized) {
+            monthSelect.value = curr.getMonth();
+            monthSelect.dataset.initialized = "true";
+        }
+        if (yearSelect && !yearSelect.dataset.initialized) {
+            yearSelect.value = curr.getFullYear();
+            yearSelect.dataset.initialized = "true";
+        }
+
+        window.renderMonthlyOverviewGrid();
+    } else {
+        if (worklogCont) worklogCont.classList.remove('hidden');
+        if (monthlyCont) monthlyCont.classList.add('hidden');
+        if (pickers) pickers.style.display = 'none';
+        window.renderAdminAnalytics();
+    }
+};
+
+window.renderMonthlyOverviewGrid = function() {
+    const thead = document.getElementById('monthly-grid-thead');
+    const tbody = document.getElementById('monthly-grid-tbody');
+    if (!thead || !tbody) return;
+
+    const selectedMonth = parseInt(document.getElementById('monthly-overview-month')?.value || new Date().getMonth());
+    const selectedYear = parseInt(document.getElementById('monthly-overview-year')?.value || new Date().getFullYear());
+
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const titleEl = document.getElementById('monthly-overview-title');
+    if (titleEl) {
+        titleEl.innerText = `${monthNames[selectedMonth]} ${selectedYear} - Worklog Overview`;
+    }
+
+    // Calculate number of days in selected month/year
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+    // 1. Render Table Header (Sticky top)
+    let theadHtml = `
+        <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; font-family: 'Inter', sans-serif; position: sticky; top: 0; z-index: 10;">
+            <th style="padding: 1.25rem 1rem; text-align: center; font-weight: 800; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; width: 50px; position: sticky; left: 0; background: #F8FAFC; z-index: 11; border-right: 1px solid #E2E8F0;">S.No</th>
+            <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 220px; position: sticky; left: 50px; background: #F8FAFC; z-index: 11; border-right: 1px solid #E2E8F0;">Name</th>
+    `;
+    for (let day = 1; day <= daysInMonth; day++) {
+        theadHtml += `
+            <th style="padding: 1rem 0.5rem; text-align: center; font-weight: 800; color: #475569; font-size: 0.8rem; border-right: 1px solid #E2E8F0; min-width: 40px; background: #F8FAFC;">${day}</th>
+        `;
+    }
+    theadHtml += '</tr>';
+    thead.innerHTML = theadHtml;
+
+    // 2. Fetch all unique students from user database (cachedAdminData)
+    const students = window.cachedAdminData || [];
+    const worklogs = window.cachedWorklogData || [];
+
+    if (students.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${daysInMonth + 2}" style="text-align: center; padding: 4rem 0; color: #94A3B8;">
+                    No student records loaded. Make sure student database is populated.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Get search filter or other year filters if any
+    const searchVal = (document.getElementById('worklog-search-input')?.value || '').trim().toLowerCase();
+    const yearFilter = document.getElementById('worklog-year-select')?.value || 'all';
+
+    let filteredStudents = [...students];
+    if (searchVal) {
+        filteredStudents = filteredStudents.filter(s => 
+            (s.name || '').toLowerCase().includes(searchVal) || 
+            (s.rollNo || s.roll_number || s.roll_no || '').toLowerCase().includes(searchVal)
+        );
+    }
+    if (yearFilter !== 'all') {
+        filteredStudents = filteredStudents.filter(s => String(s.year || s.current_year || '') === yearFilter);
+    }
+
+    // Sort students alphabetically by name
+    filteredStudents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    // 3. Render Table Rows
+    const tbodyHtml = filteredStudents.map((student, index) => {
+        const studentName = student.name || 'Unknown';
+        const studentRoll = student.rollNo || student.roll_number || student.roll_no || '';
+        const studentEmail = (student.email || student.email_id || student.mailid || student.mail || '').toLowerCase().trim();
+        const cleanRoll = studentRoll.toLowerCase().trim();
+
+        // Find worklogs for this student (robust fallback mapping)
+        const studentLogs = worklogs.filter(log => {
+            const logEmail = (log.email || log.email_id || log.mailid || log.mail || '').toLowerCase().trim();
+            const logRoll = (log.rollNo || log.roll_number || log.roll_no || '').toLowerCase().trim();
+            const logName = (log.name || '').toLowerCase().trim();
+            
+            const cleanName = studentName.toLowerCase().trim();
+            const cleanEmail = (student.email || student.email_id || student.mailid || student.mail || '').toLowerCase().trim();
+            const cleanRoll = (student.rollNo || student.roll_number || student.roll_no || '').toLowerCase().trim();
+
+            const isMatch = (cleanEmail && logEmail === cleanEmail) || 
+                            (cleanRoll && logRoll === cleanRoll) ||
+                            (cleanName && logName === cleanName);
+            return isMatch;
+        });
+
+        if (studentName.toLowerCase().includes('indresh')) {
+            console.log("Matching Indresh S Logs:", {
+                studentEmail, cleanRoll, studentName,
+                studentLogsCount: studentLogs.length,
+                studentLogs: studentLogs
+            });
+        }
+
+        // Create row HTML
+        let rowHtml = `
+            <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 1rem 0.5rem; text-align: center; font-weight: 700; color: #64748B; position: sticky; left: 0; background: white; z-index: 1; border-right: 1px solid #E2E8F0;">
+                    ${index + 1}
+                </td>
+                <td style="padding: 1rem 1.5rem; text-align: left; font-weight: 700; color: #1E293B; white-space: nowrap; position: sticky; left: 50px; background: white; z-index: 1; border-right: 1px solid #E2E8F0; box-shadow: 2px 0 5px rgba(0,0,0,0.02);">
+                    <div style="font-size: 0.9rem; color: #1E293B;">${studentName}</div>
+                    <div style="font-size: 0.72rem; color: #64748B; font-weight: 500; font-family: monospace; margin-top: 2px;">${studentRoll}</div>
+                </td>
+        `;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            // Find the specific worklog on this date
+            const dayLog = studentLogs.find(log => {
+                const rawDateStr = log.date || log.timestamp;
+                if (!rawDateStr) return false;
+
+                // 1. Try custom split parsing (handles DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY)
+                const parseDateParts = (str) => {
+                    const datePart = String(str).split(' ')[0];
+                    const clean = datePart.replace(/\//g, '-').trim();
+                    const parts = clean.split('-');
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            // YYYY-MM-DD
+                            return { day: parseInt(parts[2]), month: parseInt(parts[1]) - 1, year: parseInt(parts[0]) };
+                        } else {
+                            // DD-MM-YYYY
+                            return { day: parseInt(parts[0]), month: parseInt(parts[1]) - 1, year: parseInt(parts[2]) };
+                        }
+                    }
+                    return null;
+                };
+
+                const logParsed = parseDateParts(rawDateStr);
+                if (logParsed) {
+                    if (logParsed.day === day && logParsed.month === selectedMonth && logParsed.year === selectedYear) {
+                        return true;
+                    }
+                }
+
+                // 2. Try JS Date parser fallback (handles ISO, GMT dates, timestamps)
+                try {
+                    const datePart = String(rawDateStr).split(' ')[0];
+                    const parts = datePart.replace(/\//g, '-').split('-');
+                    let d;
+                    if (parts.length === 3 && parts[0].length === 2 && parts[2].length === 4) {
+                        // DD-MM-YYYY format
+                        d = new Date(`${parts[1]}-${parts[0]}-${parts[2]}`);
+                    } else {
+                        d = new Date(rawDateStr);
+                    }
+                    if (!isNaN(d.getTime())) {
+                        return d.getDate() === day && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+                    }
+                } catch (e) {}
+
+                return false;
+            });
+
+            if (dayLog) {
+                const getWorklogSlot = (text, slotIndex) => {
+                    if (!text) return '';
+                    const textStr = String(text);
+                    const slots = [
+                        /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                    ];
+                    const match = textStr.match(slots[slotIndex]);
+                    return match ? match[1].trim() : '';
+                };
+
+                const s1 = dayLog.s1 || getWorklogSlot(dayLog.worklog, 0);
+                const s2 = dayLog.s2 || getWorklogSlot(dayLog.worklog, 1);
+                const s3 = dayLog.s3 || getWorklogSlot(dayLog.worklog, 2);
+                const s4 = dayLog.s4 || getWorklogSlot(dayLog.worklog, 3);
+                const s5 = dayLog.s5 || getWorklogSlot(dayLog.worklog, 4);
+
+                let slotsHtml = '';
+                const slotsList = [
+                    { label: '8:45 AM - 10:25 AM', val: s1 },
+                    { label: '10:40 AM - 12:30 PM', val: s2 },
+                    { label: '1:30 PM - 3:10 PM', val: s3 },
+                    { label: '3:25 PM - 4:25 PM', val: s4 },
+                    { label: 'Custom Slot', val: s5 }
+                ];
+                
+                slotsList.forEach(slot => {
+                    if (slot.val && slot.val.trim()) {
+                        slotsHtml += `
+                            <div style="margin-bottom: 8px; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">
+                                <div style="font-weight: 800; color: #475569; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.3px;">${slot.label}</div>
+                                <div style="color: #1E293B; font-size: 0.78rem; font-weight: 600; line-height: 1.4; white-space: normal; word-break: break-word; margin-top: 2px;">${slot.val}</div>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (!slotsHtml) {
+                    slotsHtml = `<div style="color: #64748B; font-size: 0.75rem; font-style: italic;">No detailed slots logged.</div>`;
+                } else {
+                    // Remove last border
+                    slotsHtml = slotsHtml.trim().replace(/; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;(?=[^;]*$)/, ';');
+                }
+
+                const popoverPositionStyle = day > 15 ? 'right: 105%; left: auto;' : 'left: 105%; right: auto;';
+                const logIdx = (window.cachedWorklogData || []).indexOf(dayLog);
+
+                rowHtml += `
+                    <td onclick="window.showAdminWorklogDetails(${logIdx})" style="padding: 1rem 0.5rem; text-align: center; border-right: 1px solid #E2E8F0; background: #ECFDF5; cursor: pointer; position: relative; transition: all 0.2s;" onmouseover="this.style.background='#D1FAE5'; this.querySelector('.worklog-popover').style.display='block'" onmouseout="this.style.background='#ECFDF5'; this.querySelector('.worklog-popover').style.display='none'">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        
+                        <!-- Premium Popover Card (Excel style comments popover) -->
+                        <div class="worklog-popover" style="display: none; position: absolute; ${popoverPositionStyle} top: 50%; transform: translateY(-50%); background: white; border: 1.5px solid #CBD5E1; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 0.9rem; width: 280px; z-index: 1000; text-align: left; pointer-events: none;">
+                            ${slotsHtml}
+                        </div>
+                    </td>
+                `;
+            } else {
+                rowHtml += `
+                    <td style="padding: 1rem 0.5rem; text-align: center; border-right: 1px solid #E2E8F0;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; opacity: 0.5;">
+                            <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                        </svg>
+                    </td>
+                `;
+            }
+        }
+
+        rowHtml += '</tr>';
+        return rowHtml;
+    }).join('');
+
+    tbody.innerHTML = tbodyHtml;
 };
 
 window.handleAttendanceDateFilterChange = function (val) {
@@ -10113,17 +10448,34 @@ window.publishTaskAssignment = async function () {
         };
 
         console.log("Dispatching task assignment payload:", payload);
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain'
-            },
-            body: JSON.stringify(payload)
+        
+        // Race the fetch against a 2.5-second timeout to resolve the UI quickly
+        const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                resolve({ status: 'success', isTimeout: true });
+            }, 2500);
         });
-        const data = await res.json();
-        console.log("Received server response:", data);
+
+        const fetchPromise = (async () => {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: JSON.stringify(payload)
+            });
+            return await res.json();
+        })();
+
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+        console.log("Resolved dispatch state:", data);
+
         if (data.status === 'success') {
-            showToast('success', 'Task Assigned', 'Assignment has been dispatched successfully.');
+            if (data.isTimeout) {
+                showToast('success', 'Dispatching Task', 'Task is being dispatched in the background.');
+            } else {
+                showToast('success', 'Task Assigned', 'Assignment has been dispatched successfully.');
+            }
             switchTaskTab('history');
         } else {
             showToast('error', 'Assignment Failed', data.message || 'Unable to sync with server.');
@@ -10143,37 +10495,89 @@ window.loadTasks = async function (force = false) {
     const list = document.getElementById('task-history-list');
     if (!list) return;
 
-    const renderTasksToDOM = (tasksList) => {
+    if (force) {
+        window.AppStore.remove('tasks');
+    }
+
+    window.renderFilteredTasks = (tasksList) => {
+        const mList = document.getElementById('task-history-list-mobile');
         if (tasksList && tasksList.length > 0) {
-            const html = tasksList.map(t => `
-                <div style="padding: 1.5rem; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
+            // Render desktop table rows
+            const html = tasksList.map(t => {
+                let targetsObj = t.targets || {};
+                let targetText = 'All';
+                if (targetsObj.users && targetsObj.users.length > 0) {
+                    targetText = `${targetsObj.users.length} Users`;
+                } else if ((targetsObj.years && targetsObj.years.length > 0) || (targetsObj.domains && targetsObj.domains.length > 0)) {
+                    const parts = [];
+                    if (targetsObj.years && targetsObj.years.length > 0) parts.push(`Yrs: ${targetsObj.years.join(', ')}`);
+                    if (targetsObj.domains && targetsObj.domains.length > 0) parts.push(`Dmns: ${targetsObj.domains.join(', ')}`);
+                    targetText = parts.join(' | ');
+                }
+                const formattedTimestamp = t.timestamp ? new Date(t.timestamp).toLocaleString() : 'N/A';
+                const formattedDeadline = t.deadline ? new Date(t.deadline).toLocaleDateString() : 'N/A';
+                const linkHtml = t.link ? `<a href="${t.link}" target="_blank" onclick="event.stopPropagation();" style="color: #4F46E5; text-decoration: underline; font-weight: 700;">Open Link</a>` : 'N/A';
+
+                let imagesCount = 0;
+                try {
+                    const imagesArr = typeof t.images === 'string' ? JSON.parse(t.images) : (t.images || []);
+                    imagesCount = imagesArr.length;
+                } catch(e) {}
+                const imagesText = imagesCount > 0 ? `<span style="font-size: 0.75rem; font-weight: 800; color: #4F46E5; background: #EEF2FF; padding: 2px 8px; border-radius: 99px;">${imagesCount} Imgs</span>` : '<span style="color:#94A3B8;">0</span>';
+
+                return `
+                    <tr onclick="window.showAdminTaskDetailModal('${t.timestamp}')" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F8FAFC'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; color: #475569; white-space: nowrap;">${formattedTimestamp}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; font-weight: 700; color: #1E293B;">${t.title}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; color: #475569; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.desc || ''}">${t.desc || ''}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; color: #475569; white-space: nowrap;">${formattedDeadline}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; color: #06B6D4; font-weight: 700; white-space: nowrap;">${targetText}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; white-space: nowrap;">${linkHtml}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; white-space: nowrap;">${imagesText}</td>
+                        <td style="padding: 1rem 1.5rem; font-size: 0.85rem; color: #475569; white-space: nowrap;">${t.admin || 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+            list.innerHTML = html;
+
+            // Render mobile cards
+            const mHtml = tasksList.map(t => {
+                let targetsObj = t.targets || {};
+                let targetText = 'All';
+                if (targetsObj.users && targetsObj.users.length > 0) {
+                    targetText = `${targetsObj.users.length} Users`;
+                } else if ((targetsObj.years && targetsObj.years.length > 0) || (targetsObj.domains && targetsObj.domains.length > 0)) {
+                    targetText = 'Filtered';
+                }
+                const formattedDate = t.timestamp ? new Date(t.timestamp).toLocaleDateString() : 'N/A';
+                return `
+                    <div class="card" onclick="window.showAdminTaskDetailModal('${t.timestamp}')" style="padding: 1.25rem; border-radius: 16px; border: 1.5px solid #F1F5F9; background: white; margin-bottom: 0.75rem; cursor: pointer;">
                         <h4 style="font-weight: 800; color: #1E293B; margin-bottom: 4px;">${t.title}</h4>
                         <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 8px;">${(t.desc || '').substring(0, 100)}${(t.desc || '').length > 100 ? '...' : ''}</p>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <span style="font-size: 0.7rem; font-weight: 800; color: #06B6D4; background: #ECFEFF; padding: 2px 8px; border-radius: 99px; text-transform: uppercase;">${t.target_count || 0} Targets</span>
-                            <span style="font-size: 0.7rem; color: #94A3B8;">${new Date(t.timestamp).toLocaleDateString()}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.7rem; font-weight: 800; color: #06B6D4; background: #ECFEFF; padding: 2px 8px; border-radius: 99px; text-transform: uppercase;">${targetText}</span>
+                            <span style="font-size: 0.7rem; color: #94A3B8;">${formattedDate}</span>
                         </div>
                     </div>
-                </div>
-            `).join('');
-            list.innerHTML = html;
-            const mList = document.getElementById('task-history-list-mobile');
-            if (mList) mList.innerHTML = html;
+                `;
+            }).join('');
+            if (mList) mList.innerHTML = mHtml;
         } else {
-            list.innerHTML = '<div style="text-align: center; padding: 4rem 0; opacity: 0.3;"><i data-lucide="history" style="width: 48px; margin: 0 auto 1rem;"></i><p style="font-weight: 700;">No task history found.</p></div>';
+            list.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 4rem 0; opacity: 0.3;"><p style="font-weight: 700;">No task history found.</p></td></tr>';
+            if (mList) mList.innerHTML = '<div style="text-align: center; padding: 4rem 0; opacity: 0.3;"><p style="font-weight: 700;">No task history found.</p></div>';
         }
         if (typeof lucide !== 'undefined') lucide.createIcons();
     };
 
     const cached = window.AppStore.get('tasks');
-    if (cached) {
-        renderTasksToDOM(cached);
+    if (cached && !force) {
+        window.allTaskHistory = cached;
+        window.renderFilteredTasks(cached);
     } else {
-        const skeletonHtml = '<div class="skeleton-card" style="height: 100px;"></div><div class="skeleton-card" style="height: 100px;"></div>';
+        const skeletonHtml = '<tr><td colspan="8" style="text-align: center; padding: 2rem 0;"><div class="skeleton" style="height: 40px; margin-bottom: 8px;"></div></td></tr>';
         list.innerHTML = skeletonHtml;
         const mList = document.getElementById('task-history-list-mobile');
-        if (mList) mList.innerHTML = skeletonHtml;
+        if (mList) mList.innerHTML = '<div class="skeleton-card" style="height: 100px;"></div>';
     }
 
     try {
@@ -10181,16 +10585,67 @@ window.loadTasks = async function (force = false) {
         const data = await res.json();
         if (data.status === 'success') {
             const taskList = data.tasks || [];
+            window.allTaskHistory = taskList;
             window.AppStore.set('tasks', taskList, { ttl: 15 * 60 * 1000 });
-            renderTasksToDOM(taskList);
+            
+            // Dynamically populate Creator/Admin filter
+            const creators = [...new Set(taskList.map(t => t.admin).filter(Boolean))];
+            const creatorFilter = document.getElementById('task-history-filter-creator');
+            if (creatorFilter) {
+                creatorFilter.innerHTML = '<option value="all">All Admins</option>' + 
+                    creators.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+
+            window.renderFilteredTasks(taskList);
         } else if (!cached) {
-            list.innerHTML = '<div style="text-align: center; padding: 4rem 0; opacity: 0.3;"><i data-lucide="history" style="width: 48px; margin: 0 auto 1rem;"></i><p style="font-weight: 700;">No task history found.</p></div>';
+            list.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 4rem 0; opacity: 0.3;"><p style="font-weight: 700;">No task history found.</p></td></tr>';
         }
     } catch (e) {
         if (!cached) {
-            list.innerHTML = '<div style="text-align: center; padding: 4rem 0; color: #EF4444;"><p>Failed to load tasks.</p></div>';
+            list.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 4rem 0; color: #EF4444;"><p>Failed to load tasks.</p></td></tr>';
         }
     }
+};
+
+window.filterTaskHistoryTable = function() {
+    if (!window.allTaskHistory) return;
+    const searchVal = (document.getElementById('task-history-search')?.value || '').trim().toLowerCase();
+    const creatorVal = document.getElementById('task-history-filter-creator')?.value || 'all';
+    const sortVal = document.getElementById('task-history-sort')?.value || 'newest';
+
+    let filtered = [...window.allTaskHistory];
+
+    if (searchVal) {
+        filtered = filtered.filter(t => 
+            (t.title || '').toLowerCase().includes(searchVal) || 
+            (t.desc || '').toLowerCase().includes(searchVal)
+        );
+    }
+
+    if (creatorVal !== 'all') {
+        filtered = filtered.filter(t => (t.admin || '').toLowerCase() === creatorVal.toLowerCase());
+    }
+
+    if (sortVal === 'newest') {
+        filtered.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+    } else if (sortVal === 'oldest') {
+        filtered.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+    } else if (sortVal === 'title') {
+        filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    }
+
+    window.renderFilteredTasks(filtered);
+};
+
+window.resetTaskHistoryFilters = function() {
+    const searchInput = document.getElementById('task-history-search');
+    if (searchInput) searchInput.value = '';
+    const creatorSelect = document.getElementById('task-history-filter-creator');
+    if (creatorSelect) creatorSelect.value = 'all';
+    const sortSelect = document.getElementById('task-history-sort');
+    if (sortSelect) sortSelect.value = 'newest';
+
+    window.filterTaskHistoryTable();
 };
 
 window.showTaskUserDropdown = function () {
@@ -11295,6 +11750,12 @@ window.filterLinkedinPostTracker = function () {
         else searchMob.value = searchDesk.value;
     }
 
+    const viewMode = document.getElementById('linkedin-view-mode')?.value || 'list';
+    if (viewMode === 'monthly') {
+        window.renderLinkedinMonthlyGrid();
+        return;
+    }
+
     if (!window.cachedAdminData) return;
 
     if (!searchTerm && selectedYears.includes('all')) {
@@ -11303,7 +11764,7 @@ window.filterLinkedinPostTracker = function () {
     }
 
     const filtered = window.cachedAdminData.filter(student => {
-        const id = (student['id'] || student['Reg No'] || student['reg'] || student['roll'] || student['Roll No'] || '').toString().toLowerCase();
+        const id = (student['id'] || student['Reg No'] || student['reg'] || student['roll'] || student['Roll No'] || student.rollNo || '').toString().toLowerCase();
         const name = (student['name'] || student['Name'] || '').toLowerCase();
         const y = student.year || student.current_year || '';
 
@@ -11314,6 +11775,243 @@ window.filterLinkedinPostTracker = function () {
     });
 
     window.renderLinkedinPostTracker(filtered);
+};
+
+window.toggleLinkedinViewMode = function (mode) {
+    const listCont = document.getElementById('linkedin-detailed-list-container');
+    const gridCont = document.getElementById('linkedin-monthly-grid-container');
+    const pickers = document.getElementById('linkedin-monthly-pickers');
+    
+    const dateTypeSel = document.getElementById('linkedin-post-date-type-desktop');
+    const customDateInput = document.getElementById('linkedin-post-date-desktop');
+
+    if (mode === 'monthly') {
+        if (listCont) listCont.classList.add('hidden');
+        if (gridCont) gridCont.classList.remove('hidden');
+        if (pickers) pickers.style.display = 'flex';
+        
+        if (dateTypeSel) dateTypeSel.style.display = 'none';
+        if (customDateInput) customDateInput.style.display = 'none';
+
+        const monthSel = document.getElementById('linkedin-overview-month');
+        const yearSel = document.getElementById('linkedin-overview-year');
+        const curr = new Date();
+        if (monthSel && !monthSel.dataset.initialized) {
+            monthSel.value = curr.getMonth();
+            monthSel.dataset.initialized = "true";
+        }
+        if (yearSel && !yearSel.dataset.initialized) {
+            yearSel.value = curr.getFullYear();
+            yearSel.dataset.initialized = "true";
+        }
+
+        window.renderLinkedinMonthlyGrid();
+    } else {
+        if (listCont) listCont.classList.remove('hidden');
+        if (gridCont) gridCont.classList.add('hidden');
+        if (pickers) pickers.style.display = 'none';
+        
+        if (dateTypeSel) dateTypeSel.style.display = 'inline-block';
+        if (customDateInput && dateTypeSel.value === 'custom') {
+            customDateInput.style.display = 'inline-block';
+        }
+
+        window.renderLinkedinPostTracker();
+    }
+};
+
+window.renderLinkedinMonthlyGrid = function () {
+    const thead = document.getElementById('linkedin-monthly-thead');
+    const tbody = document.getElementById('linkedin-monthly-tbody');
+    if (!thead || !tbody) return;
+
+    const selectedMonth = parseInt(document.getElementById('linkedin-overview-month')?.value || new Date().getMonth());
+    const selectedYear = parseInt(document.getElementById('linkedin-overview-year')?.value || new Date().getFullYear());
+
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const titleEl = document.getElementById('linkedin-monthly-title');
+    if (titleEl) {
+        titleEl.innerText = `${monthNames[selectedMonth]} ${selectedYear} - LinkedIn Post Overview`;
+    }
+
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+    // 1. Render Table Header (Sticky top)
+    let theadHtml = `
+        <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; font-family: 'Inter', sans-serif; position: sticky; top: 0; z-index: 10;">
+            <th style="padding: 1.25rem 1rem; text-align: center; font-weight: 800; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; width: 50px; position: sticky; left: 0; background: #F8FAFC; z-index: 11; border-right: 1px solid #E2E8F0;">S.No</th>
+            <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 800; color: #475569; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 220px; position: sticky; left: 50px; background: #F8FAFC; z-index: 11; border-right: 1px solid #E2E8F0;">Name</th>
+    `;
+    for (let day = 1; day <= daysInMonth; day++) {
+        theadHtml += `
+            <th style="padding: 1rem 0.5rem; text-align: center; font-weight: 800; color: #475569; font-size: 0.8rem; border-right: 1px solid #E2E8F0; min-width: 40px; background: #F8FAFC;">${day}</th>
+        `;
+    }
+    theadHtml += '</tr>';
+    thead.innerHTML = theadHtml;
+
+    // 2. Fetch all unique students from user database (cachedAdminData)
+    const students = window.cachedAdminData || [];
+    const posts = window.linkedinPostData || [];
+
+    if (students.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${daysInMonth + 2}" style="text-align: center; padding: 4rem 0; color: #94A3B8;">
+                    No student records loaded. Make sure student database is populated.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Get search filter
+    const searchVal = (document.getElementById('linkedin-post-search-desktop')?.value || '').trim().toLowerCase();
+    
+    // Check selected years from dropdown
+    const dropdown = document.getElementById('linkedin-year-dropdown-desktop');
+    let selectedYears = ['all'];
+    if (dropdown) {
+        selectedYears = Array.from(dropdown.querySelectorAll('.li-year-cb')).filter(cb => cb.checked).map(cb => cb.value);
+    }
+
+    let filteredStudents = [...students];
+    if (searchVal) {
+        filteredStudents = filteredStudents.filter(s => 
+            (s.name || '').toLowerCase().includes(searchVal) || 
+            (s.rollNo || s.roll_number || s.roll_no || '').toLowerCase().includes(searchVal)
+        );
+    }
+    if (!selectedYears.includes('all')) {
+        filteredStudents = filteredStudents.filter(s => {
+            const yr = String(s.year || s.current_year || '');
+            return selectedYears.includes(yr);
+        });
+    }
+
+    // Sort students alphabetically by name
+    filteredStudents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    // 3. Render Table Rows
+    const tbodyHtml = filteredStudents.map((student, index) => {
+        const studentName = student.name || 'Unknown';
+        const studentRoll = student.rollNo || student.roll_number || student.roll_no || '';
+        const studentEmail = (student.email || student.email_id || '').toLowerCase().trim();
+        const cleanRoll = studentRoll.toLowerCase().trim();
+
+        // Find LinkedIn posts for this student
+        const studentPosts = posts.filter(post => {
+            const postEmail = (post.email || '').toLowerCase().trim();
+            const postRoll = (post.reg || post.rollNo || '').toLowerCase().trim();
+            const postName = (post.name || '').toLowerCase().trim();
+            const cleanName = studentName.toLowerCase().trim();
+            return (studentEmail && postEmail === studentEmail) || 
+                   (cleanRoll && postRoll === cleanRoll) ||
+                   (cleanName && postName === cleanName);
+        });
+
+        // Create row HTML
+        let rowHtml = `
+            <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 1rem 0.5rem; text-align: center; font-weight: 700; color: #64748B; position: sticky; left: 0; background: white; z-index: 1; border-right: 1px solid #E2E8F0;">
+                    ${index + 1}
+                </td>
+                <td style="padding: 1rem 1.5rem; text-align: left; font-weight: 700; color: #1E293B; white-space: nowrap; position: sticky; left: 50px; background: white; z-index: 1; border-right: 1px solid #E2E8F0; box-shadow: 2px 0 5px rgba(0,0,0,0.02);">
+                    <div style="font-size: 0.9rem; color: #1E293B;">${studentName}</div>
+                    <div style="font-size: 0.72rem; color: #64748B; font-weight: 500; font-family: monospace; margin-top: 2px;">${studentRoll}</div>
+                </td>
+        `;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            // Find the specific post on this date
+            const dayPost = studentPosts.find(post => {
+                const rawDateStr = post.date || post.rawDate;
+                if (!rawDateStr) return false;
+
+                // 1. Try custom split parsing (handles DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY)
+                const parseDateParts = (str) => {
+                    const datePart = String(str).split(' ')[0];
+                    const clean = datePart.replace(/\//g, '-').trim();
+                    const parts = clean.split('-');
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            // YYYY-MM-DD
+                            return { day: parseInt(parts[2]), month: parseInt(parts[1]) - 1, year: parseInt(parts[0]) };
+                        } else {
+                            // DD-MM-YYYY
+                            return { day: parseInt(parts[0]), month: parseInt(parts[1]) - 1, year: parseInt(parts[2]) };
+                        }
+                    }
+                    return null;
+                };
+
+                const logParsed = parseDateParts(rawDateStr);
+                if (logParsed) {
+                    if (logParsed.day === day && logParsed.month === selectedMonth && logParsed.year === selectedYear) {
+                        return true;
+                    }
+                }
+
+                // 2. Try JS Date parser fallback (handles ISO, GMT dates, timestamps)
+                try {
+                    const datePart = String(rawDateStr).split(' ')[0];
+                    const parts = datePart.replace(/\//g, '-').split('-');
+                    let d;
+                    if (parts.length === 3 && parts[0].length === 2 && parts[2].length === 4) {
+                        // DD-MM-YYYY format
+                        d = new Date(`${parts[1]}-${parts[0]}-${parts[2]}`);
+                    } else {
+                        d = new Date(rawDateStr);
+                    }
+                    if (!isNaN(d.getTime())) {
+                        return d.getDate() === day && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+                    }
+                } catch (e) {}
+
+                return false;
+            });
+
+            if (dayPost) {
+                const postLink = dayPost.link || '';
+                const popoverPositionStyle = day > 15 ? 'right: 105%; left: auto;' : 'left: 105%; right: auto;';
+                const linkAction = postLink ? `onclick="window.open('${postLink}', '_blank')"` : '';
+
+                rowHtml += `
+                    <td ${linkAction} style="padding: 1rem 0.5rem; text-align: center; border-right: 1px solid #E2E8F0; background: #E0F2FE; cursor: pointer; position: relative; transition: all 0.2s;" onmouseover="this.style.background='#BAE6FD'; this.querySelector('.linkedin-popover').style.display='block'" onmouseout="this.style.background='#E0F2FE'; this.querySelector('.linkedin-popover').style.display='none'">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                            <rect x="2" y="9" width="4" height="12"></rect>
+                            <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                        
+                        <!-- Premium Popover Card (Excel style comments popover) -->
+                        <div class="linkedin-popover" style="display: none; position: absolute; ${popoverPositionStyle} top: 50%; transform: translateY(-50%); background: white; border: 1.5px solid #CBD5E1; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 0.9rem; width: 280px; z-index: 1000; text-align: left; pointer-events: none;">
+                            <div style="font-weight: 800; color: #0284C7; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;">LinkedIn Post Submitted</div>
+                            <div style="font-size: 0.78rem; font-weight: 600; line-height: 1.4; color: #1E293B; word-break: break-all;">
+                                <a href="${postLink}" target="_blank" style="color: #0284C7; text-decoration: underline; pointer-events: auto;">${postLink || 'No link provided'}</a>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            } else {
+                rowHtml += `
+                    <td style="padding: 1rem 0.5rem; text-align: center; border-right: 1px solid #E2E8F0;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; opacity: 0.5;">
+                            <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                        </svg>
+                    </td>
+                `;
+            }
+        }
+
+        rowHtml += '</tr>';
+        return rowHtml;
+    }).join('');
+
+    tbody.innerHTML = tbodyHtml;
 };
 
 window.handleLinkedinYearCheckbox = function (checkbox) {
@@ -13930,7 +14628,7 @@ window.loadUserActivityPasses = async function(force = false) {
         if (desktopContainer) desktopContainer.style.display = 'block';
         if (desktopGrid) {
             desktopGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 4rem 2rem; background: white; border-radius: 10px !important; box-shadow: 0 4px 18px rgba(0,0,0,0.06); font-family: 'Google Sans', sans-serif; border: none !important;">
+                <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 4rem 2rem; background: transparent !important; border: none !important; box-shadow: none !important; font-family: 'Google Sans', sans-serif;">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; color: #4F46E5;">
                         <div class="analytics-spin-loader" style="width: 28px; height: 28px; border-width: 3px; border-top-color: #4F46E5;"></div>
                         <span style="font-size: 0.85rem; font-weight: 700; letter-spacing: -0.2px;">Loading activity passes...</span>
@@ -13943,7 +14641,7 @@ window.loadUserActivityPasses = async function(force = false) {
         if (mobileContainer) {
             mobileContainer.style.display = 'flex';
             mobileContainer.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: white; border-radius: 10px !important; box-shadow: 0 4px 18px rgba(0,0,0,0.06); width: 100%; box-sizing: border-box; font-family: 'Google Sans', sans-serif; border: none !important;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; width: 100%; box-sizing: border-box; font-family: 'Google Sans', sans-serif;">
                     <div class="analytics-spin-loader" style="width: 24px; height: 24px; border-width: 3px; border-top-color: #4F46E5; margin-bottom: 8px;"></div>
                     <span style="font-size: 0.8rem; font-weight: 700; color: #4F46E5; letter-spacing: -0.2px;">Loading...</span>
                 </div>
@@ -14015,21 +14713,68 @@ window.loadUserActivityPasses = async function(force = false) {
 
             const mobileCardsHtml = data.passes.map(pass => {
                 const isExpired = isActivityPassExpired(pass.date, pass.toTime);
-                const rangeHeader = formatPassRangeHeader(pass.date, pass.fromTime, pass.toTime);
+                
+                // Parse date nicely
+                const d = new Date(pass.date);
+                let datePart = '';
+                if (!isNaN(d.getTime())) {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    datePart = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                } else {
+                    datePart = pass.date || '';
+                }
+                
+                const timeRangeText = `${formatTimeOnly(pass.fromTime)} - ${formatTimeOnly(pass.toTime)}`;
+                
+                // Determine category icon and dynamic colors
+                const cat = (pass.category || '').trim().toLowerCase();
+                let iconBg = '#F1F5F9';
+                let iconColor = '#475569';
+                
+                if (cat.includes('lab')) {
+                    iconBg = '#EFF6FF';
+                    iconColor = '#1D4ED8';
+                } else if (cat.includes('guest') || cat.includes('lecture') || cat.includes('seminar')) {
+                    iconBg = '#FAF5FF';
+                    iconColor = '#6B21A8';
+                } else if (cat.includes('ps') || cat.includes('slot')) {
+                    iconBg = '#ECFDF5';
+                    iconColor = '#047857';
+                } else if (cat.includes('exam') || cat.includes('test')) {
+                    iconBg = '#FEF2F2';
+                    iconColor = '#991B1B';
+                }
                 
                 return `
-                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 10px !important; padding: 1.25rem; box-shadow: 0 4px 18px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; border: none !important;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.09)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 18px rgba(0,0,0,0.06)';">
-                        <div>
-                            <div style="font-size: 0.78rem; font-weight: 700; color: #4F46E5; margin-bottom: 0.5rem; font-family: 'Google Sans', sans-serif; letter-spacing: -0.2px;">
-                                ${rangeHeader}
-                            </div>
-                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">
-                                ${pass.title || ''}
-                            </h4>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Google Sans', sans-serif;">
-                            ${getCategoryBadgeHtml(pass.category)}
+                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 12px !important; padding: 1.25rem 3.5rem 1.25rem 1.25rem !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important; border: 1.5px solid #F1F5F9 !important; display: flex; flex-direction: column; gap: 0.85rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; cursor: pointer; position: relative; width: 100%; box-sizing: border-box;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='none';">
+                        <!-- Top Row: Category and Status -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; background: ${iconBg}; color: ${iconColor}; padding: 4px 10px; border-radius: 9999px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: none; font-family: 'Google Sans', sans-serif;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${iconColor}; display: inline-block;"></span>
+                                ${pass.category || ''}
+                            </span>
                             ${getUserStatusPillHtml(pass.status, isExpired)}
+                        </div>
+
+                        <!-- Title -->
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; padding-right: 0.5rem;" title="${pass.title || ''}">
+                            ${pass.title || ''}
+                        </h4>
+                        <!-- Date / Time Section with Icons -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #F1F5F9; padding-top: 0.85rem; margin-top: 0.25rem;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #1E293B; font-size: 0.85rem; font-weight: 700; font-family: 'Google Sans', sans-serif;">
+                                <i data-lucide="calendar" style="width: 15px; height: 15px; color: #4F46E5; flex-shrink: 0; stroke-width: 2.5px;"></i>
+                                <span>${datePart}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; color: #1E293B; font-size: 0.85rem; font-weight: 700; font-family: 'Google Sans', sans-serif;">
+                                <i data-lucide="clock" style="width: 15px; height: 15px; color: #4F46E5; flex-shrink: 0; stroke-width: 2.5px;"></i>
+                                <span>${timeRangeText}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Indicator Chevron -->
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #F8FAFC; border: 1.5px solid #E2E8F0; display: flex; align-items: center; justify-content: center; color: #94A3B8; position: absolute; right: 1.25rem; top: calc(50% + 12px); transform: translateY(-50%); transition: all 0.2s;">
+                            <i data-lucide="chevron-right" style="width: 14px; height: 14px; stroke-width: 3px; color: #64748B;"></i>
                         </div>
                     </div>
                 `;
@@ -14475,3 +15220,333 @@ window.updateActivityPassStatus = async function(requestId, action) {
         alert("Connection error while updating status.");
     }
 };
+
+window.showAdminTaskDetailModal = function(timestampStr) {
+    if (!window.allTaskHistory) return;
+    const task = window.allTaskHistory.find(t => t.timestamp === timestampStr || new Date(t.timestamp).getTime() === parseInt(timestampStr));
+    if (!task) return;
+
+    const contentDiv = document.getElementById('admin-task-detail-content');
+    if (!contentDiv) return;
+
+    let targetsObj = task.targets || {};
+    let targetText = 'All Students';
+    if (targetsObj.users && targetsObj.users.length > 0) {
+        targetText = `Specific Users:<br><span style="font-size:0.8rem; font-family:monospace; color:#475569;">${targetsObj.users.join('<br>')}</span>`;
+    } else if ((targetsObj.years && targetsObj.years.length > 0) || (targetsObj.domains && targetsObj.domains.length > 0)) {
+        const parts = [];
+        if (targetsObj.years && targetsObj.years.length > 0) parts.push(`Years: ${targetsObj.years.join(', ')}`);
+        if (targetsObj.domains && targetsObj.domains.length > 0) parts.push(`Domains: ${targetsObj.domains.join(', ')}`);
+        targetText = parts.join('<br>');
+    }
+
+    const formattedTimestamp = task.timestamp ? new Date(task.timestamp).toLocaleString() : 'N/A';
+    const formattedDeadline = task.deadline ? new Date(task.deadline).toLocaleString() : 'N/A';
+    const linkHtml = task.link ? `<a href="${task.link}" target="_blank" onclick="event.stopPropagation();" style="color: #4F46E5; text-decoration: underline; font-weight: 800; word-break: break-all;">${task.link}</a>` : 'N/A';
+
+    // Parse images array
+    let imagesHtml = '<span style="color:#64748B;">No reference images</span>';
+    let imagesArr = [];
+    try {
+        imagesArr = typeof task.images === 'string' ? JSON.parse(task.images) : (task.images || []);
+    } catch(e) {}
+    if (imagesArr && imagesArr.length > 0) {
+        imagesHtml = `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">` + 
+            imagesArr.map(img => `<img src="${img}" style="max-width:120px; max-height:120px; border-radius:8px; object-fit:cover; border:1px solid #E2E8F0;" onclick="event.stopPropagation(); window.open('${img}', '_blank')">`).join('') +
+            `</div>`;
+    }
+
+    contentDiv.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Task Details</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #1E293B;">${task.title || '-'}</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Dispatched: <span style="color: #1E293B;">${formattedTimestamp}</span></div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #64748B;">Deadline: <span style="color: #EF4444; font-weight: 800;">${formattedDeadline}</span></div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Target Audience</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #334155; line-height: 1.4;">${targetText}</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Task Link</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #334155;">${linkHtml}</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Reference Images</div>
+            ${imagesHtml}
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Description</div>
+            <div style="font-size: 0.9rem; color: #334155; background: #F8FAFC; padding: 12px; border-radius: 12px; line-height: 1.5; border: 1px solid #E2E8F0; white-space: pre-wrap;">
+                ${task.desc || '-'}
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Admin</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: #1E293B;">${task.admin || '-'}</div>
+        </div>
+    `;
+
+    const modal = document.getElementById('admin-task-detail-modal');
+    if (modal) modal.classList.remove('hidden');
+    if (window.innerWidth <= 1024) {
+        history.pushState({ activeModal: 'admin-task-detail-modal' }, '');
+    }
+};
+
+window.closeAdminTaskDetailModal = function() {
+    const modal = document.getElementById('admin-task-detail-modal');
+    if (modal) modal.classList.add('hidden');
+    if (window.innerWidth <= 1024 && history.state && history.state.activeModal === 'admin-task-detail-modal') {
+        window.isClosingModal = true;
+        history.back();
+    }
+};
+
+// Global Modal History and Click-Outside Manager
+(function() {
+    const modals = [
+        {
+            id: 'admin-task-detail-modal',
+            close: () => {
+                if (typeof window.closeAdminTaskDetailModal === 'function') {
+                    window.closeAdminTaskDetailModal();
+                } else {
+                    const m = document.getElementById('admin-task-detail-modal');
+                    if (m) m.classList.add('hidden');
+                }
+            }
+        },
+        {
+            id: 'admin-activity-pass-detail-modal',
+            close: () => {
+                if (typeof window.closeActivityPassDetailModal === 'function') {
+                    window.closeActivityPassDetailModal();
+                } else {
+                    const m = document.getElementById('admin-activity-pass-detail-modal');
+                    if (m) m.classList.add('hidden');
+                }
+            }
+        },
+        {
+            id: 'user-activity-pass-detail-modal',
+            close: () => {
+                if (typeof window.closeUserActivityPassDetailModal === 'function') {
+                    window.closeUserActivityPassDetailModal();
+                } else {
+                    const m = document.getElementById('user-activity-pass-detail-modal');
+                    if (m) m.classList.add('hidden');
+                }
+            }
+        },
+        {
+            id: 'activity-pass-modal-container',
+            close: () => {
+                if (typeof window.toggleActivityPassModal === 'function') {
+                    window.toggleActivityPassModal(false);
+                } else {
+                    const m = document.getElementById('activity-pass-modal-container');
+                    if (m) m.classList.add('hidden');
+                }
+            }
+        },
+        {
+            id: 'notification-modal-container',
+            close: () => {
+                if (typeof window.toggleNotificationModal === 'function') {
+                    window.toggleNotificationModal(false, false);
+                } else {
+                    const m = document.getElementById('notification-modal-container');
+                    if (m) m.classList.add('hidden');
+                }
+            }
+        }
+    ];
+
+    // Click outside backdrop to close modal
+    document.addEventListener('click', function(e) {
+        modals.forEach(mConf => {
+            const modal = document.getElementById(mConf.id);
+            if (modal && !modal.classList.contains('hidden') && modal.style.display !== 'none') {
+                if (e.target === modal) {
+                    mConf.close();
+                }
+            }
+        });
+    });
+
+    // Decorate open handlers to push history state (mobile only)
+    const originalShowUserModal = window.showUserActivityPassDetailModal;
+    window.showUserActivityPassDetailModal = function(...args) {
+        if (originalShowUserModal) originalShowUserModal.apply(this, args);
+        if (window.innerWidth <= 1024) {
+            history.pushState({ activeModal: 'user-activity-pass-detail-modal' }, '');
+        }
+    };
+
+    const originalShowAdminModal = window.showActivityPassDetailModal;
+    window.showActivityPassDetailModal = function(...args) {
+        if (originalShowAdminModal) originalShowAdminModal.apply(this, args);
+        if (window.innerWidth <= 1024) {
+            history.pushState({ activeModal: 'admin-activity-pass-detail-modal' }, '');
+        }
+    };
+
+    const originalToggleActivityPassModal = window.toggleActivityPassModal;
+    window.toggleActivityPassModal = function(show, ...args) {
+        if (originalToggleActivityPassModal) originalToggleActivityPassModal.apply(this, [show, ...args]);
+        if (show && window.innerWidth <= 1024) {
+            history.pushState({ activeModal: 'activity-pass-modal-container' }, '');
+        }
+    };
+
+    // Decorate close handlers to pop history state if clicked manually and prevent page navigation (mobile only)
+    const originalCloseUserModal = window.closeUserActivityPassDetailModal;
+    window.closeUserActivityPassDetailModal = function(...args) {
+        if (originalCloseUserModal) originalCloseUserModal.apply(this, args);
+        if (window.innerWidth <= 1024 && history.state && history.state.activeModal === 'user-activity-pass-detail-modal') {
+            window.isClosingModal = true;
+            history.back();
+        }
+    };
+
+    const originalCloseAdminModal = window.closeActivityPassDetailModal;
+    window.closeActivityPassDetailModal = function(...args) {
+        if (originalCloseAdminModal) originalCloseAdminModal.apply(this, args);
+        if (window.innerWidth <= 1024 && history.state && history.state.activeModal === 'admin-activity-pass-detail-modal') {
+            window.isClosingModal = true;
+            history.back();
+        }
+    };
+
+    const originalShowTaskModal = window.showAdminTaskDetailModal;
+    window.showAdminTaskDetailModal = function(...args) {
+        if (originalShowTaskModal) originalShowTaskModal.apply(this, args);
+        if (window.innerWidth <= 1024) {
+            history.pushState({ activeModal: 'admin-task-detail-modal' }, '');
+        }
+    };
+
+    const originalCloseTaskModal = window.closeAdminTaskDetailModal;
+    window.closeAdminTaskDetailModal = function(...args) {
+        if (originalCloseTaskModal) originalCloseTaskModal.apply(this, args);
+        if (window.innerWidth <= 1024 && history.state && history.state.activeModal === 'admin-task-detail-modal') {
+            window.isClosingModal = true;
+            history.back();
+        }
+    };
+
+    // --- MONTHLY GRID EXPORT UTILITIES ---
+    window.downloadTableAsExcelXML = function (table, filename) {
+        const rows = table.querySelectorAll('tr');
+        let xmlContent = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Worksheet ss:Name="Monthly Overview">
+  <Table>`;
+
+        rows.forEach(row => {
+            xmlContent += '\n   <Row>';
+            const cols = row.querySelectorAll('th, td');
+            cols.forEach((col) => {
+                let cellText = '';
+                let isComment = false;
+                let commentText = '';
+                
+                const popover = col.querySelector('.worklog-popover, .linkedin-popover');
+                if (popover) {
+                    isComment = true;
+                    commentText = popover.innerText.trim();
+                    cellText = 'TRUE';
+                } else {
+                    const clone = col.cloneNode(true);
+                    const pEl = clone.querySelector('.worklog-popover, .linkedin-popover');
+                    if (pEl) pEl.remove();
+                    
+                    const hasSvgCheck = clone.querySelector('svg');
+                    if (hasSvgCheck && !hasSvgCheck.style.opacity) {
+                        cellText = 'TRUE';
+                    } else {
+                        cellText = clone.innerText.trim();
+                    }
+                }
+
+                // Determine data type
+                let type = 'String';
+                if (cellText === 'TRUE' || cellText === 'FALSE') {
+                    type = 'Boolean';
+                    cellText = cellText === 'TRUE' ? '1' : '0';
+                } else if (!isNaN(cellText) && cellText.trim() !== '') {
+                    type = 'Number';
+                }
+
+                // Escape special XML characters
+                const escapeXml = (str) => {
+                    return str.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&apos;');
+                };
+
+                xmlContent += `\n    <Cell>`;
+                xmlContent += `<Data ss:Type="${type}">${escapeXml(cellText)}</Data>`;
+                
+                if (isComment && commentText) {
+                    xmlContent += `
+     <Comment ss:Author="System">
+      <ss:Data xmlns="http://www.w3.org/TR/REC-html40">
+       ${escapeXml(commentText).replace(/\n/g, '&#10;')}
+      </ss:Data>
+     </Comment>`;
+                }
+                xmlContent += `</Cell>`;
+            });
+            xmlContent += '\n   </Row>';
+        });
+
+        xmlContent += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+        const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    window.exportWorklogMonthlyToCSV = function () {
+        const table = document.querySelector('#admin-analytics-monthly-grid-container table');
+        if (!table) return;
+        const selectedMonth = parseInt(document.getElementById('monthly-overview-month')?.value || new Date().getMonth());
+        const selectedYear = parseInt(document.getElementById('monthly-overview-year')?.value || new Date().getFullYear());
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        window.downloadTableAsExcelXML(table, `worklog_monthly_grid_${monthNames[selectedMonth]}_${selectedYear}.xls`);
+    };
+
+    window.exportLinkedinMonthlyToCSV = function () {
+        const table = document.querySelector('#linkedin-monthly-grid-container table');
+        if (!table) return;
+        const selectedMonth = parseInt(document.getElementById('linkedin-overview-month')?.value || new Date().getMonth());
+        const selectedYear = parseInt(document.getElementById('linkedin-overview-year')?.value || new Date().getFullYear());
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        window.downloadTableAsExcelXML(table, `linkedin_monthly_grid_${monthNames[selectedMonth]}_${selectedYear}.xls`);
+    };
+})();
