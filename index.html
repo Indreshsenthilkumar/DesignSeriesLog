@@ -4791,6 +4791,7 @@
                                         <th style="padding: 1.25rem 1.5rem; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Date</th>
                                         <th style="padding: 1.25rem 1.5rem; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">From</th>
                                         <th style="padding: 1.25rem 1.5rem; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">To</th>
+                                        <th style="padding: 1.25rem 1.5rem; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Reason</th>
                                         <th style="padding: 1.25rem 1.5rem; font-weight: 800; color: #64748B; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; white-space: nowrap;">Actions / Details</th>
                                     </tr>
                                 </thead>
@@ -5082,7 +5083,7 @@
 
                 <!-- Title of the Activity -->
                 <div class="form-group">
-                    <label style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">Title of the activity you chose</label>
+                    <label id="act-pass-title-label" style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">Title of the activity you chose</label>
                     <div class="act-pass-wrapper-div">
                         <div style="width: 34px; height: 34px; border-radius: 10px; background: #F0FDF4; color: #16A34A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             <i data-lucide="bookmark" style="width: 16px; stroke-width: 2px;"></i>
@@ -5092,7 +5093,7 @@
                 </div>
 
                 <!-- Venue (Optional) -->
-                <div class="form-group">
+                <div class="form-group" id="act-pass-venue-group">
                     <label style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">Venue (Optional)</label>
                     <div class="act-pass-wrapper-div">
                         <div style="width: 34px; height: 34px; border-radius: 10px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -5103,20 +5104,20 @@
                 </div>
 
                 <!-- Date, From Time, To Time -->
-                <div class="act-pass-row-responsive" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                <div class="act-pass-row-responsive" id="act-pass-datetime-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
                     <div class="form-group">
                         <label style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">Date</label>
                         <div class="act-pass-wrapper-div" style="padding: 0 0.5rem !important;">
                             <input type="date" id="act-pass-date" class="act-pass-inner-input" style="font-size: 0.8rem !important; height: 44px !important;">
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="act-pass-from-time-group">
                         <label style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">From Time</label>
                         <div class="act-pass-wrapper-div" style="padding: 0 0.5rem !important;">
                             <input type="time" id="act-pass-from-time" class="act-pass-inner-input" style="font-size: 0.8rem !important; height: 44px !important;">
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="act-pass-to-time-group">
                         <label style="font-size: 0.85rem; font-weight: 800; color: #1E293B; display: block; margin-bottom: 6px; letter-spacing: -0.2px;">To Time</label>
                         <div class="act-pass-wrapper-div" style="padding: 0 0.5rem !important;">
                             <input type="time" id="act-pass-to-time" class="act-pass-inner-input" style="font-size: 0.8rem !important; height: 44px !important;">
@@ -5760,7 +5761,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
-    <script src="script.js?v=5.04" defer></script>
+    <script src="script.js?v=5.05" defer></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();

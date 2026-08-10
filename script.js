@@ -14354,6 +14354,7 @@ window.toggleActivityPassModal = function(show) {
         const dateInput = document.getElementById('act-pass-date');
         if (dateInput) dateInput.value = todayISO;
         if (window.lucide) window.lucide.createIcons();
+        window.handleActivityPassCategoryChange('PS Slot'); // default category is PS Slot
     } else {
         modal.classList.add('hidden');
         // Reset form
@@ -14385,6 +14386,29 @@ window.handleActivityPassCategoryChange = function(val) {
         } else {
             customGrp.classList.add('hidden');
         }
+    }
+
+    const venueGrp = document.getElementById('act-pass-venue-group');
+    const fromGrp = document.getElementById('act-pass-from-time-group');
+    const toGrp = document.getElementById('act-pass-to-time-group');
+    const dtRow = document.getElementById('act-pass-datetime-row');
+    const titleLabel = document.getElementById('act-pass-title-label');
+    const titleInput = document.getElementById('act-pass-title');
+
+    if (val === 'PS Slot') {
+        if (venueGrp) venueGrp.classList.add('hidden');
+        if (fromGrp) fromGrp.classList.add('hidden');
+        if (toGrp) toGrp.classList.add('hidden');
+        if (dtRow) dtRow.style.gridTemplateColumns = '1fr';
+        if (titleLabel) titleLabel.innerText = "Name of skill/ course";
+        if (titleInput) titleInput.placeholder = "e.g. Next.js Course";
+    } else {
+        if (venueGrp) venueGrp.classList.remove('hidden');
+        if (fromGrp) fromGrp.classList.remove('hidden');
+        if (toGrp) toGrp.classList.remove('hidden');
+        if (dtRow) dtRow.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        if (titleLabel) titleLabel.innerText = "Title of the activity you chose";
+        if (titleInput) titleInput.placeholder = "e.g. Product Studio (College Portal)";
     }
 };
 
@@ -14420,9 +14444,11 @@ window.submitActivityPass = function() {
         alert("Please select a date.");
         return;
     }
-    if (!fromTime || !toTime) {
-        alert("Please fill in both From and To times.");
-        return;
+    if (selectedCategory !== 'PS Slot') {
+        if (!fromTime || !toTime) {
+            alert("Please fill in both From and To times.");
+            return;
+        }
     }
     if (!reason) {
         alert("Please enter the reason.");
@@ -15048,6 +15074,7 @@ window.renderAdminActivityPassesList = function(passesList) {
                         <td style="padding: 1.25rem 1.5rem; white-space: nowrap;">${formatDateOnly(pass.date)}</td>
                         <td style="padding: 1.25rem 1.5rem; color: #059669; white-space: nowrap;">${formatTimeOnly(pass.fromTime)}</td>
                         <td style="padding: 1.25rem 1.5rem; color: #DC2626; white-space: nowrap;">${formatTimeOnly(pass.toTime)}</td>
+                        <td style="padding: 1.25rem 1.5rem; color: #475569; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${pass.reason || ''}">${pass.reason || ''}</td>
                         <td style="padding: 1.25rem 1.5rem; text-align: center; white-space: nowrap;">${actionHtml}</td>
                     </tr>
                 `;
