@@ -6675,7 +6675,7 @@ window.switchAnalyticsTab = function (tab) {
 };
 
 window.loadAnalyticsData = async function (force = false) {
-    if (!force && window.cachedAnalyticsData && window.cachedWorklogData) {
+    if (!force && window.cachedAnalyticsData && window.cachedAnalyticsData.length > 0 && window.cachedWorklogData && window.cachedWorklogData.length > 0) {
         window.renderAdminAnalytics();
         return;
     }
@@ -6685,35 +6685,37 @@ window.loadAnalyticsData = async function (force = false) {
     const wlDesk = document.getElementById('admin-worklog-list-desktop');
     const wlMob = document.getElementById('admin-worklog-list-mobile');
 
-    const attSkeletonRowHtml = `
-        <tr style="border-bottom: 1px solid #F1F5F9;">
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 120px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 80px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 70px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 70px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 110px; height: 28px; border-radius: 100px;"></span></td>
+    const attSpinnerRowHtml = `
+        <tr>
+            <td colspan="6" style="text-align: center; padding: 4rem 2rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <div class="wl-spinner"></div>
+                    <span style="font-weight: 700; color: #64748B; font-size: 0.95rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading attendance data...</span>
+                </div>
+            </td>
         </tr>
     `;
-    const wlSkeletonRowHtml = `
-        <tr style="border-bottom: 1px solid #F1F5F9;">
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 120px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 80px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 90px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 130px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1rem;"><span class="skeleton-inline" style="width: 100px; height: 16px; border-radius: 4px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 110px; height: 28px; border-radius: 100px;"></span></td>
-            <td style="padding: 1.1rem 1.5rem;"><span class="skeleton-inline" style="width: 130px; height: 32px; border-radius: 8px;"></span></td>
+    const wlSpinnerRowHtml = `
+        <tr>
+            <td colspan="12" style="text-align: center; padding: 4rem 2rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <div class="wl-spinner"></div>
+                    <span style="font-weight: 700; color: #64748B; font-size: 0.95rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading worklog data...</span>
+                </div>
+            </td>
         </tr>
+    `;
+    const mobileSpinnerHtml = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; gap: 12px; background: white; border-radius: 20px; border: 1px solid #F1F5F9; box-shadow: var(--shadow-sm); width: 100%;">
+            <div class="wl-spinner"></div>
+            <span style="font-weight: 700; color: #64748B; font-size: 0.85rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading data...</span>
+        </div>
     `;
 
-    if (listDesk) listDesk.innerHTML = Array(5).fill(attSkeletonRowHtml).join('');
-    if (listMob) listMob.innerHTML = Array(4).fill('<div class="skeleton-card"></div>').join('');
-    if (wlDesk) wlDesk.innerHTML = Array(5).fill(wlSkeletonRowHtml).join('');
-    if (wlMob) wlMob.innerHTML = Array(4).fill('<div class="skeleton-card"></div>').join('');
+    if (listDesk) listDesk.innerHTML = attSpinnerRowHtml;
+    if (listMob) listMob.innerHTML = mobileSpinnerHtml;
+    if (wlDesk) wlDesk.innerHTML = wlSpinnerRowHtml;
+    if (wlMob) wlMob.innerHTML = mobileSpinnerHtml;
 
     let adminEmail = "";
     try {
@@ -7070,7 +7072,7 @@ window.renderAdminAnalytics = function () {
         if (logs.length === 0) {
             const emptyHtmlDesk = `
                 <tr>
-                    <td colspan="5" style="text-align:center; padding:4rem 2rem; color: #94A3B8;">
+                    <td colspan="12" style="text-align:center; padding:4rem 2rem; color: #94A3B8;">
                         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
                             <div style="width: 48px; height: 48px; border-radius: 14px; background: #F8FAFC; display: flex; align-items: center; justify-content: center; color: #94A3B8; border: 1px solid #F1F5F9;">
                                 <i data-lucide="folder" style="width: 20px; height: 20px;"></i>
