@@ -3484,10 +3484,10 @@
                     <!-- Search Input -->
                     <div style="position: relative; width: 280px;">
                         <i data-lucide="search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
-                        <input type="text" id="worklog-search-input" placeholder="Search name, reg no, date, title, worklog..." oninput="window.renderAdminAnalytics()" style="width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.8rem; background: white; outline: none; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; color: #334155;">
+                        <input type="text" id="admin-worklog-search-input" placeholder="Search name, reg no, date, title, worklog..." oninput="window.renderAdminAnalytics()" style="width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem 0 2.8rem; background: white; outline: none; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; color: #334155;">
                     </div>
                     <!-- Date Filter Select -->
-                    <select id="worklog-date-select" onchange="window.handleWorklogDateFilterChange(this.value)" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
+                    <select id="worklog-date-select" onchange="window.handleAdminWorklogDateFilterChange(this.value)" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; outline: none; background: white; font-weight: 700; color: #334155; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer;">
                         <option value="all" selected>All Time</option>
                         <option value="today">Today</option>
                         <option value="yesterday">Yesterday</option>

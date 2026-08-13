@@ -3954,7 +3954,8 @@ function formatToISODate(dateVal) {
             if (parts[0].length === 4) {
                 return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             } else if (parts[2].length === 4) {
-                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                // MM/DD/YYYY format
+                return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
             }
         }
     }
@@ -4450,17 +4451,29 @@ function parseDateToLocalDate(dateStr) {
     if (!dateStr) return null;
     const str = String(dateStr).trim();
 
-    // Handle DD-MM-YYYY or DD/MM/YYYY
+    // Check if it's already an ISO date (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        const parts = str.split('-');
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+
+    // Handle MM/DD/YYYY or MM-DD-YYYY (sheet date format)
     const separator = str.includes('-') ? '-' : (str.includes('/') ? '/' : null);
     if (separator) {
         const parts = str.split(separator);
         if (parts.length === 3) {
             if (parts[2].length === 4) {
-                // parts[2] is YYYY, parts[1] is MM (1-indexed), parts[0] is DD
-                return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+                // MM/DD/YYYY
+                const mm = parseInt(parts[0], 10);
+                const dd = parseInt(parts[1], 10);
+                const yyyy = parseInt(parts[2], 10);
+                return new Date(yyyy, mm - 1, dd);
             } else if (parts[0].length === 4) {
-                // parts[0] is YYYY, parts[1] is MM (1-indexed), parts[2] is DD
-                return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                // YYYY/MM/DD
+                const yyyy = parseInt(parts[0], 10);
+                const mm = parseInt(parts[1], 10);
+                const dd = parseInt(parts[2], 10);
+                return new Date(yyyy, mm - 1, dd);
             }
         }
     }
@@ -4798,7 +4811,8 @@ window.renderWorklogHistory = function (searchTerm = '') {
             const dateInfo = parseWorklogDate(i.date || i.Date);
             const statusInfo = getStatusDetails(i.progress);
             const idx = window.WORKLOG_HISTORY ? window.WORKLOG_HISTORY.indexOf(i) : -1;
-            const displayDate = `${dateInfo.day} ${dateInfo.month} ${dateInfo.year}`;
+            const dateObj = parseDateToLocalDate(i.date || i.Date);
+            const displayDate = dateObj ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}` : `${dateInfo.month}/${dateInfo.day}/${dateInfo.year}`;
 
             const getWorklogSlot = (text, slotIndex) => {
                 if (!text) return '';
@@ -6456,6 +6470,7 @@ window.toggleAdminSubView = function (viewId) {
         document.getElementById('admin-analytics-attendance-container-mobile'),
         document.getElementById('admin-analytics-worklog-container'),
         document.getElementById('admin-analytics-worklog-container-mobile'),
+        document.getElementById('admin-analytics-monthly-grid-container'),
         document.getElementById('mgmt-tab-history'), document.getElementById('mgmt-tab-extensions'), document.getElementById('mgmt-tab-linkedin'),
         document.getElementById('notif-mgmt-tab-history'), document.getElementById('notif-mgmt-tab-extensions'),
         document.getElementById('notif-mgmt-tab-history-mobile'), document.getElementById('notif-mgmt-tab-extensions-mobile')].forEach(el => el?.classList.add('hidden'));
@@ -6806,7 +6821,7 @@ window.renderAdminAnalytics = function () {
     const attendanceDateFilter = document.getElementById('attendance-date-select')?.value || 'all';
     const attendanceCustomDateVal = document.getElementById('attendance-custom-date')?.value || '';
 
-    const worklogSearch = document.getElementById('worklog-search-input')?.value.toLowerCase() || '';
+    const worklogSearch = document.getElementById('admin-worklog-search-input')?.value.toLowerCase() || '';
     const worklogDateFilter = document.getElementById('worklog-date-select')?.value || 'all';
     const worklogCustomDateVal = document.getElementById('worklog-custom-date')?.value || '';
     const worklogProgressFilter = document.getElementById('worklog-progress-select')?.value || 'all';
@@ -6822,16 +6837,12 @@ window.renderAdminAnalytics = function () {
     const formatDateStr = (dateStr) => {
         if (!dateStr) return '';
         try {
-            const strVal = String(dateStr);
-            let d;
-            if (strVal.includes('-') && strVal.split('-')[0].length === 2) {
-                const parts = strVal.split('-');
-                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else {
-                d = new Date(strVal);
-            }
-            if (isNaN(d.getTime())) return strVal;
-            return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            const d = parseDateToLocalDate(dateStr);
+            if (!d || isNaN(d.getTime())) return String(dateStr);
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            return `${mm}/${dd}/${yyyy}`;
         } catch (e) { return String(dateStr); }
     };
 
@@ -7015,17 +7026,35 @@ window.renderAdminAnalytics = function () {
         }
         let logs = window.cachedWorklogData || [];
 
+        // Sort logs descending (newest first)
+        logs = [...logs].sort((a, b) => {
+            const dA = parseDateToLocalDate(a.date) || new Date(0);
+            const dB = parseDateToLocalDate(b.date) || new Date(0);
+            return dB - dA;
+        });
+
+        // Helper to convert date to YYYY-MM-DD for comparison
+        const toISODateOnly = (dObj) => {
+            if (!dObj || isNaN(dObj.getTime())) return null;
+            return `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+        };
+
         if (isDesktop) {
             if (worklogDateFilter === 'today') {
-                logs = logs.filter(log => log.date === todayDStr);
+                logs = logs.filter(log => {
+                    const d = parseDateToLocalDate(log.date);
+                    return d && toISODateOnly(d) === todayStr;
+                });
             } else if (worklogDateFilter === 'yesterday') {
-                logs = logs.filter(log => log.date === yesterdayDStr);
+                logs = logs.filter(log => {
+                    const d = parseDateToLocalDate(log.date);
+                    return d && toISODateOnly(d) === yesterdayStr;
+                });
             } else if (worklogDateFilter === 'custom' && worklogCustomDateVal) {
-                const parts = worklogCustomDateVal.split('-');
-                if (parts.length === 3) {
-                    const customDStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    logs = logs.filter(log => log.date === customDStr);
-                }
+                logs = logs.filter(log => {
+                    const d = parseDateToLocalDate(log.date);
+                    return d && toISODateOnly(d) === worklogCustomDateVal;
+                });
             }
 
             if (worklogProgressFilter !== 'all') {
@@ -7052,9 +7081,15 @@ window.renderAdminAnalytics = function () {
 
         } else {
             if (filterMob === 'today') {
-                logs = logs.filter(log => log.date === todayDStr);
+                logs = logs.filter(log => {
+                    const d = parseDateToLocalDate(log.date);
+                    return d && toISODateOnly(d) === todayStr;
+                });
             } else if (filterMob === 'yesterday') {
-                logs = logs.filter(log => log.date === yesterdayDStr);
+                logs = logs.filter(log => {
+                    const d = parseDateToLocalDate(log.date);
+                    return d && toISODateOnly(d) === yesterdayStr;
+                });
             }
         }
 
@@ -7064,6 +7099,7 @@ window.renderAdminAnalytics = function () {
                 (log.name && log.name.toLowerCase().includes(activeSearch)) ||
                 (log.rollNo && log.rollNo.toLowerCase().includes(activeSearch)) ||
                 (log.date && log.date.toLowerCase().includes(activeSearch)) ||
+                (formatDateStr(log.date) && formatDateStr(log.date).toLowerCase().includes(activeSearch)) ||
                 (log.title && log.title.toLowerCase().includes(activeSearch)) ||
                 (log.worklog && log.worklog.toLowerCase().includes(activeSearch))
             );
@@ -7588,7 +7624,7 @@ window.refreshAttendanceTable = function () {
     window.loadAnalyticsData(true);
 };
 
-window.handleWorklogDateFilterChange = function (val) {
+window.handleAdminWorklogDateFilterChange = function (val) {
     const customPicker = document.getElementById('worklog-custom-date');
     if (customPicker) {
         if (val === 'custom') {
@@ -7602,7 +7638,7 @@ window.handleWorklogDateFilterChange = function (val) {
 };
 
 window.clearWorklogFilters = function () {
-    const searchInput = document.getElementById('worklog-search-input');
+    const searchInput = document.getElementById('admin-worklog-search-input');
     const dateSelect = document.getElementById('worklog-date-select');
     const customPicker = document.getElementById('worklog-custom-date');
     const progressSelect = document.getElementById('worklog-progress-select');
