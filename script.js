@@ -14638,7 +14638,24 @@ function isActivityPassExpired(dateStr, toTimeStr) {
     return new Date() > target;
 }
 
-function getUserStatusPillHtml(status, isExpired) {
+function getUserStatusPillHtml(status, isExpired, category = '', passDate = '') {
+    const cat = (category || '').trim().toLowerCase();
+    if (cat.includes('ps') || cat.includes('slot')) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const activityDate = parseDateToLocalDate(passDate);
+        if (activityDate && !isNaN(activityDate.getTime())) {
+            activityDate.setHours(0, 0, 0, 0);
+            if (activityDate.getTime() === today.getTime()) {
+                return `<span style="background: #22C55E; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Active</span>`;
+            } else if (activityDate.getTime() > today.getTime()) {
+                return `<span style="background: #3B82F6; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Upcoming</span>`;
+            } else {
+                return `<span style="background: #EF4444; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Expired</span>`;
+            }
+        }
+    }
+
     if (isExpired) {
         return `<span style="background: #F87171; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Expired</span>`;
     }
@@ -14769,7 +14786,7 @@ window.loadUserActivityPasses = async function(force = false) {
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Google Sans', sans-serif;">
                             ${getCategoryBadgeHtml(pass.category)}
-                            ${getUserStatusPillHtml(pass.status, isExpired)}
+                            ${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}
                         </div>
                     </div>
                 `;
@@ -14817,7 +14834,7 @@ window.loadUserActivityPasses = async function(force = false) {
                                 <span style="width: 6px; height: 6px; border-radius: 50%; background: ${iconColor}; display: inline-block;"></span>
                                 ${pass.category || ''}
                             </span>
-                            ${getUserStatusPillHtml(pass.status, isExpired)}
+                            ${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}
                         </div>
 
                         <!-- Title -->
@@ -14875,13 +14892,33 @@ window.showUserActivityPassDetailModal = function(requestId) {
     const isExpired = isActivityPassExpired(pass.date, pass.toTime);
     const timingText = `${formatTimeOnly(pass.fromTime)} to ${formatTimeOnly(pass.toTime)}`;
     
+    const cat = (pass.category || '').trim().toLowerCase();
     let statusLabel = isExpired ? "Expired" : (pass.status || "Pending Approval");
-    if (statusLabel === "Approved") statusLabel = "Active";
-    
     let statusBg = "#D97706"; // Amber
-    if (isExpired) statusBg = "#F87171"; // Coral Red
-    else if (pass.status === "Approved") statusBg = "#10B981"; // Green
-    else if (pass.status === "Rejected") statusBg = "#EF4444"; // Solid Red
+
+    if (cat.includes('ps') || cat.includes('slot')) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const activityDate = parseDateToLocalDate(pass.date);
+        if (activityDate && !isNaN(activityDate.getTime())) {
+            activityDate.setHours(0, 0, 0, 0);
+            if (activityDate.getTime() === today.getTime()) {
+                statusLabel = "Active";
+                statusBg = "#22C55E"; // Green
+            } else if (activityDate.getTime() > today.getTime()) {
+                statusLabel = "Upcoming";
+                statusBg = "#3B82F6"; // Blue
+            } else {
+                statusLabel = "Expired";
+                statusBg = "#EF4444"; // Red
+            }
+        }
+    } else {
+        if (statusLabel === "Approved") statusLabel = "Active";
+        if (isExpired) statusBg = "#F87171"; // Coral Red
+        else if (pass.status === "Approved") statusBg = "#10B981"; // Green
+        else if (pass.status === "Rejected") statusBg = "#EF4444"; // Solid Red
+    }
     
     badgeContainer.innerHTML = `
         <span style="background: ${statusBg}; color: white; padding: 2px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;">
@@ -15077,7 +15114,19 @@ window.renderAdminActivityPassesList = function(passesList) {
         if (desktopList) {
             desktopList.innerHTML = passesList.map(pass => {
                 let actionHtml = '';
-                if (pass.status === 'Pending') {
+                const cat = (pass.category || '').trim().toLowerCase();
+                const isPSSlot = cat.includes('ps') || cat.includes('slot');
+                if (isPSSlot) {
+                    const isExpired = isActivityPassExpired(pass.date, pass.toTime || '23:59');
+                    actionHtml = `
+                        <div style="display: flex; gap: 8px; justify-content: center; align-items: center; white-space: nowrap;">
+                            <button onclick="window.showActivityPassDetailModal('${pass.requestId}')" style="background: white; border: 1.5px solid #E2E8F0; color: #4F46E5; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+                                <i data-lucide="eye" style="width: 14px;"></i> Details
+                            </button>
+                            ${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}
+                        </div>
+                    `;
+                } else if (pass.status === 'Pending') {
                     actionHtml = `
                         <div style="display: flex; gap: 6px; justify-content: center; align-items: center; white-space: nowrap;">
                             <button onclick="window.showActivityPassDetailModal('${pass.requestId}')" style="background: white; border: 1.5px solid #E2E8F0; color: #4F46E5; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
@@ -15123,7 +15172,12 @@ window.renderAdminActivityPassesList = function(passesList) {
         if (mobileContainer) {
             mobileContainer.innerHTML = passesList.map(pass => {
                 let actionHtml = '';
-                if (pass.status === 'Pending') {
+                const cat = (pass.category || '').trim().toLowerCase();
+                const isPSSlot = cat.includes('ps') || cat.includes('slot');
+                if (isPSSlot) {
+                    const isExpired = isActivityPassExpired(pass.date, pass.toTime || '23:59');
+                    actionHtml = `<div style="width: 100%; margin-top: 0.5rem; text-align: center;">${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}</div>`;
+                } else if (pass.status === 'Pending') {
                     actionHtml = `
                         <div style="display: flex; gap: 8px; width: 100%; margin-top: 0.5rem;">
                             <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'approve')" style="flex: 1; height: 38px; background: #10B981; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
@@ -15224,7 +15278,12 @@ window.showActivityPassDetailModal = function(requestId) {
 
     const badgeDiv = document.getElementById('modal-detail-status-badge');
     if (badgeDiv) {
-        if (pass.status === 'Pending') {
+        const cat = (pass.category || '').trim().toLowerCase();
+        const isPSSlot = cat.includes('ps') || cat.includes('slot');
+        if (isPSSlot) {
+            const isExpired = isActivityPassExpired(pass.date, pass.toTime || '23:59');
+            badgeDiv.innerHTML = getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date);
+        } else if (pass.status === 'Pending') {
             badgeDiv.innerHTML = `
                 <div style="display: flex; gap: 10px;">
                     <button onclick="window.updateActivityPassStatus('${pass.requestId}', 'approve'); window.closeActivityPassDetailModal();" style="background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
