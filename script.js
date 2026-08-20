@@ -6806,7 +6806,7 @@ window.renderAdminAnalytics = function () {
     // Dynamically populate worklog year select from cachedAdminData if available
     const worklogYearSelect = document.getElementById('worklog-year-select');
     if (worklogYearSelect && window.cachedAdminData && window.cachedAdminData.length > 0 && !worklogYearSelect.dataset.populated) {
-        const uniqueYears = [...new Set(window.cachedAdminData.map(s => s.year || s.current_year || '').filter(y => y.trim() !== ''))].sort();
+        const uniqueYears = [...new Set(window.cachedAdminData.map(s => String(s.year || s.current_year || '').trim()).filter(y => y !== ''))].sort();
         let optionsHtml = '<option value="all">All Years</option>';
         uniqueYears.forEach(year => {
             optionsHtml += `<option value="${year}">${year}</option>`;
@@ -6910,10 +6910,10 @@ window.renderAdminAnalytics = function () {
 
         if (activeSearch) {
             logs = logs.filter(log =>
-                (log.name && log.name.toLowerCase().includes(activeSearch)) ||
-                (log.rollNo && log.rollNo.toLowerCase().includes(activeSearch)) ||
-                (log.date && log.date.toLowerCase().includes(activeSearch)) ||
-                (formatDateStr(log.date) && formatDateStr(log.date).toLowerCase().includes(activeSearch))
+                (log.name && String(log.name).toLowerCase().includes(activeSearch)) ||
+                (log.rollNo && String(log.rollNo).toLowerCase().includes(activeSearch)) ||
+                (log.date && String(log.date).toLowerCase().includes(activeSearch)) ||
+                (formatDateStr(log.date) && String(formatDateStr(log.date)).toLowerCase().includes(activeSearch))
             );
         }
 
@@ -7067,11 +7067,11 @@ window.renderAdminAnalytics = function () {
 
             if (worklogYearFilter !== 'all') {
                 logs = logs.filter(log => {
-                    const reqEmailSafe = (log.email || '').toLowerCase().trim();
-                    const reqRollSafe = (log.rollNo || '').toLowerCase().trim();
+                    const reqEmailSafe = String(log.email || '').toLowerCase().trim();
+                    const reqRollSafe = String(log.rollNo || '').toLowerCase().trim();
                     const studentObj = (window.cachedAdminData || []).find(u => {
-                        const uEmail = (u.email || u.email_id || '').toLowerCase().trim();
-                        const uRoll = (u.rollNo || u.roll_number || u.roll_no || '').toLowerCase().trim();
+                        const uEmail = String(u.email || u.email_id || '').toLowerCase().trim();
+                        const uRoll = String(u.rollNo || u.roll_number || u.roll_no || '').toLowerCase().trim();
                         return (reqEmailSafe && uEmail === reqEmailSafe) || (reqRollSafe && uRoll === reqRollSafe);
                     });
                     const studentYear = studentObj ? String(studentObj.year || studentObj.current_year || '') : '';
@@ -7096,12 +7096,12 @@ window.renderAdminAnalytics = function () {
         const activeSearch = worklogSearch || searchMob;
         if (activeSearch) {
             logs = logs.filter(log =>
-                (log.name && log.name.toLowerCase().includes(activeSearch)) ||
-                (log.rollNo && log.rollNo.toLowerCase().includes(activeSearch)) ||
-                (log.date && log.date.toLowerCase().includes(activeSearch)) ||
-                (formatDateStr(log.date) && formatDateStr(log.date).toLowerCase().includes(activeSearch)) ||
-                (log.title && log.title.toLowerCase().includes(activeSearch)) ||
-                (log.worklog && log.worklog.toLowerCase().includes(activeSearch))
+                (log.name && String(log.name).toLowerCase().includes(activeSearch)) ||
+                (log.rollNo && String(log.rollNo).toLowerCase().includes(activeSearch)) ||
+                (log.date && String(log.date).toLowerCase().includes(activeSearch)) ||
+                (formatDateStr(log.date) && String(formatDateStr(log.date)).toLowerCase().includes(activeSearch)) ||
+                (log.title && String(log.title).toLowerCase().includes(activeSearch)) ||
+                (log.worklog && String(log.worklog).toLowerCase().includes(activeSearch))
             );
         }
 
@@ -7140,7 +7140,7 @@ window.renderAdminAnalytics = function () {
                 const key = String(log.email || log.rollNo || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + String(log.date || '').replace(/[^a-z0-9]/g, '');
 
                 let badgeBg = '#E8F0FE', badgeFg = '#1A73E8', badgeBorder = '#D2E3FC';
-                const lowerProg = (log.progress || '').toLowerCase().trim();
+                const lowerProg = String(log.progress || '').toLowerCase().trim();
                 if (lowerProg.includes('completed') || lowerProg === 'complete') {
                     badgeBg = '#E6F4EA'; badgeFg = '#137333'; badgeBorder = '#CEEAD6';
                 } else if (lowerProg.includes('ongoing') || lowerProg.includes('on going') || lowerProg.includes('absent')) {
@@ -7248,7 +7248,7 @@ window.renderAdminAnalytics = function () {
                 const key = String(log.email || log.rollNo || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + String(log.date || '').replace(/[^a-z0-9]/g, '');
 
                 let badgeBg = '#E8F0FE', badgeFg = '#1A73E8', badgeBorder = '#D2E3FC';
-                const lowerProg = (log.progress || '').toLowerCase().trim();
+                const lowerProg = String(log.progress || '').toLowerCase().trim();
                 if (lowerProg.includes('completed') || lowerProg === 'complete') {
                     badgeBg = '#E6F4EA'; badgeFg = '#137333'; badgeBorder = '#CEEAD6';
                 } else if (lowerProg.includes('ongoing') || lowerProg.includes('on going') || lowerProg.includes('absent')) {
