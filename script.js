@@ -1389,7 +1389,7 @@ window.handleCredentialResponse = async function (response) {
     try {
         // Query the database directly to verify the student exists in Google Sheets (bypassing cache)
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 15000); // 15-SECOND TIMEOUT FOR COLD STARTS
+        const timer = setTimeout(() => ctrl.abort(), 40000); // 40-SECOND TIMEOUT FOR COLD STARTS
         const res = await fetch(`${API_URL}?action=verifyUser&email=${encodeURIComponent(email)}&t=${Date.now()}`, { signal: ctrl.signal });
         clearTimeout(timer);
         const data = await res.json();
@@ -1485,7 +1485,7 @@ window.handleManualLogin = async function (type) {
 
     try {
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 15000); // 15-SECOND TIMEOUT FOR COLD STARTS
+        const timer = setTimeout(() => ctrl.abort(), 40000); // 40-SECOND TIMEOUT FOR COLD STARTS
         const res = await fetch(`${API_URL}?action=verifyUser&email=${encodeURIComponent(email)}&t=${Date.now()}`, { signal: ctrl.signal });
         clearTimeout(timer);
         const data = await res.json();
@@ -1587,12 +1587,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initDuplicateTabsSync();
     // 🔍 FIX: Map screen names exactly to your IDs
     const screens = {
-        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes'), 'activity-approval': document.getElementById('mobile-activity-approval') },
+        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes'), 'activity-approval': document.getElementById('mobile-activity-approval'), 'digital-footprint': document.getElementById('mobile-digital-footprint') },
         dsk: {
             dash: document.getElementById('desktop-dashboard'),
             history: document.getElementById('desktop-history'),
             'work-log': document.getElementById('desktop-work-log'),
             profile: document.getElementById('desktop-profile'),
+            'digital-footprint': document.getElementById('desktop-digital-footprint'),
             admin: document.getElementById('desktop-admin'),
             notes: document.getElementById('desktop-notes'),
             'activity-approval': document.getElementById('desktop-activity-approval')
@@ -1600,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const navB = {
         mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile'), admin: document.getElementById('nav-admin-mobile'), notes: document.getElementById('nav-notes-mobile'), 'activity-approval': document.getElementById('nav-activity-approval-mobile') },
-        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop'), 'activity-approval': document.getElementById('nav-activity-approval-desktop') }
+        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), 'digital-footprint': document.getElementById('nav-digital-footprint-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop'), 'activity-approval': document.getElementById('nav-activity-approval-desktop') }
     };
     const actions = {
         addM: document.getElementById('btn-add-mobile'), addD: document.getElementById('btn-add-desktop'),
@@ -1808,6 +1809,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (scr === 'work-log') {
                 if (typeof window.renderWorklogHistory === 'function') {
                     window.renderWorklogHistory();
+                }
+            }
+            if (scr === 'digital-footprint') {
+                if (typeof window.loadDigitalFootprint === 'function') {
+                    window.loadDigitalFootprint();
+                }
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
                 }
             }
             if (scr === 'admin') {
@@ -2523,6 +2532,24 @@ async function fetchAttendance(email, forceBypass = false) {
 
             localStorage.setItem('user', JSON.stringify(data.student));
             window.AppStore.set('attendance', data, { ttl: 5 * 60 * 1000 });
+            
+            if (data.digitalFootprints) {
+                localStorage.setItem('df_submissions', JSON.stringify(data.digitalFootprints));
+                const linkedinMap = {};
+                data.digitalFootprints.forEach(sub => {
+                    if (sub.category === 'LINKEDIN') {
+                        try {
+                            const subDate = new Date(sub.submittedAt);
+                            if (!isNaN(subDate.getTime())) {
+                                const subDateStr = subDate.toISOString().split('T')[0];
+                                linkedinMap[subDateStr] = sub.link;
+                            }
+                        } catch(e) {}
+                    }
+                });
+                localStorage.setItem('linkedin_submissions', JSON.stringify(linkedinMap));
+            }
+            
             if (data.history) {
                 window.ATTENDANCE_HISTORY = data.history;
                 renderHistory();
@@ -4802,92 +4829,219 @@ window.renderWorklogHistory = function (searchTerm = '') {
         `;
     };
 
+    window.worklogViewMode = window.worklogViewMode || 'card';
+    window.setWorklogViewMode = function (mode) {
+        window.worklogViewMode = mode;
+        const cardBtn = document.getElementById('wl-view-card-btn');
+        const tableBtn = document.getElementById('wl-view-table-btn');
+        
+        if (cardBtn && tableBtn) {
+            if (mode === 'card') {
+                cardBtn.style.background = 'white';
+                cardBtn.style.color = '#4F46E5';
+                cardBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+                tableBtn.style.background = 'transparent';
+                tableBtn.style.color = '#64748B';
+                tableBtn.style.boxShadow = 'none';
+            } else {
+                tableBtn.style.background = 'white';
+                tableBtn.style.color = '#4F46E5';
+                tableBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+                cardBtn.style.background = 'transparent';
+                cardBtn.style.color = '#64748B';
+                cardBtn.style.boxShadow = 'none';
+            }
+        }
+        window.renderWorklogHistory();
+    };
+
     const buildDesktopTableHTML = () => {
         if (filtered.length === 0) {
             return getEmptyStateHTML("No work logs found.");
         }
 
-        const rowsHTML = filtered.map(i => {
-            const dateInfo = parseWorklogDate(i.date || i.Date);
-            const statusInfo = getStatusDetails(i.progress);
-            const idx = window.WORKLOG_HISTORY ? window.WORKLOG_HISTORY.indexOf(i) : -1;
-            const dateObj = parseDateToLocalDate(i.date || i.Date);
-            const displayDate = dateObj ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}` : `${dateInfo.month}/${dateInfo.day}/${dateInfo.year}`;
+        if (window.worklogViewMode === 'card') {
+            const cardsHTML = filtered.map(i => {
+                const dateInfo = parseWorklogDate(i.date || i.Date);
+                const statusInfo = getStatusDetails(i.progress);
+                const idx = window.WORKLOG_HISTORY ? window.WORKLOG_HISTORY.indexOf(i) : -1;
+                const dateObj = parseDateToLocalDate(i.date || i.Date);
+                const displayDate = dateObj ? `${String(dateObj.getDate()).padStart(2, '0')} ${dateInfo.month} ${dateObj.getFullYear()}` : `${dateInfo.day} ${dateInfo.month} ${dateInfo.year}`;
 
-            const getWorklogSlot = (text, slotIndex) => {
-                if (!text) return '';
-                const textStr = String(text);
-                const slots = [
-                    /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
-                    /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
-                    /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
-                    /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
-                    /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                const getWorklogSlot = (text, slotIndex) => {
+                    if (!text) return '';
+                    const textStr = String(text);
+                    const slots = [
+                        /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                    ];
+                    const match = textStr.match(slots[slotIndex]);
+                    return match ? match[1].trim() : '';
+                };
+
+                const s1 = i.s1 || getWorklogSlot(i.worklog, 0);
+                const s2 = i.s2 || getWorklogSlot(i.worklog, 1);
+                const s3 = i.s3 || getWorklogSlot(i.worklog, 2);
+                const s4 = i.s4 || getWorklogSlot(i.worklog, 3);
+                const s5 = i.s5 || getWorklogSlot(i.worklog, 4);
+
+                let slotsHtml = '';
+                const slotsList = [
+                    { name: 'S1', label: '8:45 AM - 10:25 AM', val: s1 },
+                    { name: 'S2', label: '10:40 AM - 12:30 PM', val: s2 },
+                    { name: 'S3', label: '1:30 PM - 3:10 PM', val: s3 },
+                    { name: 'S4', label: '3:25 PM - 4:25 PM', val: s4 },
+                    { name: 'S5', label: 'Custom Time Slot', val: s5 }
                 ];
-                const match = textStr.match(slots[slotIndex]);
-                return match ? match[1].trim() : '';
-            };
 
-            const s1 = i.s1 || getWorklogSlot(i.worklog, 0);
-            const s2 = i.s2 || getWorklogSlot(i.worklog, 1);
-            const s3 = i.s3 || getWorklogSlot(i.worklog, 2);
-            const s4 = i.s4 || getWorklogSlot(i.worklog, 3);
-            const s5 = i.s5 || getWorklogSlot(i.worklog, 4);
+                slotsList.forEach(s => {
+                    if (s.val) {
+                        slotsHtml += `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #F8FAFC; border: 1.5px solid #F1F5F9; border-radius: 14px; margin-top: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                                    <i data-lucide="paperclip" style="width: 14px; height: 14px; color: #4F46E5; flex-shrink: 0;"></i>
+                                    <span style="font-size: 0.78rem; font-weight: 800; color: #4F46E5; letter-spacing: 0.3px; flex-shrink: 0; text-transform: uppercase; margin-right: 4px;">${s.name} (${s.label})</span>
+                                    <span style="font-size: 0.82rem; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${s.val.replace(/"/g, '&quot;')}">${s.val}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
 
-            const wrapVal = (val) => {
-                const clean = String(val || '-').trim();
-                return `<div style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550;" title="${clean.replace(/"/g, '&quot;')}">${clean}</div>`;
-            };
+                if (!slotsHtml) {
+                    slotsHtml = `<div style="font-size: 0.82rem; color: #94A3B8; font-weight: 500; padding: 8px 0;">No slots submitted.</div>`;
+                }
+
+                const remarksHtml = i.remarks ? `
+                    <div style="display: flex; align-items: center; gap: 6px; background: #FFF5F5; color: #E53E3E; padding: 6px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 800; border: 1.5px solid #FED7D7; white-space: nowrap;">
+                        <i data-lucide="message-square" style="width: 12px; height: 12px;"></i>
+                        <span>Remarks: ${i.remarks}</span>
+                    </div>
+                ` : `
+                    <div style="display: flex; align-items: center; gap: 6px; background: #F0FDF4; color: #15803D; padding: 6px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 800; border: 1.5px solid #DCFCE7; white-space: nowrap;">
+                        <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i>
+                        <span>Verified</span>
+                    </div>
+                `;
+
+                return `
+                    <div onclick="window.showWorklogDetailsByIndex(${idx})" style="background: white; border: 1.5px solid #E2E8F0; border-radius: 24px; padding: 1.75rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; gap: 1rem; position: relative;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(0, 0, 0, 0.06)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 20px rgba(0, 0, 0, 0.02)';">
+                        <!-- Top Row: Date Title & Chevron -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 1.2rem; font-weight: 800; color: #0F172A; margin: 0; font-family: 'Google Sans', sans-serif;">Daily Worklog - ${displayDate}</h3>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #EEF2FF; display: flex; align-items: center; justify-content: center; color: #4F46E5;">
+                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Slots List (Styled like attachment links) -->
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            ${slotsHtml}
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="border-top: 1.5px solid #F1F5F9; margin-top: 6px;"></div>
+
+                        <!-- Footer Row -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: #64748B;">${dateInfo.dayOfWeek}</span>
+                            ${remarksHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             return `
-                <tr onclick="window.showWorklogDetailsByIndex(${idx})" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='transparent';">
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; font-weight: 700; color: #1E293B; white-space: nowrap; vertical-align: top;">
-                        <div style="display: flex; flex-direction: column;">
-                            <span>${displayDate}</span>
-                            <span style="font-size: 0.72rem; font-weight: 600; color: #3B82F6; margin-top: 2px;">${dateInfo.dayOfWeek}</span>
-                        </div>
-                    </td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s1)}</td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s2)}</td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s3)}</td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s4)}</td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s5)}</td>
-                    <td style="padding: 1.1rem 1.5rem; white-space: nowrap; vertical-align: top;">
-                        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 100px; background: ${statusInfo.pillBg}; color: ${statusInfo.pillColor}; text-transform: capitalize; border: 1px solid rgba(0,0,0,0.02);">
-                            <i data-lucide="${statusInfo.icon}" style="width: 11px; height: 11px;"></i>
-                            ${statusInfo.text}
-                        </span>
-                    </td>
-                    <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #475569; font-weight: 600; vertical-align: top;">
-                        ${wrapVal(i.remarks)}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        return `
-            <div style="overflow: hidden; padding: 0; margin-bottom: 2rem; background: white; border: 1.5px solid #F1F5F9; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);">
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 1500px; text-align: left; font-family: inherit;">
-                        <thead>
-                            <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 10%;">Date</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S1 (8:45-10:25)</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S2 (10:40-12:30)</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S3 (1:30-3:10)</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S4 (3:25-4:25)</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">S5 (Custom)</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 8%;">Status</th>
-                                <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsHTML}
-                        </tbody>
-                    </table>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1.5rem; width: 100%; margin-bottom: 2rem;">
+                    ${cardsHTML}
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            const rowsHTML = filtered.map(i => {
+                const dateInfo = parseWorklogDate(i.date || i.Date);
+                const statusInfo = getStatusDetails(i.progress);
+                const idx = window.WORKLOG_HISTORY ? window.WORKLOG_HISTORY.indexOf(i) : -1;
+                const dateObj = parseDateToLocalDate(i.date || i.Date);
+                const displayDate = dateObj ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}` : `${dateInfo.month}/${dateInfo.day}/${dateInfo.year}`;
+
+                const getWorklogSlot = (text, slotIndex) => {
+                    if (!text) return '';
+                    const textStr = String(text);
+                    const slots = [
+                        /\[8:45 AM - 10:25 AM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[10:40 AM - 12:30 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[1:30 PM - 3:10 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[3:25 PM - 4:25 PM\]\s*([\s\S]*?)(?=\[|$)/i,
+                        /\[Custom Slot\]\s*([\s\S]*?)(?=\[|$)/i
+                    ];
+                    const match = textStr.match(slots[slotIndex]);
+                    return match ? match[1].trim() : '';
+                };
+
+                const s1 = i.s1 || getWorklogSlot(i.worklog, 0);
+                const s2 = i.s2 || getWorklogSlot(i.worklog, 1);
+                const s3 = i.s3 || getWorklogSlot(i.worklog, 2);
+                const s4 = i.s4 || getWorklogSlot(i.worklog, 3);
+                const s5 = i.s5 || getWorklogSlot(i.worklog, 4);
+
+                const wrapVal = (val) => {
+                    const clean = String(val || '-').trim();
+                    return `<div style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550;" title="${clean.replace(/"/g, '&quot;')}">${clean}</div>`;
+                };
+
+                return `
+                    <tr onclick="window.showWorklogDetailsByIndex(${idx})" style="border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='transparent';">
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; font-weight: 700; color: #1E293B; white-space: nowrap; vertical-align: top;">
+                            <div style="display: flex; flex-direction: column;">
+                                <span>${displayDate}</span>
+                                <span style="font-size: 0.72rem; font-weight: 600; color: #3B82F6; margin-top: 2px;">${dateInfo.dayOfWeek}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s1)}</td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s2)}</td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s3)}</td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s4)}</td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #334155; vertical-align: top;">${wrapVal(s5)}</td>
+                        <td style="padding: 1.1rem 1.5rem; white-space: nowrap; vertical-align: top;">
+                            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 100px; background: ${statusInfo.pillBg}; color: ${statusInfo.pillColor}; text-transform: capitalize; border: 1px solid rgba(0,0,0,0.02);">
+                                <i data-lucide="${statusInfo.icon}" style="width: 11px; height: 11px;"></i>
+                                ${statusInfo.text}
+                            </span>
+                        </td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.85rem; color: #475569; font-weight: 600; vertical-align: top;">
+                            ${wrapVal(i.remarks)}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div style="overflow: hidden; padding: 0; margin-bottom: 2rem; background: white; border: 1.5px solid #F1F5F9; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 1500px; text-align: left; font-family: inherit;">
+                            <thead>
+                                <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 10%;">Date</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S1 (8:45-10:25)</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S2 (10:40-12:30)</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S3 (1:30-3:10)</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 16%;">S4 (3:25-4:25)</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">S5 (Custom)</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 8%;">Status</th>
+                                    <th style="padding: 1.25rem 1.5rem; font-size: 0.85rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; width: 12%;">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
     };
 
     // 📱 Mobile Render
@@ -6496,7 +6650,7 @@ window.toggleAdminSubView = function (viewId) {
         if (dNotif) dNotif.classList.remove('hidden');
         if (mNotif) mNotif.classList.remove('hidden');
         if (window.initNotifTargetFilters) window.initNotifTargetFilters();
-        window.loadNotifications(false);
+        window.switchMgmtTab('history');
     } else if (viewId === 'tasks') {
         if (dTasks) dTasks.classList.remove('hidden');
         if (mTasks) mTasks.classList.remove('hidden');
@@ -9578,6 +9732,155 @@ window.openAdminManualAttendance = function (targetEmail) {
 // Final Cleanup: AI and Voice features removed as per user request.
 
 // --- NOTIFICATION MANAGEMENT LOGIC ---
+let quill;
+window.initQuillEditor = function () {
+    if (typeof Quill !== 'undefined' && !quill) {
+        quill = new Quill('#adv-notif-editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['blockquote', 'link'],
+                    ['clean']
+                ]
+            }
+        });
+        quill.on('text-change', function() {
+            const htmlValue = quill.root.innerHTML;
+            const textValue = quill.getText().trim();
+            const descInput = document.getElementById('adv-notif-description');
+            if (descInput) {
+                descInput.value = textValue ? htmlValue : '';
+            }
+            window.updateLivePreview();
+        });
+    }
+};
+
+window.toggleCreateNotifModal = function (show) {
+    const modal = document.getElementById('create-notif-modal-container');
+    if (modal) {
+        if (show) {
+            modal.classList.remove('hidden');
+            document.getElementById('mgmt-tab-create')?.classList.remove('hidden');
+            setTimeout(() => {
+                window.initQuillEditor();
+            }, 100);
+        } else {
+            modal.classList.add('hidden');
+            window.switchMgmtTab('history');
+        }
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.toggleSelectAllTarget = function (category, clickedEl, mode = 'notif') {
+    const state = mode === 'task' ? window.taskMgmtState : window.advNotifState;
+    if (!state) return;
+    
+    const selectAll = !clickedEl.classList.contains('active');
+    if (selectAll) {
+        clickedEl.classList.add('active');
+    } else {
+        clickedEl.classList.remove('active');
+    }
+    
+    const yearsSet = new Set();
+    const domainsSet = new Set();
+    
+    const findInUser = (user, prefixes) => {
+        const keys = Object.keys(user);
+        const foundKey = keys.find(k => prefixes.some(p => k.toLowerCase().replace(/[\s_]/g, '').includes(p)));
+        return foundKey ? user[foundKey] : null;
+    };
+    
+    if (window.cachedAdminData) {
+        window.cachedAdminData.forEach(user => {
+            const y = findInUser(user, ['year']);
+            const d = findInUser(user, ['domain']);
+            if (y && y !== 'null' && y !== 'N/A') yearsSet.add(y.toString().trim());
+            if (d && d !== 'null' && d !== 'N/A') domainsSet.add(d.toString().trim());
+        });
+    }
+    
+    const items = category === 'year' ? Array.from(yearsSet).sort() : Array.from(domainsSet).sort();
+    
+    if (category === 'year') {
+        state.targets.years = selectAll ? [...items] : [];
+    } else {
+        state.targets.domains = selectAll ? [...items] : [];
+    }
+    
+    const container = clickedEl.parentElement;
+    if (container) {
+        const chips = container.querySelectorAll('.target-chip');
+        chips.forEach(chip => {
+            if (chip.classList.contains('select-all-chip')) return;
+            if (selectAll) chip.classList.add('active');
+            else chip.classList.remove('active');
+        });
+    }
+
+    if (mode === 'task') updateTaskPreview();
+    else updateLivePreview();
+};
+
+window.setScheduleSendPreset = function (preset) {
+    const now = new Date();
+    let scheduleDate = new Date();
+    
+    if (preset === 'tomorrow-morning') {
+        scheduleDate.setDate(now.getDate() + 1);
+        scheduleDate.setHours(8, 0, 0, 0);
+    } else if (preset === 'tomorrow-afternoon') {
+        scheduleDate.setDate(now.getDate() + 1);
+        scheduleDate.setHours(13, 0, 0, 0);
+    } else if (preset === 'monday-morning') {
+        const day = now.getDay();
+        const daysToAdd = day === 0 ? 1 : 8 - day;
+        scheduleDate.setDate(now.getDate() + daysToAdd);
+        scheduleDate.setHours(8, 0, 0, 0);
+    }
+    
+    const tzOffset = scheduleDate.getTimezoneOffset() * 60000;
+    const localISODate = new Date(scheduleDate.getTime() - tzOffset).toISOString().slice(0, 16);
+    
+    const launchInput = document.getElementById('adv-notif-launch');
+    if (launchInput) {
+        launchInput.value = localISODate;
+        window.showToast('Scheduled', `Launch scheduled for ${scheduleDate.toLocaleString()}`, 'clock');
+    }
+    
+    document.getElementById('schedule-send-dropdown')?.classList.add('hidden');
+};
+
+window.openCustomSchedulePicker = function () {
+    const launchInput = document.getElementById('adv-notif-launch');
+    if (launchInput) {
+        launchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        launchInput.focus();
+        launchInput.style.border = '2px solid #4F46E5';
+        setTimeout(() => {
+            launchInput.style.border = '1px solid #E2E8F0';
+        }, 1500);
+    }
+    document.getElementById('schedule-send-dropdown')?.classList.add('hidden');
+};
+
+window.toggleScheduleDropdown = function (event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('schedule-send-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+};
+
+document.addEventListener('click', function () {
+    document.getElementById('schedule-send-dropdown')?.classList.add('hidden');
+});
+
 window.switchMgmtTab = function (tabId) {
     const tabs = ['create', 'broadcast', 'challenge'];
     tabs.forEach(t => {
@@ -9594,8 +9897,12 @@ window.switchMgmtTab = function (tabId) {
         document.getElementById(id)?.classList.add('hidden');
     });
 
+    if (tabId !== 'create') {
+        document.getElementById('create-notif-modal-container')?.classList.add('hidden');
+    }
+
     if (tabId === 'create') {
-        document.getElementById('mgmt-tab-create')?.classList.remove('hidden');
+        window.toggleCreateNotifModal(true);
         document.getElementById('mgmt-tab-create-mobile')?.classList.remove('hidden');
     } else if (tabId === 'history') {
         document.getElementById('notif-mgmt-tab-history')?.classList.remove('hidden');
@@ -9911,7 +10218,13 @@ window.updateLivePreview = function () {
         const pBtnSubmit = document.getElementById(`preview-btn-submit${suffix}`);
 
         if (pTitle) pTitle.innerText = title;
-        if (pContent) pContent.innerText = content;
+        if (pContent) {
+            if (content.trim().startsWith('<') || content.includes('</')) {
+                pContent.innerHTML = content;
+            } else {
+                pContent.innerText = content;
+            }
+        }
         if (pType) {
             pType.innerText = window.advNotifState.type || 'Instruction';
             pType.style.background = window.advNotifState.type === 'challenge' ? '#FEF3C7' : '#F1F5F9';
@@ -10080,6 +10393,7 @@ window.filterUserDropdown = function (query) {
     dropdowns.forEach(d => {
         if (d) {
             d.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #64748B; font-size: 0.85rem;">No matching students found</div>';
+            d.classList.remove('hidden');
         }
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -10096,6 +10410,7 @@ window.selectUser = function (name, email, avatar) {
         if (!list || !inputs[i]) return;
         const chip = document.createElement('div');
         chip.className = 'user-chip animate-scale-up';
+        chip.setAttribute('data-email', email);
         chip.innerHTML = `
             <img src="${avatar}">
             <span>${name}</span>
@@ -10106,8 +10421,15 @@ window.selectUser = function (name, email, avatar) {
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    // Multi-select optimization: Keep dropdown open but clear search
-    inputs.forEach(input => { if (input) { input.value = ''; input.focus(); } });
+    // Multi-select optimization: Clear search and only focus the visible input to avoid focus hijacking
+    inputs.forEach(input => {
+        if (input) {
+            input.value = '';
+            if (input.offsetWidth > 0 || input.offsetHeight > 0) {
+                input.focus();
+            }
+        }
+    });
     filterUserDropdown(''); // Refresh to show checkmarks
     updateLivePreview();
 };
@@ -10121,10 +10443,63 @@ document.addEventListener('click', function (e) {
 
 window.removeUser = function (email) {
     window.advNotifState.targets.users = window.advNotifState.targets.users.filter(u => u.email !== email);
-    document.querySelectorAll('.user-chip').forEach(c => {
-        if (c.innerHTML.includes(`removeUser('${email}'`)) c.remove();
-    });
+    document.querySelectorAll(`.user-chip[data-email="${email}"]`).forEach(c => c.remove());
     updateLivePreview();
+};
+
+window.handleUserPasteOrInput = function (inputEl, event) {
+    let text = "";
+    if (event.type === 'paste') {
+        text = (event.clipboardData || window.clipboardData).getData('text');
+        event.preventDefault();
+    } else {
+        text = inputEl.value;
+        const lastChar = text.slice(-1);
+        if (lastChar === ',' || lastChar === ';' || lastChar === ' ' || lastChar === '\n') {
+            // separator detected, proceed to parse
+        } else {
+            window.filterUserDropdown(text);
+            return;
+        }
+    }
+
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const emails = text.match(emailRegex) || [];
+
+    if (emails.length > 0) {
+        emails.forEach(email => {
+            const cleanEmail = email.trim().toLowerCase();
+            const matchedUser = (window.cachedAdminData || []).find(u => {
+                const uEmail = (u.email || u.email_id || '').toLowerCase().trim();
+                return uEmail === cleanEmail;
+            });
+
+            if (matchedUser) {
+                const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(matchedUser.name)}&background=random&color=fff`;
+                window.selectUser(matchedUser.name, cleanEmail, avatar);
+            } else {
+                const name = cleanEmail.split('@')[0];
+                const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+                window.selectUser(name, cleanEmail, avatar);
+            }
+        });
+        inputEl.value = '';
+    } else {
+        if (event.type === 'paste') {
+            inputEl.value = text;
+            window.filterUserDropdown(text);
+        }
+    }
+};
+
+window.handleUserKeyDown = function (inputEl, event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const text = inputEl.value.trim();
+        if (text) {
+            window.handleUserPasteOrInput(inputEl, { type: 'enter', preventDefault: () => {} });
+        }
+    }
 };
 
 window.toggleBuilderField = function (el, field) {
@@ -10206,7 +10581,10 @@ window.initNotifTargetFilters = function () {
         const renderYears = (containerId, suffix = '', mode = 'notif') => {
             const container = document.getElementById(containerId);
             if (!container) return;
-            container.innerHTML = years.map(y => `
+            const selectAllHtml = `
+                <span class="target-chip select-all-chip" onclick="window.toggleSelectAllTarget('year', this, '${mode}')">Select All</span>
+            `;
+            container.innerHTML = selectAllHtml + years.map(y => `
                 <span class="target-chip" onclick="toggleTargetAdv(this, 'year', '${y}', '${mode}')">${y}${suffix}</span>
             `).join('');
         };
@@ -10220,7 +10598,10 @@ window.initNotifTargetFilters = function () {
         const renderDomains = (containerId, mode = 'notif') => {
             const container = document.getElementById(containerId);
             if (!container) return;
-            container.innerHTML = domains.map(d => `
+            const selectAllHtml = `
+                <span class="target-chip select-all-chip" onclick="window.toggleSelectAllTarget('domain', this, '${mode}')">Select All</span>
+            `;
+            container.innerHTML = selectAllHtml + domains.map(d => `
                 <span class="target-chip" onclick="toggleTargetAdv(this, 'domain', '${d}', '${mode}')">${d}</span>
             `).join('');
         };
@@ -13288,46 +13669,13 @@ let currentFolderFilter = "Inbox";
 let currentSmartView = null; // 'all', 'pinned', 'favorites', 'trash'
 let folderTreeCollapsed = false;
 
-// Initialize Notes from LocalStorage & Generate Mock Data
+// Initialize Notes from LocalStorage
 function initNotes() {
     try {
         const stored = localStorage.getItem('ds_notes');
         notesData = stored ? JSON.parse(stored) : [];
     } catch (e) {
         notesData = [];
-    }
-
-    if (notesData.length < 10) {
-        const folders = ["Work", "Personal", "Design Tasks", "Research", "Inbox"];
-        const colors = ["#FFFFFF", "#FEF3C7", "#D1FAE5", "#E0F2FE", "#F3E8FF", "#FEE2E2"];
-        const contents = [
-            "<h2>Weekly Progress Agenda</h2><ul><li>Review timeline updates</li><li>Address layout spacing issues</li><li>Finalize deployment checklist</li></ul>",
-            "<h2>Personal To-Do List</h2><ol><li>Pick up dry cleaning</li><li>Schedule dentist appointment</li><li>Order new notebook</li></ol>",
-            "<h2>Product Design System</h2><p>Always enforce unified border radius, consistent padding cards, readable line height, and premium colors.</p>",
-            "<h2>Leading App Research</h2><p>Notion, Obsidian, and Bear use block editors with inline formatting to optimize user productivity.</p>",
-            "<h2>App Idea Board</h2><p>A minimal text editor that syncs directly with local storage cache, supporting export to Markdown formats.</p>"
-        ];
-
-        notesData = [];
-        for (let i = 1; i <= 65; i++) {
-            const folder = folders[i % folders.length];
-            const color = colors[i % colors.length];
-            const body = contents[i % contents.length];
-            const ws = i % 3 === 0 ? "Personal Journal" : (i % 2 === 0 ? "Marketing Docs" : "Engineering Docs");
-            notesData.push({
-                id: 'note_mock_' + i + '_' + Date.now(),
-                title: `Demo Note #${i} - ${folder} Space`,
-                body: body,
-                workspace: ws,
-                folder: folder,
-                color: color,
-                isPinned: i % 8 === 0,
-                isFavorite: i % 5 === 0,
-                isDeleted: false,
-                updatedAt: Date.now() - (i * 3600000 * 4)
-            });
-        }
-        localStorage.setItem('ds_notes', JSON.stringify(notesData));
     }
 }
 
@@ -15672,5 +16020,620 @@ window.closeAdminTaskDetailModal = function() {
         const selectedYear = parseInt(document.getElementById('linkedin-overview-year')?.value || new Date().getFullYear());
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         window.downloadTableAsExcelXML(table, `linkedin_monthly_grid_${monthNames[selectedMonth]}_${selectedYear}.xls`);
+    };
+
+    window.activeDFCategory = 'LINKEDIN';
+
+    window.selectDFCategory = function(cat) {
+        window.activeDFCategory = cat;
+        
+        const suffixes = ['mobile', 'modal'];
+        const categories = ['LINKEDIN', 'LEET CODE', 'CODE CHEF', 'OTHERS'];
+        
+        suffixes.forEach(suffix => {
+            categories.forEach(c => {
+                const btnId = `df-cat-${c.replace(' ', '')}-${suffix}`;
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (c === cat) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        });
+        
+        window.renderDFContent();
+    };
+
+    window.renderDFContent = function() {
+        const isMobile = window.innerWidth <= 1024;
+        const suffix = isMobile ? 'mobile' : 'desktop';
+        
+        const cat = window.activeDFCategory;
+        let contentHTML = '';
+        
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        const readableDate = dateStr;
+        
+        const submissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+        
+        function isSameDay(dateInput, targetDateStr) {
+            if (!dateInput) return false;
+            const parts = targetDateStr.split('-');
+            const targetYear = parts[0];
+            const targetMonth = parts[1];
+            const targetDay = parts[2];
+            
+            const dateStrVal = String(dateInput).trim();
+            if (dateStrVal.includes(targetDateStr)) {
+                return true;
+            }
+            
+            const formattedAlt1 = `${targetDay}-${targetMonth}-${targetYear}`;
+            const formattedAlt2 = `${targetDay}/${targetMonth}/${targetYear}`;
+            const formattedAlt3 = `${targetDay}-${targetMonth.replace(/^0/, '')}-${targetYear}`;
+            const formattedAlt4 = `${targetDay}/${targetMonth.replace(/^0/, '')}/${targetYear}`;
+            if (dateStrVal.includes(formattedAlt1) || dateStrVal.includes(formattedAlt2) || dateStrVal.includes(formattedAlt3) || dateStrVal.includes(formattedAlt4)) {
+                return true;
+            }
+            
+            try {
+                const d = new Date(dateInput);
+                if (!isNaN(d.getTime())) {
+                    const utcY = String(d.getUTCFullYear());
+                    const utcM = String(d.getUTCMonth() + 1).padStart(2, '0');
+                    const utcD = String(d.getUTCDate()).padStart(2, '0');
+                    if (`${utcY}-${utcM}-${utcD}` === targetDateStr) return true;
+                    
+                    const locY = String(d.getFullYear());
+                    const locM = String(d.getMonth() + 1).padStart(2, '0');
+                    const locD = String(d.getDate()).padStart(2, '0');
+                    if (`${locY}-${locM}-${locD}` === targetDateStr) return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        const existingSub = submissions.find(sub => {
+            if (sub.category !== cat) return false;
+            return isSameDay(sub.postDate, dateStr) || isSameDay(sub.submittedAt, dateStr);
+        });
+
+        if (cat === 'LINKEDIN') {
+            const todayDay = today.getDay(); // 0-6 (Sun-Sat)
+            const isAllowedDay = [2, 4, 6].includes(todayDay); // Tuesday, Thursday, Saturday
+            
+            if (!isAllowedDay) {
+                contentHTML = `
+                    <div style="text-align: center; padding: 2rem 1.5rem; background: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 16px; color: #B45309; margin-top: 1rem;">
+                        <i data-lucide="alert-triangle" style="width: 32px; height: 32px; margin: 0 auto 0.75rem auto; color: #D97706;"></i>
+                        <h4 style="font-weight: 800; font-size: 1rem; margin-bottom: 6px;">Submission Restricted</h4>
+                        <p style="font-size: 0.85rem; color: #B45309; margin: 0; font-weight: 600; font-style: italic;">
+                             "Today is not the day for post on LinkedIn"
+                        </p>
+                        <p style="font-size: 0.78rem; color: #D97706; margin-top: 8px; font-weight: 500;">
+                            LinkedIn post submissions are only allowed on <strong>Tuesday</strong>, <strong>Thursday</strong>, and <strong>Saturday</strong>.
+                        </p>
+                    </div>
+                `;
+            } else if (existingSub) {
+                contentHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+                        <div class="task-form-group">
+                            <label class="task-form-label">Submission Date</label>
+                            <input type="text" value="${readableDate}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8;">
+                        </div>
+                        <div class="task-form-group">
+                            <label class="task-form-label">LinkedIn Post URL</label>
+                            <div style="position: relative;">
+                                <input type="text" value="${existingSub.link}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8; padding-right: 3rem;">
+                                <i data-lucide="lock" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; background: #F0FDF4; border: 1px solid #DCFCE7; padding: 12px 16px; border-radius: 12px; color: #166534; font-size: 0.85rem; font-weight: 700;">
+                            <i data-lucide="check-circle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                            <span>You already submitted. Submission locked. You cannot edit submitted links.</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                contentHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+                        <div class="task-form-group">
+                            <label class="task-form-label">Submission Date (Fixed)</label>
+                            <input type="text" value="${readableDate}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8;">
+                        </div>
+                        <div class="task-form-group">
+                            <label class="task-form-label">LinkedIn Post URL</label>
+                            <input type="url" id="df-url-input" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
+                        </div>
+                        <button id="df-submit-btn" onclick="window.submitDFPost('LINKEDIN')" class="btn" style="background: #6366F1; color: white; border: none; padding: 0 1.5rem; height: 50px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);">
+                            Submit LinkedIn Post
+                        </button>
+                    </div>
+                `;
+            }
+        } else {
+            const placeholder = cat === 'LEET CODE' ? 'https://leetcode.com/submissions/detail/...' : (cat === 'CODE CHEF' ? 'https://www.codechef.com/viewsolution/...' : 'https://...');
+            if (existingSub) {
+                contentHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+                        <div class="task-form-group">
+                            <label class="task-form-label">Submission Date</label>
+                            <input type="text" value="${readableDate}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8;">
+                        </div>
+                        <div class="task-form-group">
+                            <label class="task-form-label">${cat} Solution URL</label>
+                            <div style="position: relative;">
+                                <input type="text" value="${existingSub.link}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8; padding-right: 3rem;">
+                                <i data-lucide="lock" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 18px; color: #94A3B8;"></i>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; background: #F0FDF4; border: 1px solid #DCFCE7; padding: 12px 16px; border-radius: 12px; color: #166534; font-size: 0.85rem; font-weight: 700;">
+                            <i data-lucide="check-circle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                            <span>You already submitted. Submission locked. You cannot edit submitted links.</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                contentHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+                        <div class="task-form-group">
+                            <label class="task-form-label">Submission Date (Fixed)</label>
+                            <input type="text" value="${readableDate}" class="task-form-input" disabled style="background: #F1F5F9; color: #64748B; cursor: not-allowed; opacity: 0.8;">
+                        </div>
+                        <div class="task-form-group">
+                            <label class="task-form-label">${cat} Solution URL</label>
+                            <input type="url" id="df-url-input" class="task-form-input" placeholder="${placeholder}">
+                        </div>
+                        <button id="df-submit-btn" onclick="window.submitDFPost('${cat}')" class="btn" style="background: #6366F1; color: white; border: none; padding: 0 1.5rem; height: 50px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);">
+                            Submit ${cat} Link
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Render Submission History List/Card
+        const historyContainer = document.getElementById(`df-history-content-${suffix}`);
+        if (historyContainer) {
+            if (!window.activeDFHistoryTab) {
+                window.activeDFHistoryTab = 'ALL';
+            }
+            
+            const selectedCatText = window.activeDFHistoryTab === 'ALL' ? 'All Platforms' : (window.activeDFHistoryTab === 'LEET CODE' ? 'LeetCode' : (window.activeDFHistoryTab === 'CODE CHEF' ? 'CodeChef' : window.activeDFHistoryTab));
+            
+            historyContainer.innerHTML = `
+                <div class="card no-hover" style="padding: 1.5rem 2rem; border-radius: 20px !important; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; transition: none; overflow: visible !important;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 1rem;">
+                        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="history" style="width: 18px; height: 18px; color: #6366F1;"></i> Submission History
+                        </h4>
+                    </div>
+                    
+                    <!-- Premium Filter Toolbar Flex Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; background: white; padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.01); overflow: visible !important; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 1.25rem; flex: 1; flex-wrap: wrap;">
+                            <!-- Search Box -->
+                            <div class="search-box" style="width: 240px; height: 40px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; display: flex; align-items: center; padding: 0 10px; gap: 8px;">
+                                <i data-lucide="search" style="width: 16px; color: #94A3B8;"></i>
+                                <input type="text" id="df-filter-search" oninput="window.filterDFHistory()" placeholder="Search logs..." style="font-size: 0.85rem; font-weight: 600; border: none; background: transparent; width: 100%; outline: none; color: #1E293B;">
+                            </div>
+
+                            <!-- Date Picker -->
+                            <div style="height: 40px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #1E293B;">
+                                <i data-lucide="calendar" style="width: 16px; color: #64748B;"></i>
+                                <input type="date" id="df-filter-date" onchange="window.filterDFHistory()" style="font-size: 0.85rem; font-weight: 600; border: none; background: transparent; outline: none; color: #1E293B; cursor: pointer;">
+                            </div>
+
+                            <!-- Platform Dropdown -->
+                            <div style="position: relative; display: inline-block;" id="df-category-dropdown-wrapper">
+                                <div id="btn-df-category-dropdown" onclick="window.toggleDFCategoryDropdown(event)" style="height: 40px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #1E293B; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#CBD5E1'" onmouseout="this.style.borderColor='#E2E8F0'">
+                                    <i data-lucide="filter" style="width: 16px; color: #64748B;"></i>
+                                    <span id="selected-df-category-text">${selectedCatText}</span>
+                                    <i data-lucide="chevron-down" style="width: 14px; color: #64748B;"></i>
+                                </div>
+                                <div id="df-category-dropdown-menu" class="card hidden animate-scale-up" style="position: absolute; left: 0; top: 46px; min-width: 180px; padding: 6px; background: white; border-radius: 12px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #E2E8F0; z-index: 10000;">
+                                    <div class="dropdown-menu-item" style="padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; color: #1E293B;" onclick="window.selectDFHistoryTabDropdown('ALL')">All Platforms</div>
+                                    <div class="dropdown-menu-item" style="padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; color: #1E293B;" onclick="window.selectDFHistoryTabDropdown('LINKEDIN')">LinkedIn</div>
+                                    <div class="dropdown-menu-item" style="padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; color: #1E293B;" onclick="window.selectDFHistoryTabDropdown('LEET CODE')">LeetCode</div>
+                                    <div class="dropdown-menu-item" style="padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; color: #1E293B;" onclick="window.selectDFHistoryTabDropdown('CODE CHEF')">CodeChef</div>
+                                    <div class="dropdown-menu-item" style="padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; color: #1E293B;" onclick="window.selectDFHistoryTabDropdown('OTHERS')">Others</div>
+                                </div>
+                            </div>
+
+                            <!-- Clear All Button -->
+                            <button onclick="window.clearDFFilters()" style="height: 40px; background: transparent; border: 1px solid transparent; color: #64748B; padding: 0 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#64748B'">
+                                <i data-lucide="x-circle" style="width: 16px;"></i>
+                                Clear All
+                            </button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-shrink: 0;">
+                            <span id="df-records-count" style="font-size: 0.85rem; color: #64748B; font-weight: 600;">Showing 0 records</span>
+                            <button class="btn-primary" onclick="window.exportDFToCSV()" style="height: 40px; background: #F8FAFC; border: 1px solid #E2E8F0; color: #1E293B; padding: 0 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: none;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#F8FAFC'">
+                                <i data-lucide="download" style="width: 16px; color: #64748B;"></i>
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="df-history-list-items" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+                </div>
+            `;
+            window.filterDFHistory();
+        }
+        
+        const modalContainer = document.getElementById('df-dynamic-content-modal');
+        if (modalContainer) {
+            modalContainer.innerHTML = contentHTML.replace(/id="df-url-input"/g, 'id="df-url-input-modal"');
+        }
+        const mobileContainer = document.getElementById('df-dynamic-content-mobile');
+        if (mobileContainer) {
+            mobileContainer.innerHTML = contentHTML.replace(/id="df-url-input"/g, 'id="df-url-input-mobile"');
+        }
+        
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    };
+
+    window.toggleDFCategoryDropdown = function(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('df-category-dropdown-menu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    };
+    
+    // Also, close the dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('df-category-dropdown-menu');
+        if (menu && !menu.classList.contains('hidden')) {
+            const wrapper = document.getElementById('df-category-dropdown-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        }
+    });
+
+    window.selectDFHistoryTabDropdown = function(catVal) {
+        const displayText = catVal === 'ALL' ? 'All Platforms' : (catVal === 'LEET CODE' ? 'LeetCode' : (catVal === 'CODE CHEF' ? 'CodeChef' : catVal));
+        const btnText = document.getElementById('selected-df-category-text');
+        if (btnText) btnText.innerText = displayText;
+        
+        const menu = document.getElementById('df-category-dropdown-menu');
+        if (menu) menu.classList.add('hidden');
+        
+        window.activeDFHistoryTab = catVal;
+        window.filterDFHistory();
+    };
+
+    window.exportDFToCSV = function() {
+        const table = document.querySelector('#df-history-list-items table');
+        if (!table) return;
+        window.downloadTableAsExcelXML(table, `digital_footprint_submissions.xls`);
+    };
+
+    window.selectDFHistoryTab = function(catVal) {
+        window.activeDFHistoryTab = catVal;
+        window.filterDFHistory();
+    };
+
+    window.filterDFHistory = function() {
+        const searchVal = (document.getElementById('df-filter-search')?.value || '').toLowerCase().trim();
+        const dateVal = document.getElementById('df-filter-date')?.value || '';
+        const catVal = window.activeDFHistoryTab || 'ALL';
+        
+        const listContainer = document.getElementById('df-history-list-items');
+        if (!listContainer) return;
+        
+        const submissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+        
+        const filtered = submissions.filter(sub => {
+            const matchesSearch = !searchVal || 
+                (sub.link || '').toLowerCase().includes(searchVal) || 
+                (sub.category || '').toLowerCase().includes(searchVal);
+            
+            // Handle date matching against formatted YYYY-MM-DD
+            let matchesDate = true;
+            if (dateVal) {
+                try {
+                    const subDate = new Date(sub.postDate || sub.submittedAt);
+                    const subDateStr = subDate.toISOString().split('T')[0];
+                    matchesDate = (subDateStr === dateVal);
+                } catch(e) {
+                    matchesDate = (sub.postDate === dateVal);
+                }
+            }
+            
+            const matchesCat = catVal === 'ALL' || (sub.category === catVal);
+            
+            return matchesSearch && matchesDate && matchesCat;
+        });
+        
+        if (filtered.length > 0) {
+            listContainer.innerHTML = `
+                <div style="overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #E2E8F0;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 600px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #E2E8F0; background: #F8FAFC; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
+                                <th style="padding: 12px 16px;">Submitted Timestamp</th>
+                                <th style="padding: 12px 16px;">Submission ID</th>
+                                <th style="padding: 12px 16px;">Post Date</th>
+                                <th style="padding: 12px 16px;">Category</th>
+                                <th style="padding: 12px 16px;">Link</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.slice().reverse().map(sub => `
+                                <tr style="border-bottom: 1px solid #E2E8F0; color: #334155; font-weight: 550; transition: background 0.15s;">
+                                    <td style="padding: 12px 16px; font-weight: 600; color: #475569;">${formatDFTimestamp(sub.submittedAt)}</td>
+                                    <td style="padding: 12px 16px; font-family: monospace; color: #64748B; font-size: 0.75rem;">${sub.submissionId}</td>
+                                    <td style="padding: 12px 16px; font-weight: 700; color: #0F172A;">${formatDFDate(sub.postDate)}</td>
+                                    <td style="padding: 12px 16px;">
+                                        <span style="font-size: 0.7rem; font-weight: 800; color: #6366F1; background: #EEF2FF; padding: 4px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">${sub.category}</span>
+                                    </td>
+                                    <td style="padding: 12px 16px;">
+                                        <a href="${sub.link}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #2563EB; font-weight: 700; text-decoration: none; background: #EFF6FF; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid #BFDBFE;">
+                                            <span>View Post</span>
+                                            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            listContainer.innerHTML = `
+                <div style="text-align: center; color: #94A3B8; padding: 2rem 0; border: 1px dashed #E2E8F0; border-radius: 12px; background: white;">
+                    <i data-lucide="search" style="width: 24px; height: 24px; margin: 0 auto 0.5rem auto; opacity: 0.5;"></i>
+                    <p style="font-size: 0.8rem; margin: 0; font-weight: 600;">No matching submissions found.</p>
+                </div>
+            `;
+        }
+        
+        const recordsCountEl = document.getElementById('df-records-count');
+        if (recordsCountEl) {
+            recordsCountEl.innerText = `Showing ${filtered.length} records`;
+        }
+        
+        // Update stats cards metrics
+        const totalLoggedEl = document.getElementById('df-stat-total-logged');
+        if (totalLoggedEl) {
+            totalLoggedEl.innerText = submissions.length;
+        }
+        
+        const extensionsCountEl = document.getElementById('df-stat-extensions');
+        if (extensionsCountEl) {
+            extensionsCountEl.innerText = window.USER_EXTENSIONS ? window.USER_EXTENSIONS.length : '0';
+        }
+        
+        const rpDeductedEl = document.getElementById('df-stat-rp-deducted');
+        if (rpDeductedEl) {
+            const redeemed = document.getElementById('p-reward-used')?.innerText || '0';
+            rpDeductedEl.innerText = redeemed;
+        }
+        
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    };
+
+    window.clearDFFilters = function() {
+        const s = document.getElementById('df-filter-search');
+        const d = document.getElementById('df-filter-date');
+        if (s) s.value = '';
+        if (d) d.value = '';
+        window.selectDFHistoryTabDropdown('ALL');
+    };
+
+    function formatDFDate(dateVal) {
+        if (!dateVal) return '';
+        try {
+            const d = new Date(dateVal);
+            if (!isNaN(d.getTime())) {
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                return `${day}-${month}-${year}`;
+            }
+        } catch(e) {}
+        if (typeof dateVal === 'string' && dateVal.includes('-')) {
+            const parts = dateVal.split('T')[0].split('-');
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+                return dateVal;
+            }
+        }
+        return dateVal;
+    }
+
+    function formatDFTimestamp(tsVal) {
+        if (!tsVal) return '';
+        try {
+            const d = new Date(tsVal);
+            if (!isNaN(d.getTime())) {
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                let hours = d.getHours();
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+                return `${day}-${month}-${year} ${timeStr}`;
+            }
+        } catch(e) {}
+        return tsVal;
+    }
+
+    window.submitDFPost = async function(category) {
+        let el = document.getElementById('df-url-input-modal');
+        if (!el || window.innerWidth <= 1024) {
+            el = document.getElementById('df-url-input-mobile');
+        }
+        
+        if (!el || !el.value.trim()) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'URL Required', 'Please enter a valid URL.');
+            } else {
+                alert('Please enter a valid URL.');
+            }
+            return;
+        }
+        
+        const url = el.value.trim();
+        
+        const user = JSON.parse(localStorage.getItem('user')) || {};
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        const readableDate = dateStr;
+        
+        const submissionId = `SUB_${Date.now()}`;
+        const submittedAt = today.toLocaleString();
+        
+        const submissionData = {
+            action: 'submitDigitalFootprint',
+            submissionId: submissionId,
+            submittedAt: submittedAt,
+            category: category,
+            name: user.name || user.student_name || user.username || user.user_name || '',
+            regNumber: user.reg_num || user.roll_num || user.roll_no || user.reg_no || user.roll || user.reg || '',
+            email: user.email || user.email_id || user.mail || user.mailid || user.mail_id || '',
+            postDate: readableDate,
+            link: url
+        };
+        
+        const originalBtnText = category === 'LINKEDIN' ? "Submit LinkedIn Post" : `Submit ${category} Link`;
+        const btn = document.getElementById('df-submit-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px;"></i> Submitting...</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+        
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(submissionData)
+            });
+            const data = await res.json();
+            
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+            
+            if (data.status === 'success') {
+                const allSubmissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+                allSubmissions.push(submissionData);
+                localStorage.setItem('df_submissions', JSON.stringify(allSubmissions));
+                
+                if (category === 'LINKEDIN') {
+                    const storedSubmissions = JSON.parse(localStorage.getItem('linkedin_submissions') || '{}');
+                    storedSubmissions[dateStr] = url;
+                    localStorage.setItem('linkedin_submissions', JSON.stringify(storedSubmissions));
+                }
+                
+                if (typeof window.toggleDFInputModal === 'function') {
+                    window.toggleDFInputModal(false);
+                }
+                window.renderDFContent();
+                if (typeof window.showToast === 'function') {
+                    window.showToast('success', 'Submitted', `${category} link successfully recorded and locked.`);
+                } else {
+                    alert(`${category} link successfully recorded and locked.`);
+                }
+            } else {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('error', 'Submission Failed', data.message || 'Sheet submission failed.');
+                } else {
+                    alert('Submission failed: ' + (data.message || 'Unknown error'));
+                }
+            }
+        } catch (err) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+            console.error("Error submitting digital footprint: ", err);
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'Connection Error', 'Failed to connect to spreadsheet backend.');
+            } else {
+                alert('Connection error while saving submission.');
+            }
+        }
+    };
+
+    window.toggleDFInputModal = function(show) {
+        const modal = document.getElementById('df-input-modal');
+        if (modal) {
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                // Trigger rendering to populate fields
+                window.selectDFCategory(window.activeDFCategory || 'LINKEDIN');
+            } else {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
+    };
+
+    window.loadDigitalFootprint = async function() {
+        window.selectDFCategory('LINKEDIN');
+        
+        const user = JSON.parse(localStorage.getItem('user')) || {};
+        const email = user.email || user.email_id || user.mail || user.mailid || user.mail_id || '';
+        if (!email) return;
+        
+        // Find refresh buttons and show rotating loader state
+        const refreshBtns = document.querySelectorAll('[onclick="window.loadDigitalFootprint()"]');
+        refreshBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="animate-spin" data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Refreshing...`;
+        });
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        
+        try {
+            const res = await fetch(`${API_URL}?action=getUserFootprints&email=${encodeURIComponent(email)}&t=${Date.now()}`);
+            const data = await res.json();
+            if (data.status === "success" && data.footprints) {
+                localStorage.setItem('df_submissions', JSON.stringify(data.footprints));
+                
+                // Re-sync linkedin_submissions map
+                const linkedinMap = {};
+                data.footprints.forEach(sub => {
+                    if (sub.category === 'LINKEDIN') {
+                        try {
+                            const subDate = new Date(sub.submittedAt);
+                            if (!isNaN(subDate.getTime())) {
+                                const subDateStr = subDate.toISOString().split('T')[0];
+                                linkedinMap[subDateStr] = sub.link;
+                            }
+                        } catch(e) {}
+                    }
+                });
+                localStorage.setItem('linkedin_submissions', JSON.stringify(linkedinMap));
+                window.renderDFContent();
+            }
+        } catch(e) {
+            console.error("Failed to sync digital footprints: ", e);
+        } finally {
+            refreshBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Refresh`;
+            });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
     };
 })();

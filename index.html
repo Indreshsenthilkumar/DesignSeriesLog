@@ -24,6 +24,9 @@
     <meta name="description" content="Premium SaaS attendance management with glassmorphism UI.">
     <!-- 🛡️ ENTERPRISE SECURITY -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * 'unsafe-inline'; img-src * data: blob:; style-src * 'unsafe-inline';">
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -591,6 +594,25 @@
                                 <i data-lucide="chevron-right" style="width: 20px; stroke-width: 3px;"></i>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Footprint Mobile Card -->
+            <div style="padding: 0 1.15rem; margin-top: 1rem; position: relative; z-index: 20;">
+                <div onclick="window.show('digital-footprint')"
+                    style="background: white; padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 15px 35px rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #EEF2FF; color: #4F46E5; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="fingerprint" style="width: 24px; stroke-width: 2px;"></i>
+                        </div>
+                        <div>
+                            <h4 style="font-weight: 800; color: #0F172A; font-size: 1rem; margin: 0; font-family: 'Google Sans', sans-serif;">Digital Footprint</h4>
+                            <p style="font-size: 0.75rem; color: #64748B; font-weight: 500; margin: 2px 0 0 0;">Manage portfolios and design profiles</p>
+                        </div>
+                    </div>
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #EEF2FF; display: flex; align-items: center; justify-content: center; color: #4F46E5;">
+                        <i data-lucide="chevron-right" style="width: 16px; stroke-width: 2.5px;"></i>
                     </div>
                 </div>
             </div>
@@ -1876,7 +1898,10 @@
                                 <div class="selected-users-list" id="selected-users-list-mobile">
                                     <input type="text" id="user-search-input-mobile" placeholder="Search..." 
                                         style="border: none; outline: none; padding: 8px; flex: 1; min-width: 100px; font-size: 0.85rem;"
-                                        onfocus="showUserDropdown()" oninput="filterUserDropdown(this.value)">
+                                        onfocus="showUserDropdown()" 
+                                        oninput="window.handleUserPasteOrInput(this, event)"
+                                        onpaste="window.handleUserPasteOrInput(this, event)"
+                                        onkeydown="window.handleUserKeyDown(this, event)">
                                 </div>
                                 <div class="search-dropdown hidden" id="user-search-dropdown-mobile"></div>
                             </div>
@@ -2173,6 +2198,40 @@
                 </div>
             </div>
         </div>
+
+        <!-- Digital Footprint Screen (Mobile) -->
+        <div id="mobile-digital-footprint" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 0 0 120px;">
+            <div style="padding: 0 1.5rem 5rem; background: var(--header-gradient); position: relative; overflow: hidden; border-bottom-left-radius: 32px; border-bottom-right-radius: 32px; box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);">
+                <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(30px);"></div>
+                <div style="position: absolute; bottom: -20px; left: -30px; width: 120px; height: 120px; background: rgba(0,0,0,0.05); border-radius: 50%; filter: blur(20px);"></div>
+                <div style="display: flex; align-items: center; gap: 1rem; position: relative; z-index: 10;">
+                    <button class="btn-icon" onclick="window.show('dash');" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);"><i data-lucide="chevron-left" style="color: white;"></i></button>
+                    <h2 style="font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: -0.5px;">Digital Footprint</h2>
+                </div>
+            </div>
+
+            <div style="padding: 0 1.5rem; margin-top: -3.5rem; position: relative; z-index: 20;">
+                <div class="card" style="padding: 1.5rem; border-radius: 16px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.05); background: white;">
+                    <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; color: #0F172A; font-family: 'Google Sans', sans-serif;">Select Platform Category</h3>
+                    
+                    <!-- Category Switcher Buttons -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
+                        <button onclick="window.selectDFCategory('LINKEDIN')" class="df-cat-btn active" id="df-cat-LINKEDIN-mobile" style="padding: 8px 14px; font-size: 0.75rem;">LINKEDIN</button>
+                        <button onclick="window.selectDFCategory('LEET CODE')" class="df-cat-btn" id="df-cat-LEETCODE-mobile" style="padding: 8px 14px; font-size: 0.75rem;">LEET CODE</button>
+                        <button onclick="window.selectDFCategory('CODE CHEF')" class="df-cat-btn" id="df-cat-CODECHEF-mobile" style="padding: 8px 14px; font-size: 0.75rem;">CODE CHEF</button>
+                        <button onclick="window.selectDFCategory('OTHERS')" class="df-cat-btn" id="df-cat-OTHERS-mobile" style="padding: 8px 14px; font-size: 0.75rem;">OTHERS</button>
+                    </div>
+
+                    <!-- Dynamic Content Container -->
+                    <div id="df-dynamic-content-mobile"></div>
+                </div>
+            </div>
+            
+            <!-- Separate History Container -->
+            <div style="padding: 0 1.5rem; margin-top: 1.5rem;">
+                <div id="df-history-content-mobile"></div>
+            </div>
+        </div>
     </div>
 
     <!-- ================== DESKTOP VIEW ================== -->
@@ -2201,6 +2260,10 @@
                 <li class="nav-item" id="nav-profile-desktop">
                     <i data-lucide="user"></i>
                     <span>Profile</span>
+                </li>
+                <li class="nav-item" id="nav-digital-footprint-desktop">
+                    <i data-lucide="fingerprint"></i>
+                    <span>Digital Footprint</span>
                 </li>
                 <li class="nav-item" id="nav-activity-approval-desktop" style="display: flex; align-items: center; gap: 8px;">
                     <i data-lucide="file-check"></i>
@@ -2927,40 +2990,19 @@
 
             <!-- Desktop Worklog Screen -->
             <div id="desktop-work-log" class="desktop-screen hidden" style="padding: 1.5rem 2rem;">
-                <!-- Premium Header Banner -->
-                <div class="desktop-banner"
-                    style="background: var(--header-gradient); border-radius: var(--radius-xl); padding: 2.2rem 3rem; position: relative; overflow: hidden; box-shadow: 0 25px 60px rgba(59, 130, 246, 0.2); margin-bottom: 2rem; color: white; display: flex; align-items: center; justify-content: space-between;">
-                    <!-- Decorative Shapes -->
-                    <div
-                        style="position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -100px; right: -50px; filter: blur(30px);">
+                <!-- Premium Section Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h2 style="font-size: 1.8rem; font-weight: 800; color: #1E293B; letter-spacing: -0.5px; font-family: 'Google Sans', sans-serif;">Work Log Tracker</h2>
+                        <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px; font-weight: 500;">Maintain a detailed record of your daily progress, tasks completed, and upcoming milestones.</p>
                     </div>
-                    <div
-                        style="position: absolute; width: 200px; height: 200px; background: rgba(0,0,0,0.05); border-radius: 50%; bottom: -50px; left: 10%; filter: blur(50px);">
-                    </div>
-
-                    <div style="position: relative; z-index: 2;">
-                        <div
-                            style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; background: rgba(255,255,255,0.15); width: fit-content; padding: 6px 14px; border-radius: 10px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);">
-                            <span
-                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;">DEVELOPMENT
-                                PROGRESS</span>
-                        </div>
-                        <h2
-                            style="font-size: 2.2rem; font-weight: 800; margin-bottom: 0.75rem; letter-spacing: -1.2px; line-height: 1;">
-                            Work Log Tracker</h2>
-                        <p
-                            style="opacity: 0.95; font-size: 1.15rem; font-weight: 500; max-width: 580px; line-height: 1.6;">
-                            Maintain a detailed record of your daily progress, tasks completed, and upcoming milestones.
-                        </p>
-                    </div>
-
-                    <div style="position: relative; z-index: 2; text-align: right;">
-                        <button onclick="openWorklogModal()" class="btn-primary"
-                            style="background: white; color: var(--accent-teal); border: none; width: auto; padding: 0 2.5rem; height: 64px; border-radius: 18px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
-                            <i data-lucide="plus-circle" style="width: 24px; margin-right: 10px;"></i>
-                            New Work Log
-                        </button>
-                    </div>
+                    <button onclick="openWorklogModal()" class="btn"
+                        style="background: #4F46E5; color: white; border: none; padding: 0 1.5rem; height: 48px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);"
+                        onmouseover="this.style.background='#4338CA'; this.style.transform='translateY(-1px)';"
+                        onmouseout="this.style.background='#4F46E5'; this.style.transform='none';">
+                        <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+                        + Create Work Log for Today
+                    </button>
                 </div>
 
                 <!-- User Assigned Tasks Desktop Section -->
@@ -3016,6 +3058,20 @@
                             style="background: #F1F5F9; border: none; border-radius: 12px; height: 52px; padding: 0 12px; color: #64748B; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;">
                             Clear
                         </button>
+
+                        <!-- View Switcher (Card vs Table) -->
+                        <div id="worklog-view-switcher" style="display: flex; background: #F1F5F9; border-radius: 12px; padding: 4px; gap: 2px; flex-shrink: 0; height: 52px; align-items: center; box-sizing: border-box; margin-left: 6px;">
+                            <button id="wl-view-card-btn" onclick="window.setWorklogViewMode('card')" 
+                                    style="border: none; background: white; color: #4F46E5; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.05);"
+                                    title="Grid Card View">
+                                <i data-lucide="layout-grid" style="width: 18px; height: 18px;"></i>
+                            </button>
+                            <button id="wl-view-table-btn" onclick="window.setWorklogViewMode('table')" 
+                                    style="border: none; background: transparent; color: #64748B; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                                    title="List Table View">
+                                <i data-lucide="list" style="width: 18px; height: 18px;"></i>
+                            </button>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 12px;">
                         <div
@@ -3167,6 +3223,66 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Desktop Digital Footprint Screen -->
+            <div id="desktop-digital-footprint" class="desktop-screen hidden" style="padding: 2rem 2.5rem; overflow-y: auto; height: auto; min-height: 100%; background: #F8FAFC;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h2 style="font-size: 1.8rem; font-weight: 800; color: #1E293B; letter-spacing: -0.5px; font-family: 'Google Sans', sans-serif;">Digital Footprint History</h2>
+                        <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px; font-weight: 500;">Link your portfolio website, design hubs, and social spaces in one place.</p>
+                    </div>
+                    <button onclick="window.toggleDFInputModal(true)" class="btn-primary"
+                        style="width: auto; height: 46px; padding: 0 1.5rem; border-radius: 12px; font-size: 0.9rem; font-weight: 700; background: #2563EB; color: white; border: none; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);">
+                        <i data-lucide="plus" style="width: 18px; height: 18px;"></i> Create digital footprint log
+                    </button>
+                </div>
+
+                <!-- Stats Cards Grid -->
+                <div class="desktop-stats-grid" style="grid-template-columns: repeat(3, 1fr) !important; margin-bottom: 1.5rem;">
+                    <!-- Card 1: Total Logged -->
+                    <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="globe" style="width: 22px; stroke-width: 2px;"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Total Logged</span>
+                            <h3 id="df-stat-total-logged" style="font-size: 1.75rem; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2;">0</h3>
+                            <span style="color: #10B981; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
+                                <span>&nearr;</span> Real-time sync
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Card 2: Extension Count -->
+                    <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #FFFBEB; color: #D97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="hourglass" style="width: 22px; stroke-width: 2px;"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Extension Count</span>
+                            <h3 id="df-stat-extensions" style="font-size: 1.75rem; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2;">0</h3>
+                            <span style="color: #D97706; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
+                                Late Submissions
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Card 3: RP Deducted -->
+                    <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="coins" style="width: 22px; stroke-width: 2px;"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">RP Deducted</span>
+                            <h3 id="df-stat-rp-deducted" style="font-size: 1.75rem; font-weight: 800; color: #EF4444; margin: 0; line-height: 1.2;">0</h3>
+                            <span style="color: #EF4444; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
+                                Reward Points
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Separate History Container (Full Width) -->
+                <div id="df-history-content-desktop"></div>
             </div>
 
             <!-- Activity Approval Screen (Desktop) -->
@@ -3868,27 +3984,38 @@
                         style="width: 48px; height: 48px; border-radius: 14px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i
                             data-lucide="chevron-left" style="width:20px;"></i></button>
                     <div>
-                        <h2 style="font-size: 1.75rem; font-weight: 800;">Create Notification</h2>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Broadcast smart alerts and challenges to your students</p>
+                        <h2 style="font-size: 1.75rem; font-weight: 800;">Notification Center</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Track, manage, and broadcast smart notifications</p>
                     </div>
                 </div>
-                <div class="mgmt-tabs" style="margin-bottom: 0;">
-                    <button class="mgmt-tab-btn active" onclick="switchMgmtTab('create')">New Dispatch</button>
-                    <button class="mgmt-tab-btn" onclick="switchMgmtTab('history')">System History</button>
-                    <button class="mgmt-tab-btn" onclick="switchMgmtTab('extensions')">Extensions</button>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div class="mgmt-tabs" style="margin-bottom: 0;">
+                        <button class="mgmt-tab-btn active" onclick="switchMgmtTab('history')">System History</button>
+                        <button class="mgmt-tab-btn" onclick="switchMgmtTab('extensions')">Extensions</button>
+                    </div>
+                    <button onclick="window.toggleCreateNotifModal(true)" class="btn-primary" style="display: flex; align-items: center; gap: 8px; font-weight: 700; height: 46px; border-radius: 12px; padding: 0 1.5rem; background: #4F46E5; color: white; border: none; cursor: pointer; transition: all 0.2s; font-family: 'Google Sans', sans-serif;" onmouseover="this.style.background='#4338CA'" onmouseout="this.style.background='#4F46E5'">
+                        <i data-lucide="plus" style="width: 18px; height: 18px;"></i> Create Notification
+                    </button>
                 </div>
             </div>
 
-            <div id="mgmt-tab-create" class="animate-fade-in">
+            <!-- Modal Container for Create Notification -->
+            <div id="create-notif-modal-container" class="hidden" onclick="if(event.target === this) window.toggleCreateNotifModal(false)" style="position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); padding: 2rem;">
+                <div style="background: white; border-radius: 24px; padding: 2.5rem; width: 95%; max-width: 1200px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+                    <button onclick="window.toggleCreateNotifModal(false)" style="position: absolute; right: 24px; top: 24px; width: 40px; height: 40px; border-radius: 50%; background: #F1F5F9; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748B;"><i data-lucide="x" style="width: 20px;"></i></button>
+                    
+                    <h2 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; font-family: 'Google Sans', sans-serif;">Create Notification</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem;">Broadcast smart alerts and challenges to your students</p>
+
+                    <div id="mgmt-tab-create" class="animate-fade-in hidden">
                 <div style="display: grid; grid-template-columns: 1fr 380px; gap: 2.5rem; align-items: start;">
                     
                     <!-- Main Creator Form -->
                     <div style="display: flex; flex-direction: column; gap: 2.5rem;">
-                        
                         <!-- 2. NOTIFICATION CREATOR DETAILS -->
                         <section class="card no-hover" style="padding: 2rem; border-radius: 24px !important; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
-                            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
-                                <span style="width: 24px; height: 24px; background: #6366F1; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+                            <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                                <span style="width: 28px; height: 28px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);">1</span>
                                 Notification Details
                             </h3>
 
@@ -3910,7 +4037,8 @@
 
                             <div class="task-form-group">
                                 <label class="task-form-label">Notification Description (For User) *</label>
-                                <textarea id="adv-notif-description" class="task-form-textarea" rows="3" placeholder="Enter brief notification details..." oninput="updateLivePreview()"></textarea>
+                                <div id="adv-notif-editor-container" style="height: 180px; border-radius: 12px; background: white; border: 1px solid #E2E8F0; margin-bottom: 1.5rem; font-family: 'Inter', sans-serif;"></div>
+                                <input type="hidden" id="adv-notif-description" oninput="updateLivePreview()">
                             </div>
 
                             <div class="task-form-group">
@@ -3921,8 +4049,8 @@
 
                         <!-- 3. TARGET USER SYSTEM -->
                         <section class="card no-hover" style="padding: 2rem; border-radius: 24px !important; overflow: visible !important;">
-                            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
-                                <span style="width: 24px; height: 24px; background: #6366F1; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">3</span>
+                            <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                                <span style="width: 28px; height: 28px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);">2</span>
                                 Target Audience
                             </h3>
 
@@ -3956,7 +4084,10 @@
                                         <!-- Selected user chips will appear here -->
                                         <input type="text" id="user-search-input" placeholder="Search by name or email..." 
                                             style="border: none; outline: none; padding: 8px; flex: 1; min-width: 200px;"
-                                            onfocus="showUserDropdown()" oninput="filterUserDropdown(this.value)">
+                                            onfocus="showUserDropdown()" 
+                                            oninput="window.handleUserPasteOrInput(this, event)"
+                                            onpaste="window.handleUserPasteOrInput(this, event)"
+                                            onkeydown="window.handleUserKeyDown(this, event)">
                                     </div>
                                     <div class="search-dropdown hidden" id="user-search-dropdown">
                                         <!-- Dropdown items will be populated by JS -->
@@ -4000,12 +4131,41 @@
                                 <div id="active-filters-summary" style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px;"></div>
                             </div>
 
-                            <button class="btn" onclick="publishAdvancedNotification()" 
-                                style="width: 100%; margin-top: 1.5rem; height: 52px; border-radius: 10px; background: #4F46E5; color: white; font-weight: 800; font-size: 0.95rem; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);"
-                                onmouseover="this.style.background='#4338CA'; this.style.transform='translateY(-1px)';"
-                                onmouseout="this.style.background='#4F46E5'; this.style.transform='none';">
-                                Send Dispatch <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
-                            </button>
+                            <div style="display: flex; gap: 4px; margin-top: 1.5rem; position: relative;">
+                                <button class="btn" onclick="publishAdvancedNotification()" 
+                                    style="flex: 1; height: 52px; border-radius: 10px 0 0 10px; background: #4F46E5; color: white; font-weight: 800; font-size: 0.95rem; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);"
+                                    onmouseover="this.style.background='#4338CA'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='#4F46E5'; this.style.transform='none';">
+                                    Send Dispatch <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <button onclick="window.toggleScheduleDropdown(event)" 
+                                    style="width: 44px; height: 52px; border-radius: 0 10px 10px 0; background: #4F46E5; color: white; border: none; border-left: 1px solid rgba(255,255,255,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);"
+                                    onmouseover="this.style.background='#4338CA'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='#4F46E5'; this.style.transform='none';">
+                                    <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+                                </button>
+
+                                <!-- Scheduled Send Dropdown Menu -->
+                                <div id="schedule-send-dropdown" class="hidden" style="position: absolute; bottom: 60px; right: 0; background: white; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 260px; z-index: 10000; padding: 6px; font-family: 'Google Sans', sans-serif; text-align: left;">
+                                    <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; padding: 8px 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #F1F5F9;">Schedule send</div>
+                                    <div class="dropdown-item" onclick="window.setScheduleSendPreset('tomorrow-morning')" style="padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; color: #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='none'">
+                                        <span>Tomorrow morning</span>
+                                        <span style="font-size: 0.75rem; color: #94A3B8;">8:00 AM</span>
+                                    </div>
+                                    <div class="dropdown-item" onclick="window.setScheduleSendPreset('tomorrow-afternoon')" style="padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; color: #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='none'">
+                                        <span>Tomorrow afternoon</span>
+                                        <span style="font-size: 0.75rem; color: #94A3B8;">1:00 PM</span>
+                                    </div>
+                                    <div class="dropdown-item" onclick="window.setScheduleSendPreset('monday-morning')" style="padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; color: #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='none'">
+                                        <span>Monday morning</span>
+                                        <span style="font-size: 0.75rem; color: #94A3B8;">8:00 AM</span>
+                                    </div>
+                                    <div style="height: 1px; background: #F1F5F9; margin: 4px 0;"></div>
+                                    <div class="dropdown-item" onclick="window.openCustomSchedulePicker()" style="padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; color: #4F46E5; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='none'">
+                                        <i data-lucide="calendar" style="width: 14px;"></i> Pick date & time
+                                    </div>
+                                </div>
+                            </div>
                             
                             <p style="text-align: center; font-size: 0.65rem; margin-top: 1rem; opacity: 0.5;">
                                 <i data-lucide="shield-check" style="width: 10px; display: inline-block;"></i> Verified Admin Broadcast
@@ -4013,6 +4173,8 @@
                         </div>
                     </aside>
                 </div>
+            </div>
+            </div>
             </div>
             </div> <!-- Close admin-subview-notifications early -->
 
@@ -4471,28 +4633,11 @@
                     </div>
 
                     <!-- Table -->
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1000px;">
-                            <thead>
-                                <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0; height: 50px;">
-                                    <th style="padding: 0 1.5rem; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 140px; min-width: 140px;">Status</th>
-                                    <th style="padding: 0 1.5rem; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Notification Details</th>
-                                    <th style="padding: 0 1.5rem; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 180px; min-width: 180px;">Time Details</th>
-                                    <th style="padding: 0 1.5rem; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 250px; min-width: 250px;">Target Audience</th>
-                                    <th style="padding: 0 1.5rem; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 150px; min-width: 150px;">Author</th>
-                                </tr>
-                            </thead>
-                            <tbody id="notif-mgmt-history-list">
-                                <tr>
-                                    <td colspan="100" style="text-align: center; padding: 4rem 0;">
-                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%;">
-                                            <div style="width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top: 3px solid #000000; border-radius: 50%; display: inline-block; animation: analytics-spin 1s linear infinite;"></div>
-                                            <div style="font-weight: 700; color: #000000; font-size: 0.95rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading...</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="notif-mgmt-history-list" style="background: white; overflow-x: auto; width: 100%;">
+                        <div style="text-align: center; padding: 4rem 0; opacity: 0.3;">
+                            <i data-lucide="history" style="width: 48px; margin: 0 auto 1rem;"></i>
+                            <p style="font-weight: 700;">No history recorded yet.</p>
+                        </div>
                     </div>
 
                     <!-- Pagination -->
@@ -6066,6 +6211,56 @@
     <div id="notes-undo-toast" class="hidden" style="position: fixed; bottom: 20px; right: 20px; z-index: 220000; background: #1F2937; color: white; padding: 12px 18px; border-radius: 10px; display: none; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); font-size: 0.85rem; font-weight: 700;">
         <span id="undo-toast-message">Note deleted</span>
         <button onclick="window.undoLastDelete()" style="background: #10B981; border: none; padding: 4px 10px; border-radius: 6px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: 800;">Undo</button>
+    </div>
+
+    <!-- DIGITAL FOOTPRINT INPUT MODAL (Desktop) -->
+    <div id="df-input-modal" class="modal-overlay hidden"
+        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(12px); z-index: 1000000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="card animate-scale-up" style="width: 100%; max-width: 500px; padding: 2rem; background: white; border-radius: 28px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15); max-height: 90vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.03);">
+            <style>
+                .df-modal-cat-btn {
+                    padding: 8px 16px;
+                    border-radius: 10px;
+                    border: 1px solid #E2E8F0;
+                    background: white;
+                    color: #64748B;
+                    font-weight: 750;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .df-modal-cat-btn.active {
+                    border-color: #6366F1;
+                    background: #EEF2FF;
+                    color: #6366F1;
+                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
+                }
+            </style>
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 style="font-size: 1.3rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; margin: 0; line-height: 1.2;">Create Digital Footprint Log</h2>
+                    <p style="color: #64748B; font-size: 0.82rem; margin-top: 4px; font-weight: 500;">Submit your social, coding, or professional post links.</p>
+                </div>
+                <button onclick="window.toggleDFInputModal(false)" 
+                    style="background: #F1F5F9; border: none; cursor: pointer; color: #64748B; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;"
+                    onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">
+                    <i data-lucide="x" style="width: 16px; stroke-width: 2.5px;"></i>
+                </button>
+            </div>
+
+            <!-- Select Platform Category -->
+            <h3 style="font-size: 0.85rem; font-weight: 800; margin-bottom: 0.75rem; color: #1E293B;">Select Platform Category</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 1rem;">
+                <button onclick="window.selectDFCategory('LINKEDIN')" class="df-modal-cat-btn active" id="df-cat-LINKEDIN-modal">LINKEDIN</button>
+                <button onclick="window.selectDFCategory('LEET CODE')" class="df-modal-cat-btn" id="df-cat-LEETCODE-modal">LEET CODE</button>
+                <button onclick="window.selectDFCategory('CODE CHEF')" class="df-modal-cat-btn" id="df-cat-CODECHEF-modal">CODE CHEF</button>
+                <button onclick="window.selectDFCategory('OTHERS')" class="df-modal-cat-btn" id="df-cat-OTHERS-modal">OTHERS</button>
+            </div>
+
+            <!-- Dynamic Input Container inside modal -->
+            <div id="df-dynamic-content-modal"></div>
+        </div>
     </div>
 
     <!-- Scripts -->

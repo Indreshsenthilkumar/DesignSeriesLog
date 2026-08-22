@@ -5,6 +5,7 @@
 
 const STUDENT_SHEET = "StudentData";
 const LOG_SHEET     = "Attendancelog";
+const DIGITAL_FOOTPRINT_SHEET = "DigitalFootprint";
 const SUPER_ADMIN   = "indreshs.it24@bitsathy.ac.in";
 const CACHE_TTL     = 60; 
 
@@ -42,6 +43,9 @@ function doGet(e) {
     const params = e.parameter;
     const isAdmin = checkAdminStatus(params.adminEmail);
     
+    if (params.action === "verifyUser" && params.email) {
+      return respondJSON(verifyUserOnly(params.email));
+    }
     if (params.action === "getHighestPoints") {
       return respondJSON(getHighestPointsFromChart());
     }
@@ -77,6 +81,9 @@ function doGet(e) {
     }
     if (params.action === "getUserActivityPasses" && params.email) {
       return respondJSON(getUserActivityPasses(params.email));
+    }
+    if (params.action === "getUserFootprints" && params.email) {
+      return respondJSON(getUserDigitalFootprints(params.email));
     }
     if (params.email) {
       const bypass = params.bypassCache === "true" || params.force === "true";
@@ -130,6 +137,11 @@ function doPost(e) {
     }
     if (body.action === "submitActivityPass") {
       return respondJSON(saveActivityPass(body));
+    }
+    
+    // 👣 DIGITAL FOOTPRINT LOGGING
+    if (body.action === "submitDigitalFootprint") {
+      return respondJSON(saveDigitalFootprint(body));
     }
     
     const isAdmin = checkAdminStatus(body.adminEmail || body.admin);
@@ -237,9 +249,40 @@ function getStudentData(email, bypassCache) {
   const extensionsResult = getUserExtensions(emailLower);
   const extensions = extensionsResult.status === "success" ? extensionsResult.extensions : [];
   
-  const result = { status: "success", student: student, history: history, assignedTasks: assignedTasks, notifications: notifications, extensions: extensions };
+  const footprintsResult = getUserDigitalFootprints(emailLower);
+  const footprints = footprintsResult.status === "success" ? footprintsResult.footprints : [];
+  
+  const result = { 
+    status: "success", 
+    student: student, 
+    history: history, 
+    assignedTasks: assignedTasks, 
+    notifications: notifications, 
+    extensions: extensions,
+    digitalFootprints: footprints
+  };
   putInCache(cacheKey, result, CACHE_TTL);
   return result;
+}
+
+function verifyUserOnly(email) {
+  const emailLower = email.toLowerCase().trim();
+  const ss = getSpreadsheet();
+  const studentSheet = ss.getSheetByName(STUDENT_SHEET);
+  const studentData = studentSheet.getDataRange().getValues();
+  const headers = studentData[0].map(h => h.toString().toLowerCase().trim().replace(/\s+/g, '_'));
+  
+  const emailIdx = studentData[0].findIndex(h => h.toString().toLowerCase().includes("email"));
+  if (emailIdx === -1) return { status: "error", message: "Email column not found." };
+
+  for (let i = 1; i < studentData.length; i++) {
+    if ((studentData[i][emailIdx] || "").toString().toLowerCase().trim() === emailLower) {
+      const student = {};
+      headers.forEach((h, idx) => { student[h] = studentData[i][idx]; });
+      return { status: "success", student: student };
+    }
+  }
+  return { status: "error", message: "User not found in student database." };
 }
 
 function updateUserStatus(email, newStatus) {
@@ -1609,5 +1652,83 @@ function updateActivityPassStatus(requestId, newStatus) {
     return { status: "error", message: "Activity pass request not found." };
   } catch (err) {
     return { status: "error", message: "Failed to update status: " + err.toString() };
+  }
+}
+
+// 👣 DIGITAL FOOTPRINT CORE HELPERS
+function getDigitalFootprintSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(DIGITAL_FOOTPRINT_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(DIGITAL_FOOTPRINT_SHEET);
+    sheet.appendRow([
+      "Submission ID", 
+      "Submitted at", 
+      "category", 
+      "Name", 
+      "Reg Number", 
+      "Email", 
+      "Postdate", 
+      "Link"
+    ]);
+    sheet.getRange(1, 1, 1, 8).setBackground("#F1F5F9").setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function saveDigitalFootprint(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000); // 15-second safety limit
+  } catch (e) {
+    return { status: "error", message: "Database busy. Please try again." };
+  }
+
+  try {
+    const sheet = getDigitalFootprintSheet();
+    sheet.appendRow([
+      data.submissionId || "",
+      data.submittedAt || "",
+      data.category || "",
+      data.name || "",
+      data.regNumber || "",
+      data.email || "",
+      data.postDate || "",
+      data.link || ""
+    ]);
+    return { status: "success", message: "Digital footprint recorded in sheet." };
+  } catch (err) {
+    return { status: "error", message: "Save digital footprint error: " + err.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getUserDigitalFootprints(email) {
+  try {
+    const sheet = getDigitalFootprintSheet();
+    const data = sheet.getDataRange().getValues();
+    const footprints = [];
+    if (data.length > 1) {
+      const emailLower = email.toLowerCase().trim();
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (row[5].toString().toLowerCase().trim() === emailLower) { // Column index 5 is Email
+          footprints.push({
+            submissionId: row[0],
+            submittedAt: row[1],
+            category: row[2],
+            name: row[3],
+            regNumber: row[4],
+            email: row[5],
+            postDate: row[6],
+            link: row[7]
+          });
+        }
+      }
+    }
+    return { status: "success", footprints: footprints };
+  } catch (err) {
+    return { status: "error", message: "Failed to fetch user footprints: " + err.toString() };
   }
 }
