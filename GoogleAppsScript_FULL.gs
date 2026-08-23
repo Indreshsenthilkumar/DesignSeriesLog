@@ -143,6 +143,9 @@ function doPost(e) {
     if (body.action === "submitDigitalFootprint") {
       return respondJSON(saveDigitalFootprint(body));
     }
+    if (body.action === "submitDigitalFootprintExtension") {
+      return respondJSON(saveDigitalFootprintExtension(body));
+    }
     
     const isAdmin = checkAdminStatus(body.adminEmail || body.admin);
     
@@ -1727,8 +1730,82 @@ function getUserDigitalFootprints(email) {
         }
       }
     }
-    return { status: "success", footprints: footprints };
+    
+    // Also count digital footprint extensions
+    let extensionCount = 0;
+    try {
+      const extSheet = getDigitalFootprintExtensionSheet();
+      const extData = extSheet.getDataRange().getValues();
+      const emailLower = email.toLowerCase().trim();
+      for (let j = 1; j < extData.length; j++) {
+        if (extData[j][3].toString().toLowerCase().trim() === emailLower) {
+          extensionCount++;
+        }
+      }
+    } catch(e) {
+      // Sheet might not exist yet or be empty
+    }
+
+    return { status: "success", footprints: footprints, extensionCount: extensionCount };
   } catch (err) {
     return { status: "error", message: "Failed to fetch user footprints: " + err.toString() };
+  }
+}
+
+const DIGITAL_FOOTPRINT_EXTENSION_SHEET = "Digitalfootprint extensiton";
+
+function getDigitalFootprintExtensionSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(DIGITAL_FOOTPRINT_EXTENSION_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(DIGITAL_FOOTPRINT_EXTENSION_SHEET);
+    sheet.appendRow([
+      "Timestamp", 
+      "Name", 
+      "Reg Number", 
+      "Email", 
+      "Year", 
+      "Extension Date", 
+      "Request Count"
+    ]);
+    sheet.getRange(1, 1, 1, 7).setBackground("#F1F5F9").setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function saveDigitalFootprintExtension(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch (e) {
+    return { status: "error", message: "Database busy. Please try again." };
+  }
+
+  try {
+    const sheet = getDigitalFootprintExtensionSheet();
+    const rows = sheet.getDataRange().getValues();
+    let userReqCount = 1;
+    const emailLower = (data.email || "").toLowerCase().trim();
+    
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][3].toString().toLowerCase().trim() === emailLower) {
+        userReqCount++;
+      }
+    }
+
+    sheet.appendRow([
+      new Date().toLocaleString(),
+      data.name || "",
+      data.regNumber || "",
+      data.email || "",
+      data.year || "",
+      data.extensionDate || "",
+      userReqCount
+    ]);
+    return { status: "success", message: "Extension request recorded in sheet.", reqCount: userReqCount };
+  } catch (err) {
+    return { status: "error", message: "Save extension request error: " + err.toString() };
+  } finally {
+    lock.releaseLock();
   }
 }

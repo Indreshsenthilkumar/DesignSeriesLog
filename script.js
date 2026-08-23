@@ -16107,18 +16107,64 @@ window.closeAdminTaskDetailModal = function() {
             const isAllowedDay = [2, 4, 6].includes(todayDay); // Tuesday, Thursday, Saturday
             
             if (!isAllowedDay) {
-                contentHTML = `
-                    <div style="text-align: center; padding: 2rem 1.5rem; background: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 16px; color: #B45309; margin-top: 1rem;">
-                        <i data-lucide="alert-triangle" style="width: 32px; height: 32px; margin: 0 auto 0.75rem auto; color: #D97706;"></i>
-                        <h4 style="font-weight: 800; font-size: 1rem; margin-bottom: 6px;">Submission Restricted</h4>
-                        <p style="font-size: 0.85rem; color: #B45309; margin: 0; font-weight: 600; font-style: italic;">
-                             "Today is not the day for post on LinkedIn"
-                        </p>
-                        <p style="font-size: 0.78rem; color: #D97706; margin-top: 8px; font-weight: 500;">
-                            LinkedIn post submissions are only allowed on <strong>Tuesday</strong>, <strong>Thursday</strong>, and <strong>Saturday</strong>.
-                        </p>
-                    </div>
-                `;
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                
+                const existingYesterdaySub = submissions.find(sub => {
+                    if (sub.category !== 'LINKEDIN') return false;
+                    return isSameDay(sub.postDate, yesterdayStr) || isSameDay(sub.submittedAt, yesterdayStr);
+                });
+
+                if (window.dfShowExtensionForm && !existingYesterdaySub) {
+                    contentHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; border: 1.5px dashed #0D9488; padding: 1.25rem; border-radius: 16px; background: #F0FDFA;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #0F766E; margin-bottom: -0.5rem;">
+                                <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+                                <h5 style="font-weight: 800; font-size: 0.85rem; margin: 0;">Submitting Extension for Yesterday (${yesterdayStr})</h5>
+                            </div>
+                            <div class="task-form-group">
+                                <label class="task-form-label">Extension Date (Fixed)</label>
+                                <input type="text" value="${yesterdayStr}" class="task-form-input" disabled style="background: #E2E8F0; color: #475569; cursor: not-allowed; opacity: 0.85;">
+                            </div>
+                            <div class="task-form-group">
+                                <label class="task-form-label">LinkedIn Post URL</label>
+                                <input type="url" id="df-url-input" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
+                                <button id="df-submit-btn" onclick="window.submitDFExtension('LINKEDIN')" class="btn" style="flex: 1; background: #0D9488; color: white; border: none; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);">
+                                    Submit Extension
+                                </button>
+                                <button onclick="window.dfShowExtensionForm = false; window.renderDFContent();" class="btn" style="background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contentHTML = `
+                        <div style="text-align: center; padding: 2rem 1.5rem; background: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 16px; color: #B45309; margin-top: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="alert-triangle" style="width: 32px; height: 32px; color: #D97706; margin-bottom: 4px;"></i>
+                            <h4 style="font-weight: 800; font-size: 1rem; margin: 0;">Submission Restricted</h4>
+                            <p style="font-size: 0.85rem; color: #B45309; margin: 0; font-weight: 600; font-style: italic;">
+                                 "Today is not the day for post on LinkedIn"
+                            </p>
+                            <p style="font-size: 0.78rem; color: #D97706; margin: 4px 0 12px 0; font-weight: 500;">
+                                LinkedIn post submissions are only allowed on <strong>Tuesday</strong>, <strong>Thursday</strong>, and <strong>Saturday</strong>.
+                            </p>
+                            ${existingYesterdaySub ? `
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FEF3C7; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #B45309;">
+                                    <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
+                                    Yesterday's post has already been submitted.
+                                </div>
+                            ` : `
+                                <button onclick="window.dfShowExtensionForm = true; window.renderDFContent();" class="btn" style="background: #0D9488; color: white; border: none; padding: 0 1.25rem; height: 38px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15); display: inline-flex; align-items: center; gap: 6px;">
+                                    <i data-lucide="history" style="width: 14px; height: 14px;"></i> Submit Extension for Yesterday
+                                </button>
+                            `}
+                        </div>
+                    `;
+                }
             } else if (existingSub) {
                 contentHTML = `
                     <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
@@ -16207,7 +16253,7 @@ window.closeAdminTaskDetailModal = function() {
             const selectedCatText = window.activeDFHistoryTab === 'ALL' ? 'All Platforms' : (window.activeDFHistoryTab === 'LEET CODE' ? 'LeetCode' : (window.activeDFHistoryTab === 'CODE CHEF' ? 'CodeChef' : window.activeDFHistoryTab));
             
             historyContainer.innerHTML = `
-                <div class="card no-hover" style="padding: 1.5rem 2rem; border-radius: 20px !important; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; transition: none; overflow: visible !important;">
+                <div class="card no-hover df-history-card" style="padding: 1.5rem 2rem; border-radius: 20px !important; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; transition: none; overflow: visible !important;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 1rem;">
                         <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 8px;">
                             <i data-lucide="history" style="width: 18px; height: 18px; color: #6366F1;"></i> Submission History
@@ -16215,7 +16261,7 @@ window.closeAdminTaskDetailModal = function() {
                     </div>
                     
                     <!-- Premium Filter Toolbar Flex Row -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; background: white; padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.01); overflow: visible !important; flex-wrap: wrap;">
+                    <div class="df-filter-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; background: white; padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.01); overflow: visible !important; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 1.25rem; flex: 1; flex-wrap: wrap;">
                             <!-- Search Box -->
                             <div class="search-box" style="width: 240px; height: 40px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; display: flex; align-items: center; padding: 0 10px; gap: 8px;">
@@ -16411,7 +16457,7 @@ window.closeAdminTaskDetailModal = function() {
         
         const extensionsCountEl = document.getElementById('df-stat-extensions');
         if (extensionsCountEl) {
-            extensionsCountEl.innerText = window.USER_EXTENSIONS ? window.USER_EXTENSIONS.length : '0';
+            extensionsCountEl.innerText = window.df_extensions_count || '0';
         }
         
         const rpDeductedEl = document.getElementById('df-stat-rp-deducted');
@@ -16574,6 +16620,135 @@ window.closeAdminTaskDetailModal = function() {
         }
     };
 
+    window.submitDFExtension = async function(category) {
+        let el = document.getElementById('df-url-input-modal');
+        if (!el || window.innerWidth <= 1024) {
+            el = document.getElementById('df-url-input-mobile');
+        }
+        
+        if (!el || !el.value.trim()) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'URL Required', 'Please enter a valid URL.');
+            } else {
+                alert('Please enter a valid URL.');
+            }
+            return;
+        }
+        
+        const url = el.value.trim();
+        const user = JSON.parse(localStorage.getItem('user')) || {};
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        const extensionData = {
+            action: 'submitDigitalFootprintExtension',
+            name: user.name || user.student_name || user.username || user.user_name || '',
+            regNumber: user.reg_num || user.roll_num || user.roll_no || user.reg_no || user.roll || user.reg || '',
+            email: user.email || user.email_id || user.mail || user.mailid || user.mail_id || '',
+            year: user.year || user.dept || user.department || user.batch || '',
+            extensionDate: yesterdayStr
+        };
+
+        const originalBtnText = "Submit Extension";
+        const btn = document.getElementById('df-submit-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px;"></i> Submitting...</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        try {
+            const extRes = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(extensionData)
+            });
+            const extResult = await extRes.json();
+            
+            if (extResult.status !== 'success') {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnText;
+                }
+                if (typeof window.showToast === 'function') {
+                    window.showToast('error', 'Extension Failed', extResult.message || 'Extension registration failed.');
+                } else {
+                    alert('Extension registration failed.');
+                }
+                return;
+            }
+
+            // Save standard digital footprint record too
+            const submissionId = `SUB_${Date.now()}`;
+            const footprintData = {
+                action: 'submitDigitalFootprint',
+                submissionId: submissionId,
+                submittedAt: today.toLocaleString(),
+                category: category,
+                name: user.name || user.student_name || user.username || user.user_name || '',
+                regNumber: user.reg_num || user.roll_num || user.roll_no || user.reg_no || user.roll || user.reg || '',
+                email: user.email || user.email_id || user.mail || user.mailid || user.mail_id || '',
+                postDate: yesterdayStr,
+                link: url
+            };
+
+            const fpRes = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(footprintData)
+            });
+            const fpResult = await fpRes.json();
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+
+            if (fpResult.status === 'success') {
+                const allSubmissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+                allSubmissions.push(footprintData);
+                localStorage.setItem('df_submissions', JSON.stringify(allSubmissions));
+                
+                // Increment extensions count locally
+                window.df_extensions_count = (window.df_extensions_count || 0) + 1;
+                const extensionsCountEl = document.getElementById('df-stat-extensions');
+                if (extensionsCountEl) {
+                    extensionsCountEl.innerText = window.df_extensions_count;
+                }
+
+                window.dfShowExtensionForm = false;
+                if (typeof window.toggleDFInputModal === 'function') {
+                    window.toggleDFInputModal(false);
+                }
+                window.renderDFContent();
+                
+                if (typeof window.showToast === 'function') {
+                    window.showToast('success', 'Submitted', 'Extension submission successfully recorded and locked.');
+                } else {
+                    alert('Extension submission successfully recorded and locked.');
+                }
+            } else {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('error', 'Submission Failed', fpResult.message || 'Sheet submission failed.');
+                } else {
+                    alert('Submission failed: ' + (fpResult.message || 'Unknown error'));
+                }
+            }
+
+        } catch (err) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+            console.error("Error submitting digital footprint extension: ", err);
+            if (typeof window.showToast === 'function') {
+                window.showToast('error', 'Connection Error', 'Failed to connect to spreadsheet backend.');
+            } else {
+                alert('Connection error while saving extension submission.');
+            }
+        }
+    };
+
     window.toggleDFInputModal = function(show) {
         const modal = document.getElementById('df-input-modal');
         if (modal) {
@@ -16609,6 +16784,7 @@ window.closeAdminTaskDetailModal = function() {
             const data = await res.json();
             if (data.status === "success" && data.footprints) {
                 localStorage.setItem('df_submissions', JSON.stringify(data.footprints));
+                window.df_extensions_count = data.extensionCount || 0;
                 
                 // Re-sync linkedin_submissions map
                 const linkedinMap = {};
