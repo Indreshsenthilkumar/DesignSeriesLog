@@ -16129,10 +16129,10 @@ window.closeAdminTaskDetailModal = function() {
                             </div>
                             <div class="task-form-group">
                                 <label class="task-form-label">LinkedIn Post URL</label>
-                                <input type="url" id="df-url-input" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
+                                <input type="url" id="df-url-input-${suffix}" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
-                                <button id="df-submit-btn" onclick="window.submitDFExtension('LINKEDIN')" class="btn" style="flex: 1; background: #0D9488; color: white; border: none; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);">
+                                <button id="df-submit-ext-btn-${suffix}" onclick="window.submitDFExtension('LINKEDIN')" class="btn" style="flex: 1; background: #0D9488; color: white; border: none; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);">
                                     Submit Extension
                                 </button>
                                 <button onclick="window.dfShowExtensionForm = false; window.renderDFContent();" class="btn" style="background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
@@ -16621,11 +16621,10 @@ window.closeAdminTaskDetailModal = function() {
     };
 
     window.submitDFExtension = async function(category) {
-        let el = document.getElementById('df-url-input-modal');
-        if (!el || window.innerWidth <= 1024) {
-            el = document.getElementById('df-url-input-mobile');
-        }
+        const isMobile = window.innerWidth <= 1024;
+        const suffix = isMobile ? 'mobile' : 'modal';
         
+        const el = document.getElementById(`df-url-input-${suffix}`);
         if (!el || !el.value.trim()) {
             if (typeof window.showToast === 'function') {
                 window.showToast('error', 'URL Required', 'Please enter a valid URL.');
@@ -16652,10 +16651,10 @@ window.closeAdminTaskDetailModal = function() {
         };
 
         const originalBtnText = "Submit Extension";
-        const btn = document.getElementById('df-submit-btn');
+        const btn = document.getElementById(`df-submit-ext-btn-${suffix}`);
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px;"></i> Submitting...</span>`;
+            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px; height:16px;"></i> Submitting...</span>`;
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
 
