@@ -138,13 +138,14 @@ body {
 }
 
 /* Specific screens that handle their own header backgrounds (Home, Worklog, Profile) */
-#mobile-dashboard, #mobile-work-log, #mobile-profile {
+#mobile-dashboard, #mobile-work-log, #mobile-profile, #mobile-digital-footprint {
     padding-top: 0 !important;
 }
 
 #mobile-dashboard .header-mobile, 
 #mobile-work-log > div:first-child,
-#mobile-profile > div:first-child {
+#mobile-profile > div:first-child,
+#mobile-digital-footprint .header-mobile {
     padding-top: calc(env(safe-area-inset-top) + 20px) !important;
 }
 

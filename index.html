@@ -1509,6 +1509,12 @@
             <i data-lucide="plus" style="width: 28px; height: 28px; stroke-width: 3px; color: white;"></i>
         </button>
 
+        <button id="global-fab-df" class="hidden" onclick="window.toggleDFInputModal(true)"
+            style="position: fixed; bottom: 105px; right: 20px; width: 62px; height: 62px; border-radius: 20px; background: var(--primary-gradient); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(37, 99, 235, 0.4); border: none; cursor: pointer; z-index: 10000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+            onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">
+            <i data-lucide="plus" style="width: 28px; height: 28px; stroke-width: 3px; color: white;"></i>
+        </button>
+
         <!-- Activity Approval Screen (Mobile) -->
         <div id="mobile-activity-approval" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem; padding-bottom: 120px; overflow-y: auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; width: 100%;">
@@ -2201,7 +2207,7 @@
 
         <!-- Digital Footprint Screen (Mobile) -->
         <div id="mobile-digital-footprint" class="screen hidden" style="background: var(--bg-light); min-height: 100vh; padding: 0 0 120px;">
-            <div style="padding: 0 1.5rem 5rem; background: var(--header-gradient); position: relative; overflow: hidden; border-bottom-left-radius: 32px; border-bottom-right-radius: 32px; box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);">
+            <div class="header-mobile" style="padding: 2.5rem 1.5rem 5rem; background: var(--header-gradient); position: relative; overflow: hidden; border-bottom-left-radius: 32px; border-bottom-right-radius: 32px; box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);">
                 <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(30px);"></div>
                 <div style="position: absolute; bottom: -20px; left: -30px; width: 120px; height: 120px; background: rgba(0,0,0,0.05); border-radius: 50%; filter: blur(20px);"></div>
                 <div style="display: flex; align-items: center; gap: 1rem; position: relative; z-index: 10;">
@@ -2210,25 +2216,36 @@
                 </div>
             </div>
 
+            <!-- Mobile Stats Unified Card -->
             <div style="padding: 0 1.5rem; margin-top: -3.5rem; position: relative; z-index: 20;">
-                <div class="card" style="padding: 1.5rem; border-radius: 16px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.05); background: white;">
-                    <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; color: #0F172A; font-family: 'Google Sans', sans-serif;">Select Platform Category</h3>
-                    
-                    <!-- Category Switcher Buttons -->
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1.5px solid #F1F5F9; padding-bottom: 1rem;">
-                        <button onclick="window.selectDFCategory('LINKEDIN')" class="df-cat-btn active" id="df-cat-LINKEDIN-mobile" style="padding: 8px 14px; font-size: 0.75rem;">LINKEDIN</button>
-                        <button onclick="window.selectDFCategory('LEET CODE')" class="df-cat-btn" id="df-cat-LEETCODE-mobile" style="padding: 8px 14px; font-size: 0.75rem;">LEET CODE</button>
-                        <button onclick="window.selectDFCategory('CODE CHEF')" class="df-cat-btn" id="df-cat-CODECHEF-mobile" style="padding: 8px 14px; font-size: 0.75rem;">CODE CHEF</button>
-                        <button onclick="window.selectDFCategory('OTHERS')" class="df-cat-btn" id="df-cat-OTHERS-mobile" style="padding: 8px 14px; font-size: 0.75rem;">OTHERS</button>
+                <div style="background: white; border-radius: 20px; padding: 1.25rem 1rem; border: 1px solid #E2E8F0; box-shadow: 0 10px 30px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; text-align: center;">
+                    <!-- Col 1: Total Posts -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 0.65rem; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Total Post</span>
+                        <h4 id="df-stat-total-logged-mobile" style="font-size: 1.3rem; font-weight: 800; color: #0F172A; margin: 0;">0</h4>
                     </div>
-
-                    <!-- Dynamic Content Container -->
-                    <div id="df-dynamic-content-mobile"></div>
+                    <!-- Divider -->
+                    <div style="width: 1px; height: 32px; background: #E2E8F0;"></div>
+                    <!-- Col 2: Extensions -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 0.65rem; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Extension</span>
+                        <h4 id="df-stat-extensions-mobile" style="font-size: 1.3rem; font-weight: 800; color: #6366F1; margin: 0;">0</h4>
+                    </div>
+                    <!-- Divider -->
+                    <div style="width: 1px; height: 32px; background: #E2E8F0;"></div>
+                    <!-- Col 3: RP Deducted -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 0.65rem; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">RP Deducted</span>
+                        <h4 id="df-stat-rp-deducted-mobile" style="font-size: 1.3rem; font-weight: 800; color: #EA580C; margin: 0;">0.0</h4>
+                    </div>
                 </div>
             </div>
             
+            <!-- Dynamic Content Container (Hidden on main page now, but remains in DOM if needed) -->
+            <div id="df-dynamic-content-mobile" style="display: none;"></div>
+            
             <!-- Separate History Container -->
-            <div style="padding: 0 1.5rem; margin-top: 1.5rem;">
+            <div style="padding: 0 1.5rem; margin-top: 1.75rem;">
                 <div id="df-history-content-mobile"></div>
             </div>
         </div>
@@ -5906,7 +5923,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
-    <script src="script.js?v=5.10" defer></script>
+    <script src="script.js?v=5.17" defer></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();

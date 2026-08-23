@@ -1854,6 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bottomNav = document.querySelector('.bottom-nav-mobile');
             const gFabHist = document.getElementById('global-fab-history');
             const gFabWork = document.getElementById('global-fab-worklog');
+            const gFabDF = document.getElementById('global-fab-df');
 
             if (bottomNav) {
                 if (scr === 'log-work' || scr === 'add') {
@@ -1871,6 +1872,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 gFabWork.classList.add('hidden');
                 gFabWork.classList.remove('bottom-nav-hidden');
                 if (scr === 'work-log') gFabWork.classList.remove('hidden');
+            }
+            if (gFabDF) {
+                gFabDF.classList.add('hidden');
+                gFabDF.classList.remove('bottom-nav-hidden');
+                if (scr === 'digital-footprint') gFabDF.classList.remove('hidden');
             }
 
             lucide.createIcons();
@@ -16129,10 +16135,10 @@ window.closeAdminTaskDetailModal = function() {
                             </div>
                             <div class="task-form-group">
                                 <label class="task-form-label">LinkedIn Post URL</label>
-                                <input type="url" id="df-url-input-${suffix}" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
+                                <input type="url" id="df-url-input" class="task-form-input" placeholder="https://www.linkedin.com/posts/...">
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
-                                <button id="df-submit-ext-btn-${suffix}" onclick="window.submitDFExtension('LINKEDIN')" class="btn" style="flex: 1; background: #0D9488; color: white; border: none; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);">
+                                <button id="df-submit-ext-btn" onclick="window.submitDFExtension('LINKEDIN')" class="btn" style="flex: 1; background: #0D9488; color: white; border: none; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);">
                                     Submit Extension
                                 </button>
                                 <button onclick="window.dfShowExtensionForm = false; window.renderDFContent();" class="btn" style="background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; padding: 0 1rem; height: 46px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
@@ -16250,17 +16256,30 @@ window.closeAdminTaskDetailModal = function() {
                 window.activeDFHistoryTab = 'ALL';
             }
             
+            const isMobileView = suffix === 'mobile';
             const selectedCatText = window.activeDFHistoryTab === 'ALL' ? 'All Platforms' : (window.activeDFHistoryTab === 'LEET CODE' ? 'LeetCode' : (window.activeDFHistoryTab === 'CODE CHEF' ? 'CodeChef' : window.activeDFHistoryTab));
             
-            historyContainer.innerHTML = `
-                <div class="card no-hover df-history-card" style="padding: 1.5rem 2rem; border-radius: 20px !important; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; transition: none; overflow: visible !important;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 1rem;">
-                        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <i data-lucide="history" style="width: 18px; height: 18px; color: #6366F1;"></i> Submission History
-                        </h4>
+            let toolbarHTML = '';
+            if (isMobileView) {
+                toolbarHTML = `
+                    <!-- Premium Filter Toolbar Grid (Mobile) -->
+                    <div class="df-filter-toolbar-mobile" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; margin-bottom: 1.25rem; background: transparent; padding: 0; border: none; box-shadow: none;">
+                        <!-- Search Box -->
+                        <div class="df-search-input-container" style="height: 44px; background: white; border: 1.5px solid #E2E8F0; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <i data-lucide="search" style="width: 16px; color: #94A3B8; stroke-width: 2.5px; flex-shrink: 0;"></i>
+                            <input type="text" id="df-filter-search" oninput="window.filterDFHistory()" placeholder="Search logs..." style="font-size: 0.85rem; font-weight: 600; border: none; background: transparent; width: 100%; outline: none; color: #1E293B; height: 38px; line-height: 38px; padding: 0; margin: 0; display: block;">
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div style="height: 44px; background: white; border: 1.5px solid #E2E8F0; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #1E293B; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <i data-lucide="calendar" style="width: 16px; color: #94A3B8; stroke-width: 2.5px; flex-shrink: 0;"></i>
+                            <input type="date" id="df-filter-date" onchange="window.filterDFHistory()" style="font-size: 0.82rem; font-weight: 600; border: none; background: transparent; outline: none; color: #1E293B; cursor: pointer; width: 100%; height: 38px; line-height: 38px; padding: 0; margin: 0; display: block; -webkit-appearance: none; appearance: none;">
+                        </div>
                     </div>
-                    
-                    <!-- Premium Filter Toolbar Flex Row -->
+                `;
+            } else {
+                toolbarHTML = `
+                    <!-- Premium Filter Toolbar Flex Row (Desktop) -->
                     <div class="df-filter-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; background: white; padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.01); overflow: visible !important; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 1.25rem; flex: 1; flex-wrap: wrap;">
                             <!-- Search Box -->
@@ -16306,8 +16325,21 @@ window.closeAdminTaskDetailModal = function() {
                             </button>
                         </div>
                     </div>
+                `;
+            }
+            
+            historyContainer.innerHTML = `
+                <div class="${isMobileView ? 'df-history-container-mobile' : 'card no-hover df-history-card'}" style="${isMobileView ? 'padding: 0; background: transparent; border: none; box-shadow: none; font-family: \'Google Sans\', \'Google Sans Text\', \'Inter\', \'Roboto\', \'Arial\', sans-serif;' : 'padding: 1.5rem 2rem; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.01);'} margin: 0; transition: none; overflow: visible !important; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 0.75rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif;">
+                        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif;">
+                            <i data-lucide="history" style="width: 18px; height: 18px; color: #6366F1;"></i> Submission History
+                        </h4>
+                        ${isMobileView ? '<span id="df-records-count" style="font-size: 0.8rem; color: #64748B; font-weight: 700; font-family: \'Google Sans\', \'Google Sans Text\', \'Inter\', \'Roboto\', sans-serif;">Showing 0 records</span>' : ''}
+                    </div>
                     
-                    <div id="df-history-list-items" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+                    ${toolbarHTML}
+                    
+                    <div id="df-history-list-items" style="display: flex; flex-direction: column; gap: 0.75rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;"></div>
                 </div>
             `;
             window.filterDFHistory();
@@ -16315,11 +16347,15 @@ window.closeAdminTaskDetailModal = function() {
         
         const modalContainer = document.getElementById('df-dynamic-content-modal');
         if (modalContainer) {
-            modalContainer.innerHTML = contentHTML.replace(/id="df-url-input"/g, 'id="df-url-input-modal"');
+            modalContainer.innerHTML = contentHTML
+                .replace(/id="df-url-input"/g, 'id="df-url-input-modal"')
+                .replace(/id="df-submit-ext-btn"/g, 'id="df-submit-ext-btn-modal"');
         }
         const mobileContainer = document.getElementById('df-dynamic-content-mobile');
         if (mobileContainer) {
-            mobileContainer.innerHTML = contentHTML.replace(/id="df-url-input"/g, 'id="df-url-input-mobile"');
+            mobileContainer.innerHTML = contentHTML
+                .replace(/id="df-url-input"/g, 'id="df-url-input-mobile"')
+                .replace(/id="df-submit-ext-btn"/g, 'id="df-submit-ext-btn-mobile"');
         }
         
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -16401,40 +16437,94 @@ window.closeAdminTaskDetailModal = function() {
             return matchesSearch && matchesDate && matchesCat;
         });
         
+        const isMobileView = window.innerWidth <= 1024;
+        
         if (filtered.length > 0) {
-            listContainer.innerHTML = `
-                <div style="overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #E2E8F0;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 600px;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #E2E8F0; background: #F8FAFC; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
-                                <th style="padding: 12px 16px;">Submitted Timestamp</th>
-                                <th style="padding: 12px 16px;">Submission ID</th>
-                                <th style="padding: 12px 16px;">Post Date</th>
-                                <th style="padding: 12px 16px;">Category</th>
-                                <th style="padding: 12px 16px;">Link</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${filtered.slice().reverse().map(sub => `
-                                <tr style="border-bottom: 1px solid #E2E8F0; color: #334155; font-weight: 550; transition: background 0.15s;">
-                                    <td style="padding: 12px 16px; font-weight: 600; color: #475569;">${formatDFTimestamp(sub.submittedAt)}</td>
-                                    <td style="padding: 12px 16px; font-family: monospace; color: #64748B; font-size: 0.75rem;">${sub.submissionId}</td>
-                                    <td style="padding: 12px 16px; font-weight: 700; color: #0F172A;">${formatDFDate(sub.postDate)}</td>
-                                    <td style="padding: 12px 16px;">
-                                        <span style="font-size: 0.7rem; font-weight: 800; color: #6366F1; background: #EEF2FF; padding: 4px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">${sub.category}</span>
-                                    </td>
-                                    <td style="padding: 12px 16px;">
-                                        <a href="${sub.link}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #2563EB; font-weight: 700; text-decoration: none; background: #EFF6FF; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid #BFDBFE;">
-                                            <span>View Post</span>
-                                            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+            if (isMobileView) {
+                listContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        ${filtered.slice().reverse().map((sub, idx) => {
+                            let iconHTML = '';
+                            let iconBg = '#EFF6FF';
+                            let badgeHTML = '';
+                            if (sub.category === 'LINKEDIN') {
+                                iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="#0A66C2"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>`;
+                                iconBg = '#E0F2FE';
+                                badgeHTML = `<span style="font-size: 0.72rem; font-weight: 800; color: #0369A1; background: #E0F2FE; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">LinkedIn</span>`;
+                            } else if (sub.category === 'LEET CODE') {
+                                iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="#FFA116"><path d="M16.102 17.93l-2.69 2.607c-.466.467-1.211.467-1.677 0L5.353 14.17c-.467-.466-.467-1.211 0-1.677l8.059-8.059c.466-.467 1.211-.467 1.677 0l2.69 2.607c.466.467.466 1.211 0 1.677l-5.38 5.38a.382.382 0 000 .54l3.703 3.703c.467.466.467 1.211 0 1.677zm3.766-3.765l-2.69-2.607c-.466-.467-1.211-.467-1.677 0l-3.703 3.703c-.466.467-.466 1.211 0 1.677l2.69 2.607c.466.467 1.211.467 1.677 0l3.703-3.703c.467-.466.467-1.211 0-1.677z"/></svg>`;
+                                iconBg = '#FEF3C7';
+                                badgeHTML = `<span style="font-size: 0.72rem; font-weight: 800; color: #B45309; background: #FEF3C7; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">LeetCode</span>`;
+                            } else if (sub.category === 'CODE CHEF') {
+                                iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="#8B5CF6"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm1-6h-2v-2h2v2zm2.07-6.25l-.9.92c-.72.73-1.17 1.33-1.17 2.83h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>`;
+                                iconBg = '#F3E8FF';
+                                badgeHTML = `<span style="font-size: 0.72rem; font-weight: 800; color: #6D28D9; background: #F3E8FF; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">CodeChef</span>`;
+                            } else {
+                                iconHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="#2563EB"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`;
+                                iconBg = '#EFF6FF';
+                                badgeHTML = `<span style="font-size: 0.72rem; font-weight: 800; color: #1E40AF; background: #DBEAFE; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block;">Submission</span>`;
+                            }
+                            
+                            return `
+                                <div style="background: white; border-radius: 16px; padding: 12px 14px; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.015); transition: none;">
+                                    <!-- Left Section: Icon + Platform Badge & ID -->
+                                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; padding-right: 8px;">
+                                        <div style="width: 44px; height: 44px; border-radius: 12px; background: ${iconBg}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                            ${iconHTML}
+                                        </div>
+                                        <div style="min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                                            ${badgeHTML}
+                                            <span style="font-size: 0.72rem; color: #94A3B8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">ID: ${sub.submissionId}</span>
+                                        </div>
+                                    </div>
+                                    <!-- Right Section: Date & View Button -->
+                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; margin-left: 8px;">
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #475569; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif;">${formatDFDate(sub.postDate)}</span>
+                                        <a href="${sub.link}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; color: #2563EB; font-weight: 800; text-decoration: none; font-size: 0.75rem; background: #EFF6FF; padding: 5px 10px; border-radius: 8px; border: 1px solid #BFDBFE; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">
+                                            <span>View</span>
+                                            <i data-lucide="external-link" style="width: 10px; height: 10px;"></i>
                                         </a>
-                                    </td>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = `
+                    <div style="overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #E2E8F0;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; min-width: 600px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #E2E8F0; background: #F8FAFC; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
+                                    <th style="padding: 12px 16px;">Submitted Timestamp</th>
+                                    <th style="padding: 12px 16px;">Submission ID</th>
+                                    <th style="padding: 12px 16px;">Post Date</th>
+                                    <th style="padding: 12px 16px;">Category</th>
+                                    <th style="padding: 12px 16px;">Link</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+                            </thead>
+                            <tbody>
+                                ${filtered.slice().reverse().map(sub => `
+                                    <tr style="border-bottom: 1px solid #E2E8F0; color: #334155; font-weight: 550; transition: background 0.15s;">
+                                        <td style="padding: 12px 16px; font-weight: 600; color: #475569;">${formatDFTimestamp(sub.submittedAt)}</td>
+                                        <td style="padding: 12px 16px; font-family: monospace; color: #64748B; font-size: 0.75rem;">${sub.submissionId}</td>
+                                        <td style="padding: 12px 16px; font-weight: 700; color: #0F172A;">${formatDFDate(sub.postDate)}</td>
+                                        <td style="padding: 12px 16px;">
+                                            <span style="font-size: 0.7rem; font-weight: 800; color: #6366F1; background: #EEF2FF; padding: 4px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;">${sub.category}</span>
+                                        </td>
+                                        <td style="padding: 12px 16px;">
+                                            <a href="${sub.link}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #2563EB; font-weight: 700; text-decoration: none; background: #EFF6FF; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; border: 1px solid #BFDBFE;">
+                                                <span>View Post</span>
+                                                <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
         } else {
             listContainer.innerHTML = `
                 <div style="text-align: center; color: #94A3B8; padding: 2rem 0; border: 1px dashed #E2E8F0; border-radius: 12px; background: white;">
@@ -16449,21 +16539,33 @@ window.closeAdminTaskDetailModal = function() {
             recordsCountEl.innerText = `Showing ${filtered.length} records`;
         }
         
-        // Update stats cards metrics
+        // Update stats cards metrics (Desktop & Mobile)
         const totalLoggedEl = document.getElementById('df-stat-total-logged');
         if (totalLoggedEl) {
             totalLoggedEl.innerText = submissions.length;
+        }
+        const totalLoggedMobEl = document.getElementById('df-stat-total-logged-mobile');
+        if (totalLoggedMobEl) {
+            totalLoggedMobEl.innerText = submissions.length;
         }
         
         const extensionsCountEl = document.getElementById('df-stat-extensions');
         if (extensionsCountEl) {
             extensionsCountEl.innerText = window.df_extensions_count || '0';
         }
+        const extensionsCountMobEl = document.getElementById('df-stat-extensions-mobile');
+        if (extensionsCountMobEl) {
+            extensionsCountMobEl.innerText = window.df_extensions_count || '0';
+        }
         
         const rpDeductedEl = document.getElementById('df-stat-rp-deducted');
+        const extCount = parseFloat(window.df_extensions_count || 0);
         if (rpDeductedEl) {
-            const redeemed = document.getElementById('p-reward-used')?.innerText || '0';
-            rpDeductedEl.innerText = redeemed;
+            rpDeductedEl.innerText = (extCount * 0.5).toFixed(1);
+        }
+        const rpDeductedMobEl = document.getElementById('df-stat-rp-deducted-mobile');
+        if (rpDeductedMobEl) {
+            rpDeductedMobEl.innerText = (extCount * 0.5).toFixed(1);
         }
         
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -16621,7 +16723,7 @@ window.closeAdminTaskDetailModal = function() {
     };
 
     window.submitDFExtension = async function(category) {
-        let el = document.getElementById('df-url-input-desktop');
+        let el = document.getElementById('df-url-input-modal');
         if (!el) {
             el = document.getElementById('df-url-input-mobile');
         }
@@ -16652,7 +16754,7 @@ window.closeAdminTaskDetailModal = function() {
         };
 
         const originalBtnText = "Submit Extension";
-        let btn = document.getElementById('df-submit-ext-btn-desktop');
+        let btn = document.getElementById('df-submit-ext-btn-modal');
         if (!btn) {
             btn = document.getElementById('df-submit-ext-btn-mobile');
         }
