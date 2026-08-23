@@ -16621,10 +16621,11 @@ window.closeAdminTaskDetailModal = function() {
     };
 
     window.submitDFExtension = async function(category) {
-        const isMobile = window.innerWidth <= 1024;
-        const suffix = isMobile ? 'mobile' : 'modal';
+        let el = document.getElementById('df-url-input-desktop');
+        if (!el) {
+            el = document.getElementById('df-url-input-mobile');
+        }
         
-        const el = document.getElementById(`df-url-input-${suffix}`);
         if (!el || !el.value.trim()) {
             if (typeof window.showToast === 'function') {
                 window.showToast('error', 'URL Required', 'Please enter a valid URL.');
@@ -16651,7 +16652,10 @@ window.closeAdminTaskDetailModal = function() {
         };
 
         const originalBtnText = "Submit Extension";
-        const btn = document.getElementById(`df-submit-ext-btn-${suffix}`);
+        let btn = document.getElementById('df-submit-ext-btn-desktop');
+        if (!btn) {
+            btn = document.getElementById('df-submit-ext-btn-mobile');
+        }
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px; height:16px;"></i> Submitting...</span>`;
