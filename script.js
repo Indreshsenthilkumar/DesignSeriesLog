@@ -12939,13 +12939,46 @@ window.submitExtensionRequest = async function (notifId, reason) {
     });
 };
 
+window.activeAdminExtensionTab = 'NOTIF';
+window.switchAdminExtensionTab = function (tab) {
+    window.activeAdminExtensionTab = tab;
+    const notifBtn = document.getElementById('tab-btn-notif-extensions');
+    const linkedinBtn = document.getElementById('tab-btn-linkedin-extensions');
+    const notifContainer = document.getElementById('admin-notif-extensions-container');
+    const linkedinContainer = document.getElementById('admin-linkedin-extensions-container');
+
+    if (tab === 'NOTIF') {
+        if (notifBtn) {
+            notifBtn.style.color = '#4F46E5';
+            notifBtn.style.borderBottomColor = '#4F46E5';
+        }
+        if (linkedinBtn) {
+            linkedinBtn.style.color = '#64748B';
+            linkedinBtn.style.borderBottomColor = 'transparent';
+        }
+        if (notifContainer) notifContainer.style.display = 'block';
+        if (linkedinContainer) linkedinContainer.style.display = 'none';
+    } else {
+        if (notifBtn) {
+            notifBtn.style.color = '#64748B';
+            notifBtn.style.borderBottomColor = 'transparent';
+        }
+        if (linkedinBtn) {
+            linkedinBtn.style.color = '#4F46E5';
+            linkedinBtn.style.borderBottomColor = '#4F46E5';
+        }
+        if (notifContainer) notifContainer.style.display = 'none';
+        if (linkedinContainer) linkedinContainer.style.display = 'block';
+    }
+};
+
 window.loadExtensionRequests = async function (isSilent = false, force = false) {
     const tableBody = document.getElementById('extension-requests-table-body');
     const listMob = document.getElementById('extension-requests-list-mobile');
 
     if (!force && window.cachedAllExtensionsList && window.cachedAllExtensionsList.length > 0) {
         console.log("[EXTENSIONS] Rendering extensions from cache instantly");
-        window.renderExtensionsTable(window.cachedAllExtensionsList, window.cachedNotificationsList || [], window.cachedUsersList || []);
+        window.renderExtensionsTable(window.cachedAllExtensionsList, window.cachedNotificationsList || [], window.cachedUsersList || [], window.cachedLinkedinExtensionsList || []);
         return;
     }
 
@@ -12977,15 +13010,17 @@ window.loadExtensionRequests = async function (isSilent = false, force = false) 
 
         if (extData.status === 'success') {
             const list = extData.extensions || [];
+            const linkedinExt = extData.linkedinExtensions || [];
             const notifications = notifData.notifications || [];
             const users = userData.users || userData.users_list || [];
 
             // Cache lists globally for optimistic re-renders
             window.cachedAllExtensionsList = list;
+            window.cachedLinkedinExtensionsList = linkedinExt;
             window.cachedNotificationsList = notifications;
             window.cachedUsersList = users;
 
-            window.renderExtensionsTable(list, notifications, users);
+            window.renderExtensionsTable(list, notifications, users, linkedinExt);
         } else {
             if (!isSilent) {
                 const err = `<tr><td colspan="12" style="padding: 3rem; text-align: center; color: #EF4444; font-weight: 600;">Failed to load extension requests: ${extData.message}</td></tr>`;
@@ -13006,7 +13041,8 @@ window.renderExtensions = function () {
     window.renderExtensionsTable(
         window.cachedAllExtensionsList || [],
         window.cachedNotificationsList || [],
-        window.cachedUsersList || []
+        window.cachedUsersList || [],
+        window.cachedLinkedinExtensionsList || []
     );
 };
 
@@ -13046,7 +13082,7 @@ window.refreshExtensionTableOnly = function () {
     window.loadExtensionRequests(false, true);
 };
 
-window.renderExtensionsTable = function (list, notifications, users) {
+window.renderExtensionsTable = function (list, notifications, users, linkedinExtensions = []) {
     const tableBody = document.getElementById('extension-requests-table-body');
     const listMob = document.getElementById('extension-requests-list-mobile');
 
@@ -13323,6 +13359,43 @@ window.renderExtensionsTable = function (list, notifications, users) {
     if (notifPendingEl) notifPendingEl.innerText = pending;
     const notifTotalElMob = document.getElementById('notif-extension-requests-count-mobile');
     if (notifTotalElMob) notifTotalElMob.innerText = total;
+
+    // Render LinkedIn Extensions Table
+    const linkedinTableBody = document.getElementById('linkedin-extension-requests-table-body');
+    if (linkedinTableBody) {
+        if (!linkedinExtensions || linkedinExtensions.length === 0) {
+            linkedinTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 4rem 0; color: #64748B; font-weight: 600; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif;">
+                        No LinkedIn extension requests found.
+                    </td>
+                </tr>
+            `;
+        } else {
+            linkedinTableBody.innerHTML = linkedinExtensions.map(req => {
+                const reqEmailSafe = (req.email || '').toLowerCase().trim();
+                const studentObj = users.find(u => (u.email || u.email_id || '').toLowerCase().trim() === reqEmailSafe);
+                const studentName = studentObj ? (studentObj.name || studentObj.student_name || req.name || 'Student') : (req.name || 'Student');
+                const studentId = studentObj ? (studentObj.rollno || studentObj.roll_no || studentObj.rollnum || studentObj.roll_num || studentObj.regno || studentObj.reg_no || req.regNumber || 'N/A') : (req.regNumber || 'N/A');
+                const studentYear = studentObj ? String(studentObj.year || req.year || 'N/A') : String(req.year || 'N/A');
+                
+                const timestampText = formatDotDateTime(req.timestamp);
+                const extDateText = req.extensionDate ? formatDotDate(req.extensionDate) : '—';
+
+                return `
+                    <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 600; width: 220px; vertical-align: middle;">${timestampText}</td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 700; width: 200px; vertical-align: middle;">${studentName}</td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; font-weight: 800; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; width: 160px; vertical-align: middle;">${studentId}</td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; width: 240px; vertical-align: middle; word-break: break-all;">${req.email}</td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 600; width: 120px; vertical-align: middle;">${studentYear}</td>
+                        <td style="padding: 1.1rem 1rem; font-size: 0.82rem; color: #334155; font-family: 'Google Sans', 'Google Sans Text', sans-serif; font-weight: 700; width: 200px; vertical-align: middle;">${extDateText}</td>
+                        <td style="padding: 1.1rem 1.5rem; font-size: 0.82rem; color: #334155; font-weight: 700; text-align: right; width: 150px; min-width: 150px; vertical-align: middle; font-family: 'Google Sans', 'Google Sans Text', sans-serif;">${req.requestCount || 1}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
@@ -16349,12 +16422,14 @@ window.closeAdminTaskDetailModal = function() {
         if (modalContainer) {
             modalContainer.innerHTML = contentHTML
                 .replace(/id="df-url-input"/g, 'id="df-url-input-modal"')
+                .replace(/id="df-submit-btn"/g, 'id="df-submit-btn-modal"')
                 .replace(/id="df-submit-ext-btn"/g, 'id="df-submit-ext-btn-modal"');
         }
         const mobileContainer = document.getElementById('df-dynamic-content-mobile');
         if (mobileContainer) {
             mobileContainer.innerHTML = contentHTML
                 .replace(/id="df-url-input"/g, 'id="df-url-input-mobile"')
+                .replace(/id="df-submit-btn"/g, 'id="df-submit-btn-mobile"')
                 .replace(/id="df-submit-ext-btn"/g, 'id="df-submit-ext-btn-mobile"');
         }
         
@@ -16625,9 +16700,18 @@ window.closeAdminTaskDetailModal = function() {
     }
 
     window.submitDFPost = async function(category) {
-        let el = document.getElementById('df-url-input-modal');
-        if (!el || window.innerWidth <= 1024) {
-            el = document.getElementById('df-url-input-mobile');
+        const modalEl = document.getElementById('df-url-input-modal');
+        const mobileEl = document.getElementById('df-url-input-mobile');
+        const modal = document.getElementById('df-input-modal');
+        const isModalVisible = modal && !modal.classList.contains('hidden');
+        
+        let el = null;
+        if (isModalVisible && modalEl) {
+            el = modalEl;
+        } else if (mobileEl) {
+            el = mobileEl;
+        } else {
+            el = modalEl || mobileEl;
         }
         
         if (!el || !el.value.trim()) {
@@ -16662,11 +16746,21 @@ window.closeAdminTaskDetailModal = function() {
         };
         
         const originalBtnText = category === 'LINKEDIN' ? "Submit LinkedIn Post" : `Submit ${category} Link`;
-        const btn = document.getElementById('df-submit-btn');
+        const modalBtn = document.getElementById('df-submit-btn-modal');
+        const mobileBtn = document.getElementById('df-submit-btn-mobile');
+        
+        let btn = null;
+        if (isModalVisible && modalBtn) {
+            btn = modalBtn;
+        } else if (mobileBtn) {
+            btn = mobileBtn;
+        } else {
+            btn = modalBtn || mobileBtn;
+        }
+
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i class="animate-spin" data-lucide="loader-2" style="width:16px;"></i> Submitting...</span>`;
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            btn.innerHTML = `<span style="display:inline-flex; align-items:center; gap:8px;"><div style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; display: inline-block; animation: analytics-spin 0.8s linear infinite;"></div> Submitting...</span>`;
         }
         
         try {

@@ -4713,7 +4713,18 @@
                         </button>
                     </div>
 
-                    <div style="background: white; overflow-x: auto; width: 100%; border-radius: 0 0 20px 20px;">
+                    <!-- Tabs Selection Bar -->
+                    <div style="background: white; border-bottom: 1px solid #E2E8F0; padding: 0 2rem; display: flex; gap: 1.5rem;">
+                        <button id="tab-btn-notif-extensions" class="admin-tab-btn active" onclick="window.switchAdminExtensionTab('NOTIF')" style="padding: 1rem 0; border: none; background: transparent; font-size: 0.88rem; font-weight: 800; color: #4F46E5; border-bottom: 2px solid #4F46E5; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif; transition: all 0.2s;">
+                            <i data-lucide="bell" style="width: 15px; height: 15px;"></i> Notification Extensions
+                        </button>
+                        <button id="tab-btn-linkedin-extensions" class="admin-tab-btn" onclick="window.switchAdminExtensionTab('LINKEDIN')" style="padding: 1rem 0; border: none; background: transparent; font-size: 0.88rem; font-weight: 800; color: #64748B; border-bottom: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif; transition: all 0.2s;">
+                            <i data-lucide="linkedin" style="width: 15px; height: 15px;"></i> LinkedIn Extensions
+                        </button>
+                    </div>
+
+                    <!-- Notification Extensions Container -->
+                    <div id="admin-notif-extensions-container" style="background: white; overflow-x: auto; width: 100%; border-radius: 0 0 20px 20px;">
                         <table style="width: 100%; border-collapse: collapse; min-width: 2010px; table-layout: fixed;">
                             <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
                                 <tr>
@@ -4738,6 +4749,30 @@
                                             <div style="width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top: 3px solid #000000; border-radius: 50%; display: inline-block; animation: analytics-spin 1s linear infinite;"></div>
                                             <div style="font-weight: 700; color: #000000; font-size: 0.95rem; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Loading...</div>
                                         </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LinkedIn Extensions Container -->
+                    <div id="admin-linkedin-extensions-container" style="display: none; background: white; overflow-x: auto; width: 100%; border-radius: 0 0 20px 20px;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 1200px; table-layout: fixed;">
+                            <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
+                                <tr>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 220px;">Timestamp</th>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 200px;">Name</th>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 160px;">Roll Number</th>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 240px;">Email</th>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 120px;">Year</th>
+                                    <th style="padding: 1.2rem 1rem; text-align: left; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 200px;">Requested Date</th>
+                                    <th style="padding: 1.2rem 1.5rem; text-align: right; font-size: 0.8rem; color: #475569; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif; width: 150px; min-width: 150px;">Request Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="linkedin-extension-requests-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 4rem 0; color: #64748B; font-weight: 600; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif;">
+                                        No requests loaded.
                                     </td>
                                 </tr>
                             </tbody>
@@ -5923,7 +5958,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
-    <script src="script.js?v=5.17" defer></script>
+    <script src="script.js?v=5.20" defer></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();

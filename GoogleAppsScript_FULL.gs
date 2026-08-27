@@ -1255,17 +1255,10 @@ function sendFcmNotification(targetEmails, title, description) {
 // ════════════════════════════════════════════════════════════
 
 function getExtensionsSheet() {
-  const ss = getSpreadsheet();
-  let sheet = ss.getSheetByName("ExtensionRequests");
-  if (!sheet) {
-    sheet = ss.insertSheet("ExtensionRequests");
-    sheet.appendRow([
-      "Timestamp", "RequestId", "Name", "Email", "RollNumber", "Year", 
-      "NotificationTitle", "Reason", "NewDeadline", "RequestDate", "ResolvedDate", "Status", "ExtensionCount", "NotificationId"
-    ]);
-    sheet.getRange(1, 1, 1, 14).setBackground("#F1F5F9").setFontWeight("bold");
-  }
-  return sheet;
+  return getSheetByGid("876514433", "ExtensionRequests", [
+    "Timestamp", "RequestId", "Name", "Email", "RollNumber", "Year", 
+    "NotificationTitle", "Reason", "NewDeadline", "RequestDate", "ResolvedDate", "Status", "ExtensionCount", "NotificationId"
+  ]);
 }
 
 function getStudentField(studentObj, prefixes) {
@@ -1386,24 +1379,49 @@ function getUserExtensions(email) {
 
 function getAllExtensions() {
   try {
+    // 1. Notification Extensions
     const sheet = getExtensionsSheet();
     const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { status: "success", extensions: [] };
-    
-    const list = [];
-    for (let i = 1; i < data.length; i++) {
-      list.push({
-        requestId: data[i][1],
-        email: data[i][3],
-        notificationId: data[i][13],
-        reason: data[i][7],
-        status: data[i][11],
-        newDeadline: data[i][8],
-        requestDate: data[i][9],
-        resolvedDate: data[i][10]
-      });
+    const notificationList = [];
+    if (data.length > 1) {
+      for (let i = 1; i < data.length; i++) {
+        notificationList.push({
+          requestId: data[i][1],
+          email: data[i][3],
+          notificationId: data[i][13],
+          reason: data[i][7],
+          status: data[i][11],
+          newDeadline: data[i][8],
+          requestDate: data[i][9],
+          resolvedDate: data[i][10]
+        });
+      }
     }
-    return { status: "success", extensions: list.reverse() };
+
+    // 2. LinkedIn Extensions
+    const extSheet = getDigitalFootprintExtensionSheet();
+    const extData = extSheet.getDataRange().getValues();
+    const linkedinList = [];
+    if (extData.length > 1) {
+      for (let j = 1; j < extData.length; j++) {
+        linkedinList.push({
+          timestamp: extData[j][0],
+          name: extData[j][1],
+          regNumber: extData[j][2],
+          email: extData[j][3],
+          year: extData[j][4],
+          extensionDate: extData[j][5],
+          requestCount: extData[j][6]
+        });
+      }
+    }
+
+    return { 
+      status: "success", 
+      extensions: notificationList.slice().reverse(), 
+      notificationExtensions: notificationList.slice().reverse(), 
+      linkedinExtensions: linkedinList.slice().reverse() 
+    };
   } catch(err) {
     return { status: "error", message: "Get all extensions error: " + err.toString() };
   }
@@ -1658,25 +1676,37 @@ function updateActivityPassStatus(requestId, newStatus) {
   }
 }
 
-// 👣 DIGITAL FOOTPRINT CORE HELPERS
-function getDigitalFootprintSheet() {
+function getSheetByGid(gid, defaultName, headers = []) {
   const ss = getSpreadsheet();
-  let sheet = ss.getSheetByName(DIGITAL_FOOTPRINT_SHEET);
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId().toString() === gid.toString()) {
+      return sheets[i];
+    }
+  }
+  let sheet = ss.getSheetByName(defaultName);
   if (!sheet) {
-    sheet = ss.insertSheet(DIGITAL_FOOTPRINT_SHEET);
-    sheet.appendRow([
-      "Submission ID", 
-      "Submitted at", 
-      "category", 
-      "Name", 
-      "Reg Number", 
-      "Email", 
-      "Postdate", 
-      "Link"
-    ]);
-    sheet.getRange(1, 1, 1, 8).setBackground("#F1F5F9").setFontWeight("bold");
+    sheet = ss.insertSheet(defaultName);
+    if (headers && headers.length > 0) {
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setBackground("#F1F5F9").setFontWeight("bold");
+    }
   }
   return sheet;
+}
+
+// 👣 DIGITAL FOOTPRINT CORE HELPERS
+function getDigitalFootprintSheet() {
+  return getSheetByGid("1612956029", "DigitalFootprint", [
+    "Submission ID", 
+    "Submitted at", 
+    "category", 
+    "Name", 
+    "Reg Number", 
+    "Email", 
+    "Postdate", 
+    "Link"
+  ]);
 }
 
 function saveDigitalFootprint(data) {
@@ -1755,22 +1785,15 @@ function getUserDigitalFootprints(email) {
 const DIGITAL_FOOTPRINT_EXTENSION_SHEET = "Digitalfootprint extensiton";
 
 function getDigitalFootprintExtensionSheet() {
-  const ss = getSpreadsheet();
-  let sheet = ss.getSheetByName(DIGITAL_FOOTPRINT_EXTENSION_SHEET);
-  if (!sheet) {
-    sheet = ss.insertSheet(DIGITAL_FOOTPRINT_EXTENSION_SHEET);
-    sheet.appendRow([
-      "Timestamp", 
-      "Name", 
-      "Reg Number", 
-      "Email", 
-      "Year", 
-      "Extension Date", 
-      "Request Count"
-    ]);
-    sheet.getRange(1, 1, 1, 7).setBackground("#F1F5F9").setFontWeight("bold");
-  }
-  return sheet;
+  return getSheetByGid("932110871", "Digitalfootprint extensiton", [
+    "Timestamp", 
+    "Name", 
+    "Reg Number", 
+    "Email", 
+    "Year", 
+    "Extension Date", 
+    "Request Count"
+  ]);
 }
 
 function saveDigitalFootprintExtension(data) {
