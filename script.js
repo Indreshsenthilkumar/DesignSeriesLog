@@ -2744,8 +2744,11 @@ async function fetchRewardPoints(emailOrReg, rollNo = null) {
             const earned = s.earned_points || s.earned || s.points_earned || s.total_points || s.points || "0";
             const used = s.used_points || s.used || s.points_used || "0";
             const balance = s.balance_points || s.balance || s.points_balance || s.reward_points || "0";
+            const missedDates = window.calculateLinkedInDeductions ? window.calculateLinkedInDeductions() : [];
+            const deduction = missedDates.length * 0.15;
+            const finalBalance = (parseFloat(balance) - deduction).toFixed(2);
 
-            console.log(`[Rewards] Sync Success via Main GAS: E:${earned} U:${used} B:${balance}`);
+            console.log(`[Rewards] Sync Success via Main GAS: E:${earned} U:${used} B:${balance} (Adj: ${finalBalance})`);
 
             document.querySelectorAll('[id^="p-reward-earned"]').forEach(el => {
                 el.innerText = earned;
@@ -2756,7 +2759,7 @@ async function fetchRewardPoints(emailOrReg, rollNo = null) {
                 el.classList.remove('skeleton-text');
             });
             document.querySelectorAll('[id^="p-reward-balance"]').forEach(el => {
-                el.innerText = balance;
+                el.innerText = finalBalance;
                 el.classList.remove('skeleton-text');
                 el.classList.add('animate-pulse');
                 setTimeout(() => el.classList.remove('animate-pulse'), 2000);
@@ -2780,8 +2783,11 @@ async function fetchRewardPoints(emailOrReg, rollNo = null) {
             const earned = s.earned_points || s.earned || s.points_earned || s.total_points || s.points || "0";
             const used = s.used_points || s.used || s.points_used || "0";
             const balance = s.balance_points || s.balance || s.points_balance || s.reward_points || "0";
+            const missedDates = window.calculateLinkedInDeductions ? window.calculateLinkedInDeductions() : [];
+            const deduction = missedDates.length * 0.15;
+            const finalBalance = (parseFloat(balance) - deduction).toFixed(2);
 
-            console.log(`[Rewards] Sync Success via GAS: E:${earned} U:${used} B:${balance}`);
+            console.log(`[Rewards] Sync Success via GAS: E:${earned} U:${used} B:${balance} (Adj: ${finalBalance})`);
 
             document.querySelectorAll('[id^="p-reward-earned"]').forEach(el => {
                 el.innerText = earned;
@@ -2792,7 +2798,7 @@ async function fetchRewardPoints(emailOrReg, rollNo = null) {
                 el.classList.remove('skeleton-text');
             });
             document.querySelectorAll('[id^="p-reward-balance"]').forEach(el => {
-                el.innerText = balance;
+                el.innerText = finalBalance;
                 el.classList.remove('skeleton-text');
                 el.classList.add('animate-pulse');
                 setTimeout(() => el.classList.remove('animate-pulse'), 2000);
@@ -2814,6 +2820,9 @@ async function populateDashboard(freshStudentData) {
         const localEarned = user.earned_points || user.earned || user.points_earned || user.total_points || user.points || "0";
         const localUsed = user.used_points || user.used || user.points_used || "0";
         const localBalance = user.balance_points || user.balance || user.points_balance || user.reward_points || "0";
+        const missedDates = window.calculateLinkedInDeductions ? window.calculateLinkedInDeductions() : [];
+        const deduction = missedDates.length * 0.15;
+        const adjustedBalance = (parseFloat(localBalance) - deduction).toFixed(2);
 
         document.querySelectorAll('[id^="p-reward-earned"]').forEach(el => {
             el.innerText = localEarned;
@@ -2824,7 +2833,7 @@ async function populateDashboard(freshStudentData) {
             el.classList.remove('skeleton-text');
         });
         document.querySelectorAll('[id^="p-reward-balance"]').forEach(el => {
-            el.innerText = localBalance;
+            el.innerText = adjustedBalance;
             el.classList.remove('skeleton-text');
         });
     }
@@ -11812,7 +11821,7 @@ window.updateThemeToggleIcons = function () {
 // ============================================================
 //  LINKEDIN POST TRACKER LOGIC
 // ============================================================
-const LINKEDIN_POSTS_CSV_URL = "https://docs.google.com/spreadsheets/d/1NzalQvWi_X_ecyjGVM4JN3IhrxDekmt3GlXi--HwJAY/export?format=csv&gid=856733370";
+const LINKEDIN_POSTS_CSV_URL = "https://docs.google.com/spreadsheets/d/1NzalQvWi_X_ecyjGVM4JN3IhrxDekmt3GlXi--HwJAY/export?format=csv&gid=1612956029";
 
 window.currentLinkedinPostTab = 'all';
 window.linkedinPostData = [];
@@ -12586,7 +12595,7 @@ window.openExportModal = function () {
             let optionsHtml = '';
             Array.from(uniqueYears).sort().forEach(y => {
                 if (y !== '-') {
-                    const id = 'export-year-chk-' + btoa(y).replace(/[^a-zA-Z0-9]/g, '');
+                    const id = 'export-year-chk-' + y.toString().replace(/[^a-zA-Z0-9]/g, '');
                     optionsHtml += `<label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:600; cursor:pointer;"><input type="checkbox" class="export-year-chk" value="${y}" checked style="accent-color:#4F46E5;"> ${y}</label>`;
                 }
             });
@@ -16101,6 +16110,30 @@ window.closeAdminTaskDetailModal = function() {
         window.downloadTableAsExcelXML(table, `linkedin_monthly_grid_${monthNames[selectedMonth]}_${selectedYear}.xls`);
     };
 
+    window.df_data_loading = true;
+    window.df_schedule_loading = true;
+    window.dfNormalizeToYYYYMMDD = function(dateInput) {
+        if (!dateInput) return '';
+        const str = String(dateInput).trim().replace(/\//g, '-');
+        const ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (ymdMatch) {
+            return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+        }
+        const dmyMatch = str.match(/^(\d{2})-(\d{2})-(\d{4})/);
+        if (dmyMatch) {
+            return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+        }
+        try {
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+        } catch(e) {}
+        return str;
+    };
     window.activeDFCategory = 'LINKEDIN';
 
     window.selectDFCategory = function(cat) {
@@ -16127,6 +16160,31 @@ window.closeAdminTaskDetailModal = function() {
     };
 
     window.renderDFContent = function() {
+        if (window.df_data_loading || window.df_schedule_loading) {
+            if (typeof window.filterDFHistory === 'function') {
+                window.filterDFHistory();
+            }
+            const isMobile = window.innerWidth <= 1024;
+            const contentHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1.5rem; gap: 1.25rem; width: 100%;">
+                    <div style="border: 4px solid #F3F4F6; border-top: 4px solid #4F46E5; border-radius: 50%; width: 40px; height: 40px; animation: analytics-spin 1s linear infinite;"></div>
+                    <span style="font-size: 0.88rem; font-weight: 700; color: #475569; font-family: 'Google Sans', sans-serif;">Verifying schedule database...</span>
+                </div>
+            `;
+            const modalContainer = document.getElementById('df-dynamic-content-modal');
+            if (modalContainer) {
+                modalContainer.innerHTML = contentHTML;
+            }
+            const mobileContainer = document.getElementById('df-dynamic-content-mobile');
+            if (mobileContainer) {
+                mobileContainer.innerHTML = contentHTML;
+            }
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+            return;
+        }
+
         const isMobile = window.innerWidth <= 1024;
         const suffix = isMobile ? 'mobile' : 'desktop';
         
@@ -16138,6 +16196,9 @@ window.closeAdminTaskDetailModal = function() {
         const readableDate = dateStr;
         
         const submissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+        const cachedExts = JSON.parse(localStorage.getItem('df_extensions') || '[]');
+        window.df_extensions_list = cachedExts;
+        window.df_extensions_count = cachedExts.length;
         
         function isSameDay(dateInput, targetDateStr) {
             if (!dateInput) return false;
@@ -16183,7 +16244,22 @@ window.closeAdminTaskDetailModal = function() {
 
         if (cat === 'LINKEDIN') {
             const todayDay = today.getDay(); // 0-6 (Sun-Sat)
-            const isAllowedDay = [2, 4, 6].includes(todayDay); // Tuesday, Thursday, Saturday
+            let isAllowedDay = [2, 4, 6].includes(todayDay); // Tuesday, Thursday, Saturday
+            let scheduleMsg = "LinkedIn post submissions are only allowed on <strong>Tuesday</strong>, <strong>Thursday</strong>, and <strong>Saturday</strong>.";
+            
+            const activeSchedule = window.df_linkedin_schedule || JSON.parse(localStorage.getItem('df_linkedin_schedule') || '[]');
+            if (activeSchedule.length > 0) {
+                isAllowedDay = activeSchedule.includes(dateStr);
+                const formattedDates = activeSchedule.map(d => {
+                    const parts = d.split('-');
+                    if (parts.length === 3) {
+                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        return `${months[parseInt(parts[1])-1]} ${parseInt(parts[2])}`;
+                    }
+                    return d;
+                });
+                scheduleMsg = `LinkedIn post submissions are only allowed on scheduled dates.`;
+            }
             
             if (!isAllowedDay) {
                 const yesterday = new Date(today);
@@ -16229,7 +16305,7 @@ window.closeAdminTaskDetailModal = function() {
                                  "Today is not the day for post on LinkedIn"
                             </p>
                             <p style="font-size: 0.78rem; color: #D97706; margin: 4px 0 12px 0; font-weight: 500;">
-                                LinkedIn post submissions are only allowed on <strong>Tuesday</strong>, <strong>Thursday</strong>, and <strong>Saturday</strong>.
+                                ${scheduleMsg}
                             </p>
                             ${existingYesterdaySub ? `
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #FEF3C7; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #B45309;">
@@ -16433,6 +16509,9 @@ window.closeAdminTaskDetailModal = function() {
                 .replace(/id="df-submit-ext-btn"/g, 'id="df-submit-ext-btn-mobile"');
         }
         
+        if (typeof window.filterDFHistory === 'function') {
+            window.filterDFHistory();
+        }
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
             lucide.createIcons();
         }
@@ -16511,14 +16590,21 @@ window.closeAdminTaskDetailModal = function() {
             
             return matchesSearch && matchesDate && matchesCat;
         });
-        
+        filtered.sort((a, b) => {
+            const da = window.dfNormalizeToYYYYMMDD(a.postDate);
+            const db = window.dfNormalizeToYYYYMMDD(b.postDate);
+            if (da < db) return 1;
+            if (da > db) return -1;
+            return 0;
+        });
+
         const isMobileView = window.innerWidth <= 1024;
         
         if (filtered.length > 0) {
             if (isMobileView) {
                 listContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 10px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
-                        ${filtered.slice().reverse().map((sub, idx) => {
+                        ${filtered.map((sub, idx) => {
                             let iconHTML = '';
                             let iconBg = '#EFF6FF';
                             let badgeHTML = '';
@@ -16579,7 +16665,7 @@ window.closeAdminTaskDetailModal = function() {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${filtered.slice().reverse().map(sub => `
+                                ${filtered.map(sub => `
                                     <tr style="border-bottom: 1px solid #E2E8F0; color: #334155; font-weight: 550; transition: background 0.15s;">
                                         <td style="padding: 12px 16px; font-weight: 600; color: #475569;">${formatDFTimestamp(sub.submittedAt)}</td>
                                         <td style="padding: 12px 16px; font-family: monospace; color: #64748B; font-size: 0.75rem;">${sub.submissionId}</td>
@@ -16615,32 +16701,38 @@ window.closeAdminTaskDetailModal = function() {
         }
         
         // Update stats cards metrics (Desktop & Mobile)
+        const isLoading = !!(window.df_data_loading || window.df_schedule_loading);
+        const loaderHTML = (color) => `<div style="border: 2.5px solid #F1F5F9; border-top: 2.5px solid ${color}; border-radius: 50%; width: 22px; height: 22px; animation: analytics-spin 0.8s linear infinite; display: inline-block; vertical-align: middle;"></div>`;
+
+        // Update stats cards metrics (Desktop & Mobile)
         const totalLoggedEl = document.getElementById('df-stat-total-logged');
         if (totalLoggedEl) {
-            totalLoggedEl.innerText = submissions.length;
+            totalLoggedEl.innerHTML = isLoading ? loaderHTML('#4F46E5') : submissions.length;
         }
         const totalLoggedMobEl = document.getElementById('df-stat-total-logged-mobile');
         if (totalLoggedMobEl) {
-            totalLoggedMobEl.innerText = submissions.length;
+            totalLoggedMobEl.innerHTML = isLoading ? loaderHTML('#4F46E5') : submissions.length;
         }
         
         const extensionsCountEl = document.getElementById('df-stat-extensions');
         if (extensionsCountEl) {
-            extensionsCountEl.innerText = window.df_extensions_count || '0';
+            extensionsCountEl.innerHTML = isLoading ? loaderHTML('#D97706') : (window.df_extensions_count || '0');
         }
         const extensionsCountMobEl = document.getElementById('df-stat-extensions-mobile');
         if (extensionsCountMobEl) {
-            extensionsCountMobEl.innerText = window.df_extensions_count || '0';
+            extensionsCountMobEl.innerHTML = isLoading ? loaderHTML('#D97706') : (window.df_extensions_count || '0');
         }
         
         const rpDeductedEl = document.getElementById('df-stat-rp-deducted');
         const extCount = parseFloat(window.df_extensions_count || 0);
+        const missedDates = window.calculateLinkedInDeductions ? window.calculateLinkedInDeductions() : [];
+        const totalDeducted = (extCount * 0.10) + (missedDates.length * 0.15);
         if (rpDeductedEl) {
-            rpDeductedEl.innerText = (extCount * 0.5).toFixed(1);
+            rpDeductedEl.innerHTML = isLoading ? loaderHTML('#EF4444') : totalDeducted.toFixed(2);
         }
         const rpDeductedMobEl = document.getElementById('df-stat-rp-deducted-mobile');
         if (rpDeductedMobEl) {
-            rpDeductedMobEl.innerText = (extCount * 0.5).toFixed(1);
+            rpDeductedMobEl.innerHTML = isLoading ? loaderHTML('#EF4444') : totalDeducted.toFixed(2);
         }
         
         if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -16964,6 +17056,10 @@ window.closeAdminTaskDetailModal = function() {
     };
 
     window.loadDigitalFootprint = async function() {
+        window.df_data_loading = true;
+        if (typeof window.renderDFContent === 'function') {
+            window.renderDFContent();
+        }
         window.selectDFCategory('LINKEDIN');
         
         const user = JSON.parse(localStorage.getItem('user')) || {};
@@ -16979,11 +17075,17 @@ window.closeAdminTaskDetailModal = function() {
         if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         
         try {
+            // Load schedule in parallel
+            if (typeof window.loadLinkedInSchedule === 'function') {
+                window.loadLinkedInSchedule();
+            }
             const res = await fetch(`${API_URL}?action=getUserFootprints&email=${encodeURIComponent(email)}&t=${Date.now()}`);
             const data = await res.json();
             if (data.status === "success" && data.footprints) {
                 localStorage.setItem('df_submissions', JSON.stringify(data.footprints));
+                localStorage.setItem('df_extensions', JSON.stringify(data.extensions || []));
                 window.df_extensions_count = data.extensionCount || 0;
+                window.df_extensions_list = data.extensions || [];
                 
                 // Re-sync linkedin_submissions map
                 const linkedinMap = {};
@@ -17004,11 +17106,207 @@ window.closeAdminTaskDetailModal = function() {
         } catch(e) {
             console.error("Failed to sync digital footprints: ", e);
         } finally {
+            window.df_data_loading = false;
+            if (typeof window.renderDFContent === 'function') {
+                window.renderDFContent();
+            }
             refreshBtns.forEach(btn => {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Refresh`;
             });
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
+    window.closeDFDetailsModal = function() {
+        const modal = document.getElementById('df-history-details-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.openDFDetailsModal = function(type) {
+        const modal = document.getElementById('df-history-details-modal');
+        const titleEl = document.getElementById('df-details-modal-title');
+        const countEl = document.getElementById('df-details-modal-count');
+        const listEl = document.getElementById('df-details-modal-list');
+        
+        if (!modal || !titleEl || !countEl || !listEl) return;
+        
+        const extensions = window.df_extensions_list || [];
+        listEl.innerHTML = '';
+        
+        if (type === 'extension') {
+            titleEl.innerText = 'Extension History';
+            countEl.innerText = `${extensions.length} ${extensions.length === 1 ? 'ENTRY' : 'ENTRIES'}`;
+            
+            if (extensions.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align: center; padding: 3rem 1.5rem; color: #64748B; font-weight: 600; font-family: 'Google Sans', sans-serif;">
+                        No extension logs found.
+                    </div>
+                `;
+            } else {
+                const sortedExtensions = extensions.slice().sort((a, b) => {
+                    const da = window.dfNormalizeToYYYYMMDD(a.extensionDate || a.timestamp);
+                    const db = window.dfNormalizeToYYYYMMDD(b.extensionDate || b.timestamp);
+                    if (da < db) return 1;
+                    if (da > db) return -1;
+                    return 0;
+                });
+                listEl.innerHTML = sortedExtensions.map(ext => {
+                    const extDateText = formatShortDate(ext.extensionDate);
+                    const requestedOnText = formatShortDate(ext.timestamp);
+                    return `
+                        <div class="card no-hover" style="background: white; border-radius: 18px; padding: 1rem; border: 1px solid rgba(226,232,240,0.8); display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.01);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 12px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="star" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-weight: 800; color: #0F172A; font-size: 0.88rem; margin: 0; font-family: 'Google Sans', sans-serif;">Extension: ${extDateText}</h4>
+                                    <p style="color: #64748B; font-size: 0.75rem; margin: 3px 0 0 0; font-weight: 600;">Requested on ${requestedOnText} &middot; extension</p>
+                                </div>
+                            </div>
+                            <div style="background: #ECFDF5; color: #10B981; font-weight: 800; font-size: 0.8rem; border-radius: 8px; padding: 4px 10px; font-family: 'Google Sans', sans-serif;">
+                                +1
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } else if (type === 'rp') {
+            titleEl.innerText = 'RP Deduction History';
+            const missedDates = window.calculateLinkedInDeductions ? window.calculateLinkedInDeductions() : [];
+            const totalEntries = extensions.length + missedDates.length;
+            countEl.innerText = `${totalEntries} ${totalEntries === 1 ? 'ENTRY' : 'ENTRIES'}`;
+            
+            const allDeductions = [];
+            extensions.forEach(ext => {
+                allDeductions.push({
+                    type: 'extension',
+                    date: ext.extensionDate || ext.timestamp,
+                    details: ext
+                });
+            });
+            missedDates.forEach(dateStr => {
+                allDeductions.push({
+                    type: 'missed',
+                    date: dateStr,
+                    details: dateStr
+                });
+            });
+            
+            allDeductions.sort((a, b) => {
+                const da = window.dfNormalizeToYYYYMMDD(a.date);
+                const db = window.dfNormalizeToYYYYMMDD(b.date);
+                if (da < db) return 1;
+                if (da > db) return -1;
+                return 0;
+            });
+            
+            let listHTML = '';
+            allDeductions.forEach(item => {
+                if (item.type === 'extension') {
+                    const ext = item.details;
+                    const dateText = formatShortDate(ext.extensionDate || ext.timestamp);
+                    listHTML += `
+                        <div class="card no-hover" style="background: white; border-radius: 18px; padding: 1rem; border: 1px solid rgba(226,232,240,0.8); display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.01); transition: none !important; transform: none !important;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 12px; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="alert-circle" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-weight: 800; color: #0F172A; font-size: 0.88rem; margin: 0; font-family: 'Google Sans', sans-serif;">RP Deduction: Extension requested</h4>
+                                    <p style="color: #64748B; font-size: 0.75rem; margin: 3px 0 0 0; font-weight: 600;">${dateText} &middot; other</p>
+                                </div>
+                            </div>
+                            <div style="background: #FEF2F2; color: #EF4444; font-weight: 800; font-size: 0.8rem; border-radius: 8px; padding: 4px 10px; font-family: 'Google Sans', sans-serif;">
+                                -0.10
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const dateStr = item.details;
+                    const dateText = formatShortDate(dateStr);
+                    listHTML += `
+                        <div class="card no-hover" style="background: white; border-radius: 18px; padding: 1rem; border: 1px solid rgba(226,232,240,0.8); display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.01); transition: none !important; transform: none !important;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 12px; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="x-circle" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-weight: 800; color: #0F172A; font-size: 0.88rem; margin: 0; font-family: 'Google Sans', sans-serif;">RP Deduction: Failed to submit</h4>
+                                    <p style="color: #64748B; font-size: 0.75rem; margin: 3px 0 0 0; font-weight: 600;">${dateText} &middot; LinkedIn missed</p>
+                                </div>
+                            </div>
+                            <div style="background: #FEF2F2; color: #EF4444; font-weight: 800; font-size: 0.8rem; border-radius: 8px; padding: 4px 10px; font-family: 'Google Sans', sans-serif;">
+                                -0.15
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (totalEntries === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align: center; padding: 3rem 1.5rem; color: #64748B; font-weight: 600; font-family: 'Google Sans', sans-serif;">
+                        No RP deductions found.
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = listHTML;
+            }
+        }
+        
+        modal.classList.remove('hidden');
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    };
+    
+    function formatShortDate(dateInput) {
+        if (!dateInput) return "N/A";
+        try {
+            const d = new Date(dateInput);
+            if (isNaN(d.getTime())) return String(dateInput);
+            const months = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"]; // Map correctly
+            const mIndex = d.getMonth();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const month = monthNames[mIndex];
+            const day = d.getDate();
+            const year = d.getFullYear();
+            return `${month} ${day}, ${year}`;
+        } catch(e) {
+            return String(dateInput);
+        }
+    }
+    
+    window.calculateLinkedInDeductions = function() {
+        const activeSchedule = window.df_linkedin_schedule || JSON.parse(localStorage.getItem('df_linkedin_schedule') || '[]');
+        const submissions = JSON.parse(localStorage.getItem('df_submissions') || '[]');
+        const extensions = JSON.parse(localStorage.getItem('df_extensions') || '[]');
+        
+        // Get all past scheduled dates (formatted as YYYY-MM-DD)
+        const todayStr = new Date().toISOString().split('T')[0];
+        const pastScheduledDates = activeSchedule.map(window.dfNormalizeToYYYYMMDD).filter(d => d && d < todayStr);
+        
+        const missedDates = [];
+        pastScheduledDates.forEach(dateStr => {
+            const hasSubmission = submissions.some(sub => {
+                if (sub.category !== 'LINKEDIN') return false;
+                const subDate = window.dfNormalizeToYYYYMMDD(sub.postDate);
+                return subDate === dateStr;
+            });
+            
+            const hasExtension = extensions.some(ext => {
+                const extDate = window.dfNormalizeToYYYYMMDD(ext.extensionDate);
+                return extDate === dateStr;
+            });
+            
+            if (!hasSubmission && !hasExtension) {
+                missedDates.push(dateStr);
+            }
+        });
+        
+        return missedDates;
+    };
+    
     };
 })();

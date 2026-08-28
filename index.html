@@ -3,6 +3,10 @@
 
 <head>
     <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+          alert("JS Error: " + message + " at line " + lineno + " in " + source.split('/').pop());
+          return false;
+      };
       (function() {
           const theme = localStorage.getItem('theme') || 'light';
           document.documentElement.setAttribute('data-theme', theme);
@@ -2120,9 +2124,14 @@
             <div id="mgmt-tab-linkedin-mobile" class="hidden animate-fade-in" style="padding-bottom: 5rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
                     <h2 style="font-size: 1.25rem; font-weight: 800; color: #1E293B;">LinkedIn Posts</h2>
-                    <button onclick="window.openExportModal()" style="width: 40px; height: 40px; border-radius: 12px; background: #EEF2FF; border: 1px solid #6366F1; color: #4F46E5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                        <i data-lucide="download" style="width: 18px;"></i>
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="console.log('Mobile Open Schedule clicked', window.openScheduleModal); if(window.openScheduleModal) window.openScheduleModal(); else alert('window.openScheduleModal is not defined! Check console for JS errors.');" style="width: 40px; height: 40px; border-radius: 12px; background: #EEF2FF; border: 1px solid #4F46E5; color: #4F46E5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i data-lucide="calendar" style="width: 18px;"></i>
+                        </button>
+                        <button onclick="window.openExportModal()" style="width: 40px; height: 40px; border-radius: 12px; background: #EEF2FF; border: 1px solid #6366F1; color: #4F46E5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <i data-lucide="download" style="width: 18px;"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
@@ -2227,16 +2236,17 @@
                     <!-- Divider -->
                     <div style="width: 1px; height: 32px; background: #E2E8F0;"></div>
                     <!-- Col 2: Extensions -->
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div onclick="window.openDFDetailsModal('extension')" style="flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                         <span style="font-size: 0.65rem; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Extension</span>
                         <h4 id="df-stat-extensions-mobile" style="font-size: 1.3rem; font-weight: 800; color: #6366F1; margin: 0;">0</h4>
                     </div>
                     <!-- Divider -->
                     <div style="width: 1px; height: 32px; background: #E2E8F0;"></div>
                     <!-- Col 3: RP Deducted -->
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div onclick="window.openDFDetailsModal('rp')" style="flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                         <span style="font-size: 0.65rem; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">RP Deducted</span>
                         <h4 id="df-stat-rp-deducted-mobile" style="font-size: 1.3rem; font-weight: 800; color: #EA580C; margin: 0;">0.0</h4>
+                        <span style="font-size: 0.52rem; color: #94A3B8; font-weight: 700; margin-top: 2px;">Click to view</span>
                     </div>
                 </div>
             </div>
@@ -3271,7 +3281,7 @@
                         </div>
                     </div>
                     <!-- Card 2: Extension Count -->
-                    <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
+                    <div class="card" onclick="window.openDFDetailsModal('extension')" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; cursor: pointer;">
                         <div style="width: 48px; height: 48px; border-radius: 50%; background: #FFFBEB; color: #D97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             <i data-lucide="hourglass" style="width: 22px; stroke-width: 2px;"></i>
                         </div>
@@ -3284,16 +3294,21 @@
                         </div>
                     </div>
                     <!-- Card 3: RP Deducted -->
-                    <div class="card no-hover" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0;">
+                    <div class="card" onclick="window.openDFDetailsModal('rp')" style="background: white; padding: 1.5rem; border-radius: 16px !important; border: 1px solid rgba(226, 232, 240, 0.8); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.01); margin: 0; cursor: pointer;">
                         <div style="width: 48px; height: 48px; border-radius: 50%; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             <i data-lucide="coins" style="width: 22px; stroke-width: 2px;"></i>
                         </div>
                         <div>
                             <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">RP Deducted</span>
                             <h3 id="df-stat-rp-deducted" style="font-size: 1.75rem; font-weight: 800; color: #EF4444; margin: 0; line-height: 1.2;">0</h3>
-                            <span style="color: #EF4444; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px; margin-top: 4px;">
-                                Reward Points
-                            </span>
+                            <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px;">
+                                <span style="color: #EF4444; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; gap: 2px;">
+                                    Reward Points
+                                </span>
+                                <span style="color: #94A3B8; font-weight: 700; font-size: 0.65rem; display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="eye" style="width: 12px; height: 12px;"></i> Click to view
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4869,6 +4884,10 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <!-- Schedule Days -->
+                        <button onclick="console.log('Open Schedule clicked', window.openScheduleModal); if(window.openScheduleModal) window.openScheduleModal(); else alert('window.openScheduleModal is not defined! Check console for JS errors.');" style="height: 46px; border-radius: 12px; background: #4F46E5; color: white; border: none; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            <i data-lucide="calendar" style="width: 16px;"></i> Schedule Days
+                        </button>
                         <!-- Export -->
                         <button onclick="window.openExportModal()" style="height: 46px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: white; color: #64748B; padding: 0 1.25rem; font-weight: 700; font-size: 0.85rem; font-family: 'Google Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
                             <i data-lucide="download" style="width: 16px;"></i> Export
@@ -5958,7 +5977,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
-    <script src="script.js?v=5.20" defer></script>
+    <script src="script.js?v=5.23" defer></script>
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
@@ -6268,7 +6287,7 @@
     <!-- DIGITAL FOOTPRINT INPUT MODAL (Desktop) -->
     <div id="df-input-modal" class="modal-overlay hidden"
         style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(12px); z-index: 1000000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
-        <div class="card animate-scale-up" style="width: 100%; max-width: 500px; padding: 2rem; background: white; border-radius: 28px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15); max-height: 90vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.03);">
+        <div class="card animate-scale-up" style="width: 100%; max-width: 500px; padding: 2rem; background: white; border-radius: 28px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15); max-height: 90vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.03); transition: none !important; transform: none !important;">
             <style>
                 .df-modal-cat-btn {
                     padding: 8px 16px;
@@ -6315,11 +6334,311 @@
         </div>
     </div>
 
+    <!-- DIGITAL FOOTPRINT STATS HISTORY DETAILS MODAL -->
+    <div id="df-history-details-modal" class="modal-overlay hidden"
+        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(12px); z-index: 1000000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="card animate-scale-up" style="width: 100%; max-width: 500px; padding: 2rem; background: #F8FAFC; border-radius: 28px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15); max-height: 85vh; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: none !important; transform: none !important;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div>
+                    <h2 id="df-details-modal-title" style="font-size: 1.2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; margin: 0; font-family: 'Google Sans', sans-serif;">Extension History</h2>
+                </div>
+                <button onclick="window.closeDFDetailsModal()" 
+                    style="background: #F1F5F9; border: none; cursor: pointer; color: #64748B; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;"
+                    onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">
+                    <i data-lucide="x" style="width: 16px; stroke-width: 2.5px;"></i>
+                </button>
+            </div>
+
+            <!-- Subtitle/Count -->
+            <div id="df-details-modal-count" style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.75px; margin-bottom: 1rem;">0 ENTRIES</div>
+
+            <!-- List Container -->
+            <div id="df-details-modal-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 4px; padding-bottom: 1.5rem;">
+                <!-- Dynamically filled -->
+            </div>
+        </div>
+    </div>
+
+    <!-- DFP LINKEDIN SUBMISSION SCHEDULER MODAL -->
+    <div id="df-schedule-modal" class="modal-overlay hidden"
+        style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(12px); z-index: 1000000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="card animate-scale-up" style="width: 100%; max-width: 450px; padding: 2rem; background: white; border-radius: 28px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15); max-height: 90vh; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: none !important; transform: none !important;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div>
+                    <h2 style="font-size: 1.2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; margin: 0; font-family: 'Google Sans', sans-serif;">Schedule LinkedIn Days</h2>
+                    <p style="font-size: 0.78rem; color: #64748B; margin: 4px 0 0 0; font-weight: 500;">Select the dates when students can submit posts.</p>
+                </div>
+                <button onclick="window.closeScheduleModal()" 
+                    style="background: #F1F5F9; border: none; cursor: pointer; color: #64748B; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;"
+                    onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">
+                    <i data-lucide="x" style="width: 16px; stroke-width: 2.5px;"></i>
+                </button>
+            </div>
+
+            <!-- Month Navigator -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; background: #F8FAFC; padding: 6px 12px; border-radius: 12px; border: 1px solid #F1F5F9;">
+                <button onclick="window.prevScheduleMonth()" style="background: none; border: none; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 6px;" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='transparent'">
+                    <i data-lucide="chevron-left" style="width: 18px;"></i>
+                </button>
+                <span id="df-schedule-month-year" style="font-weight: 800; font-size: 0.9rem; color: #1E293B; font-family: 'Google Sans', sans-serif;">August 2026</span>
+                <button onclick="window.nextScheduleMonth()" style="background: none; border: none; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 6px;" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='transparent'">
+                    <i data-lucide="chevron-right" style="width: 18px;"></i>
+                </button>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 1.25rem;">
+                <!-- Days of week -->
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">S</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">M</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">T</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">W</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">T</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">F</div>
+                <div style="font-size: 0.72rem; font-weight: 800; color: #94A3B8; padding: 4px 0;">S</div>
+            </div>
+            
+            <div id="df-schedule-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1.25rem; flex: 1; overflow-y: auto; max-height: 250px;">
+                <!-- Calendar days populated dynamically -->
+            </div>
+
+            <!-- Selected Dates Summary -->
+            <div id="df-schedule-summary" style="font-size: 0.75rem; color: #64748B; font-weight: 600; margin-bottom: 1.25rem; background: #F1F5F9; padding: 10px 14px; border-radius: 12px; line-height: 1.4;">
+                Active Schedule: Tuesday, Thursday, Saturday (Default)
+            </div>
+
+            <!-- Footer Actions -->
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.saveSchedule()" id="df-save-schedule-btn" class="btn" style="flex: 2; background: #4F46E5; color: white; border: none; padding: 0 1.25rem; height: 44px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i data-lucide="check" style="width: 16px;"></i> Save Schedule
+                </button>
+                <button onclick="window.clearScheduleSelection()" class="btn" style="flex: 1; background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; padding: 0 1rem; height: 44px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#F8FAFC'">
+                    Clear All
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         });
+    </script>
+
+    <!-- Calendar Scheduler Implementation -->
+    <script>
+        const SCHEDULER_API_URL = window.SCRIPT_URL || "https://script.google.com/macros/s/AKfycbwbm6TMHUJRn2Ja30C7s0PuKV_TkkOr5Tm76v8XH32mfa0svc0ZkSxvfNowQZhHr30cew/exec";
+        window.scheduleSelectedDates = new Set();
+        window.scheduleCurrentYear = new Date().getFullYear();
+        window.scheduleCurrentMonth = new Date().getMonth();
+
+        window.openScheduleModal = function() {
+            const modal = document.getElementById('df-schedule-modal');
+            if (!modal) return;
+            
+            const activeSchedule = window.df_linkedin_schedule || [];
+            window.scheduleSelectedDates = new Set(activeSchedule);
+            
+            window.renderScheduleCalendar();
+            modal.classList.remove('hidden');
+        };
+
+        window.closeScheduleModal = function() {
+            const modal = document.getElementById('df-schedule-modal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.prevScheduleMonth = function() {
+            window.scheduleCurrentMonth--;
+            if (window.scheduleCurrentMonth < 0) {
+                window.scheduleCurrentMonth = 11;
+                window.scheduleCurrentYear--;
+            }
+            window.renderScheduleCalendar();
+        };
+
+        window.nextScheduleMonth = function() {
+            window.scheduleCurrentMonth++;
+            if (window.scheduleCurrentMonth > 11) {
+                window.scheduleCurrentMonth = 0;
+                window.scheduleCurrentYear++;
+            }
+            window.renderScheduleCalendar();
+        };
+
+        window.toggleScheduleDate = function(dateStr) {
+            if (window.scheduleSelectedDates.has(dateStr)) {
+                window.scheduleSelectedDates.delete(dateStr);
+            } else {
+                window.scheduleSelectedDates.add(dateStr);
+            }
+            window.renderScheduleCalendar();
+        };
+
+        window.clearScheduleSelection = function() {
+            window.scheduleSelectedDates.clear();
+            window.renderScheduleCalendar();
+        };
+
+        window.renderScheduleCalendar = function() {
+            const grid = document.getElementById('df-schedule-days-grid');
+            const monthYearEl = document.getElementById('df-schedule-month-year');
+            const summaryEl = document.getElementById('df-schedule-summary');
+            if (!grid || !monthYearEl || !summaryEl) return;
+
+            const monthNames = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ];
+            monthYearEl.innerText = monthNames[window.scheduleCurrentMonth] + " " + window.scheduleCurrentYear;
+
+            const firstDayIndex = new Date(window.scheduleCurrentYear, window.scheduleCurrentMonth, 1).getDay();
+            const numDays = new Date(window.scheduleCurrentYear, window.scheduleCurrentMonth + 1, 0).getDate();
+
+            let html = '';
+            for (let i = 0; i < firstDayIndex; i++) {
+                html += '<div style="padding: 10px 0;"></div>';
+            }
+
+            for (let day = 1; day <= numDays; day++) {
+                const dateStr = window.scheduleCurrentYear + '-' + String(window.scheduleCurrentMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                const isSelected = window.scheduleSelectedDates.has(dateStr);
+                
+                const cellStyle = isSelected ? 
+                    'background: #4F46E5; color: white; font-weight: 800; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; margin: auto; cursor: pointer; transition: all 0.2s;' :
+                    'color: #1E293B; font-weight: 600; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; margin: auto; cursor: pointer; transition: all 0.2s;';
+                    
+                const cellHover = isSelected ? '' : 'onmouseover="this.style.background=\'#F1F5F9\'" onmouseout="this.style.background=\'transparent\'"';
+
+                html += '<div style="padding: 4px 0; display: flex; justify-content: center; align-items: center;">' +
+                        '<div onclick="window.toggleScheduleDate(\'' + dateStr + '\')" style="' + cellStyle + '" ' + cellHover + '>' +
+                            day +
+                        '</div>' +
+                    '</div>';
+            }
+            grid.innerHTML = html;
+
+            if (window.scheduleSelectedDates.size === 0) {
+                summaryEl.innerHTML = 'Active Schedule: <strong>Tuesday, Thursday, Saturday (Default)</strong>';
+            } else {
+                const sortedDates = Array.from(window.scheduleSelectedDates).filter(function(d) {
+                    if (!d) return false;
+                    const parts = d.split('-');
+                    if (parts.length !== 3) return false;
+                    const mIdx = parseInt(parts[1]) - 1;
+                    return mIdx >= 0 && mIdx < 12 && !isNaN(mIdx) && !isNaN(parseInt(parts[2]));
+                }).sort();
+                const formattedList = sortedDates.map(function(d) {
+                    const parts = d.split('-');
+                    const mShort = monthNames[parseInt(parts[1])-1].substring(0,3);
+                    return mShort + ' ' + parseInt(parts[2]);
+                });
+                summaryEl.innerHTML = 'Selected Dates: <strong>' + formattedList.join(', ') + '</strong>';
+            }
+        };
+
+        window.saveSchedule = async function() {
+            const btn = document.getElementById('df-save-schedule-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span style="border: 2px solid #fff; border-top: 2px solid transparent; border-radius: 50%; width: 14px; height: 14px; display: inline-block; animation: analytics-spin 1s linear infinite;"></span> Saving...';
+            }
+            
+            try {
+                const yearMonth = window.scheduleCurrentYear + '-' + String(window.scheduleCurrentMonth + 1).padStart(2, '0');
+                const datesArray = Array.from(window.scheduleSelectedDates).filter(function(d) { return d.startsWith(yearMonth + '-'); });
+                
+                const payload = {
+                    action: "saveLinkedInSchedule",
+                    dates: datesArray,
+                    yearMonth: yearMonth
+                };
+                
+                const res = await fetch(SCHEDULER_API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "data=" + encodeURIComponent(JSON.stringify(payload))
+                });
+                const data = await res.json();
+                
+                if (data.status === "success") {
+                    const finalDates = data.dates || [];
+                    window.df_linkedin_schedule = finalDates;
+                    localStorage.setItem('df_linkedin_schedule', JSON.stringify(finalDates));
+                    alert("Schedule saved successfully!");
+                    window.closeScheduleModal();
+                    if (typeof window.renderDFContent === 'function') {
+                        window.renderDFContent();
+                    }
+                } else {
+                    alert("Error saving schedule: " + data.message);
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Connection error. Please try again.");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="check" style="width: 16px;"></i> Save Schedule';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+        };
+
+        window.loadLinkedInSchedule = async function() {
+            window.df_schedule_loading = true;
+            if (typeof window.renderDFContent === 'function') {
+                window.renderDFContent();
+            }
+            try {
+                const cached = localStorage.getItem('df_linkedin_schedule');
+                if (cached) {
+                    window.df_linkedin_schedule = JSON.parse(cached);
+                } else {
+                    window.df_linkedin_schedule = [];
+                }
+                
+                const res = await fetch(SCHEDULER_API_URL + "?action=getLinkedInSchedule&t=" + Date.now());
+                const data = await res.json();
+                if (data.status === "success" && data.dates) {
+                    window.df_linkedin_schedule = data.dates;
+                    localStorage.setItem('df_linkedin_schedule', JSON.stringify(data.dates));
+                }
+            } catch(e) {
+                console.error("Failed to load schedule:", e);
+            } finally {
+                window.df_schedule_loading = false;
+                if (typeof window.renderDFContent === 'function') {
+                    window.renderDFContent();
+                }
+                if (typeof window.filterDFHistory === 'function') {
+                    window.filterDFHistory();
+                }
+            }
+        };
+
+        // Close modals on clicking outside of their cards
+        document.addEventListener('click', function(e) {
+            const inputModal = document.getElementById('df-input-modal');
+            const scheduleModal = document.getElementById('df-schedule-modal');
+            
+            if (inputModal && !inputModal.classList.contains('hidden') && e.target === inputModal) {
+                if (typeof window.toggleDFInputModal === 'function') {
+                    window.toggleDFInputModal(false);
+                } else {
+                    inputModal.classList.add('hidden');
+                }
+            }
+            if (scheduleModal && !scheduleModal.classList.contains('hidden') && e.target === scheduleModal) {
+                window.closeScheduleModal();
+            }
+        });
+
+        // Load schedule immediately on script execution
+        window.loadLinkedInSchedule();
     </script>
 </body>
 </html>

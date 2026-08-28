@@ -85,6 +85,9 @@ function doGet(e) {
     if (params.action === "getUserFootprints" && params.email) {
       return respondJSON(getUserDigitalFootprints(params.email));
     }
+    if (params.action === "getLinkedInSchedule") {
+      return respondJSON(getLinkedInSchedule());
+    }
     if (params.email) {
       const bypass = params.bypassCache === "true" || params.force === "true";
       return respondJSON(getStudentData(params.email, bypass));
@@ -145,6 +148,9 @@ function doPost(e) {
     }
     if (body.action === "submitDigitalFootprintExtension") {
       return respondJSON(saveDigitalFootprintExtension(body));
+    }
+    if (body.action === "saveLinkedInSchedule") {
+      return respondJSON(saveLinkedInSchedule(body.dates, body.yearMonth));
     }
     
     const isAdmin = checkAdminStatus(body.adminEmail || body.admin);
@@ -1749,12 +1755,12 @@ function getUserDigitalFootprints(email) {
         if (row[5].toString().toLowerCase().trim() === emailLower) { // Column index 5 is Email
           footprints.push({
             submissionId: row[0],
-            submittedAt: row[1],
+            submittedAt: row[1] instanceof Date ? Utilities.formatDate(row[1], Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd HH:mm:ss") : row[1],
             category: row[2],
             name: row[3],
             regNumber: row[4],
             email: row[5],
-            postDate: row[6],
+            postDate: row[6] instanceof Date ? Utilities.formatDate(row[6], Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd") : row[6],
             link: row[7]
           });
         }
@@ -1763,6 +1769,7 @@ function getUserDigitalFootprints(email) {
     
     // Also count digital footprint extensions
     let extensionCount = 0;
+    const extensions = [];
     try {
       const extSheet = getDigitalFootprintExtensionSheet();
       const extData = extSheet.getDataRange().getValues();
@@ -1770,13 +1777,22 @@ function getUserDigitalFootprints(email) {
       for (let j = 1; j < extData.length; j++) {
         if (extData[j][3].toString().toLowerCase().trim() === emailLower) {
           extensionCount++;
+          extensions.push({
+            timestamp: extData[j][0],
+            name: extData[j][1],
+            regNumber: extData[j][2],
+            email: extData[j][3],
+            year: extData[j][4],
+            extensionDate: extData[j][5],
+            requestCount: extData[j][6]
+          });
         }
       }
     } catch(e) {
       // Sheet might not exist yet or be empty
     }
 
-    return { status: "success", footprints: footprints, extensionCount: extensionCount };
+    return { status: "success", footprints: footprints, extensionCount: extensionCount, extensions: extensions };
   } catch (err) {
     return { status: "error", message: "Failed to fetch user footprints: " + err.toString() };
   }
@@ -1828,6 +1844,100 @@ function saveDigitalFootprintExtension(data) {
     return { status: "success", message: "Extension request recorded in sheet.", reqCount: userReqCount };
   } catch (err) {
     return { status: "error", message: "Save extension request error: " + err.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getLinkedInScheduleSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName("LinkedInSchedule");
+  if (!sheet) {
+    sheet = ss.insertSheet("LinkedInSchedule");
+    sheet.appendRow(["Scheduled Date", "Created At"]);
+  }
+  return sheet;
+}
+
+function formatDateToYYYYMMDD(dateVal) {
+  if (!dateVal) return "";
+  if (dateVal instanceof Date) {
+    const y = dateVal.getFullYear();
+    const m = String(dateVal.getMonth() + 1).padStart(2, "0");
+    const d = String(dateVal.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const str = dateVal.toString().trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return str;
+  }
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) {
+    const dObj = new Date(parsed);
+    const y = dObj.getFullYear();
+    const m = String(dObj.getMonth() + 1).padStart(2, "0");
+    const d = String(dObj.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return str;
+}
+
+function getLinkedInSchedule() {
+  try {
+    const sheet = getLinkedInScheduleSheet();
+    const data = sheet.getDataRange().getValues();
+    const dates = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0]) {
+        dates.push(formatDateToYYYYMMDD(data[i][0]));
+      }
+    }
+    return { status: "success", dates: dates };
+  } catch (err) {
+    return { status: "error", message: err.toString() };
+  }
+}
+
+function saveLinkedInSchedule(datesArray, currentYearMonth) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch (e) {
+    return { status: "error", message: "Database busy. Please try again." };
+  }
+  try {
+    const sheet = getLinkedInScheduleSheet();
+    const rows = sheet.getDataRange().getValues();
+    const existingDates = [];
+    
+    // Read and format existing dates
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0]) {
+        existingDates.push(formatDateToYYYYMMDD(rows[i][0]));
+      }
+    }
+    
+    // Filter out dates that belong to the month/year being edited
+    const preservedDates = existingDates.filter(d => {
+      if (!currentYearMonth) return false; // Overwrite all if not provided
+      return !d.startsWith(currentYearMonth + "-");
+    });
+    
+    // Merge preserved dates with the new ones
+    const newDates = datesArray || [];
+    const finalDates = [...new Set([...preservedDates, ...newDates])].sort();
+    
+    sheet.clearContents();
+    sheet.appendRow(["Scheduled Date", "Created At"]);
+    if (finalDates.length > 0) {
+      const nowStr = new Date().toLocaleString();
+      finalDates.forEach(d => {
+        sheet.appendRow([d, nowStr]);
+      });
+    }
+    return { status: "success", message: "Schedule saved successfully.", dates: finalDates };
+  } catch (err) {
+    return { status: "error", message: err.toString() };
   } finally {
     lock.releaseLock();
   }
