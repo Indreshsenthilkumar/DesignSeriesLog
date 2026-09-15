@@ -1383,7 +1383,7 @@ window.handleCredentialResponse = async function (response) {
     showLoadingOverlay();
 
     // Check if super admin
-    const superAdminEmail = "indreshs.it24@bitsathy.ac.in";
+    const superAdminEmail = "akashr.ad24@bitsathy.ac.in";
     const isSuperAdmin = (email.toLowerCase() === superAdminEmail.toLowerCase());
 
     try {
@@ -1457,7 +1457,7 @@ window.handleManualLogin = async function (type) {
             const expectedPass = student.reg_num || student.roll_num || student.roll_no || student.rollNo || "";
             if (pass === expectedPass) {
                 // Assign role if not present
-                const superAdminEmail = "indreshs.it24@bitsathy.ac.in";
+                const superAdminEmail = "akashr.ad24@bitsathy.ac.in";
                 const isSuperAdmin = (email.toLowerCase() === superAdminEmail.toLowerCase());
                 if (!student.role) {
                     student.role = isSuperAdmin ? "admin" : "student";
@@ -1740,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
     // 🛡️ ADMIN CHECK: Enable admin panel for authorized users
-    const SUPER_ADMIN = "indreshs.it24@bitsathy.ac.in";
+    const SUPER_ADMIN = "akashr.ad24@bitsathy.ac.in";
     const isAdmin = userLoggedIn && (
         userEmail?.toLowerCase() === SUPER_ADMIN.toLowerCase() ||
         (userLoggedIn.role || "").toLowerCase().trim() === "admin"
@@ -2246,7 +2246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 3. If Admin, pre-fetch student list and admin list for instant access
             const role = (_initUser.role || "").toLowerCase().trim();
-            const SUPER_ADMIN = "indreshs.it24@bitsathy.ac.in";
+            const SUPER_ADMIN = "akashr.ad24@bitsathy.ac.in";
             if (role === 'admin' || userEmail.toLowerCase() === SUPER_ADMIN.toLowerCase()) {
                 console.log("[INIT] Admin context detected. Pre-loading all admin datasets in parallel...");
 
@@ -2913,7 +2913,7 @@ async function populateDashboard(freshStudentData) {
     }
     if (topBarAvatar) {
         const userEmailForImg = (mail || "").toLowerCase().trim();
-        if (userEmailForImg === "indreshs.it24@bitsathy.ac.in") {
+        if (userEmailForImg === "akashr.ad24@bitsathy.ac.in") {
             topBarAvatar.src = "indresh_profile.jpg";
             topBarAvatar.style.transform = "scale(1.2)";
             topBarAvatar.style.transformOrigin = "center 20%";
@@ -2940,7 +2940,7 @@ async function populateDashboard(freshStudentData) {
 
     // 👤 UPDATE PROFILE IMAGE FOR SPECIFIC USER
     const userEmailForImg = (mail || "").toLowerCase().trim();
-    if (userEmailForImg === "indreshs.it24@bitsathy.ac.in") {
+    if (userEmailForImg === "akashr.ad24@bitsathy.ac.in") {
         document.querySelectorAll('img[src*="profile.png"], img[src*="indresh_profile.jpg"]').forEach(img => {
             img.src = "indresh_profile.jpg";
             img.style.transform = "scale(1.2)";
@@ -6298,7 +6298,7 @@ window.renderAdminList = function (admins, d, m) {
     admins.forEach(u => {
         const name = u.name || "Administrator";
         const email = u.email || u.email_id || "";
-        const isSuper = email.toLowerCase().trim() === "indreshs.it24@bitsathy.ac.in";
+        const isSuper = email.toLowerCase().trim() === "akashr.ad24@bitsathy.ac.in";
 
         const cardHTML = `
             <div class="card" style="padding:1.25rem; margin-bottom: 0.75rem; border-radius:14px !important; background:white; border:1.5px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important; display:flex; flex-direction:column; gap:12px;">
@@ -6584,7 +6584,7 @@ window.toggleAdminSubView = function (viewId) {
     const user = JSON.parse(localStorage.getItem('user'));
     if (viewId !== 'menu' && user) {
         const email = (user.email || user.email_id || user.mailid || user.mail || "").toLowerCase().trim();
-        const isSuper = email === "indreshs.it24@bitsathy.ac.in";
+        const isSuper = email === "akashr.ad24@bitsathy.ac.in";
         if (!isSuper) {
             const viewToHeaderKey = {
                 'user-list': 'user_management',
@@ -8904,7 +8904,7 @@ window.openScanner = async function () {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
         const email = (user.email || user.email_id || user.mailid || user.mail || "").toLowerCase().trim();
-        const isSuper = email === "indreshs.it24@bitsathy.ac.in";
+        const isSuper = email === "akashr.ad24@bitsathy.ac.in";
         if (!isSuper) {
             const val = user['scan_student_qr'];
             const hasAccess = val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1';
@@ -9267,7 +9267,7 @@ async function renderUserAttendance(email) {
     let headerHtml = '';
     const userLoggedIn = JSON.parse(localStorage.getItem('user'));
     const userEmailLoggedIn = userLoggedIn ? (userLoggedIn.email || userLoggedIn.email_id) : null;
-    const SUPER_ADMIN = "indreshs.it24@bitsathy.ac.in";
+    const SUPER_ADMIN = "akashr.ad24@bitsathy.ac.in";
     const isAdmin = userLoggedIn && (
         userEmailLoggedIn?.toLowerCase() === SUPER_ADMIN.toLowerCase() ||
         (userLoggedIn.role || "").toLowerCase().trim() === "admin"
@@ -10868,7 +10868,7 @@ window.publishTaskAssignment = async function () {
 
     try {
         const userObj = JSON.parse(localStorage.getItem('user')) || {};
-        const adminEmail = userObj.email || userObj.email_id || "indreshs.it24@bitsathy.ac.in";
+        const adminEmail = userObj.email || userObj.email_id || "akashr.ad24@bitsathy.ac.in";
 
         const payload = {
             action: 'publishTaskAssignment',
@@ -14746,7 +14746,7 @@ window.checkModuleAccessAndHideNav = function () {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     const email = user.email || user.email_id || user.mailid || user.mail || "";
-    const isSuper = email.toLowerCase().trim() === "indreshs.it24@bitsathy.ac.in";
+    const isSuper = email.toLowerCase().trim() === "akashr.ad24@bitsathy.ac.in";
 
     // Find all cards inside desktop and mobile menus
     const desktopCards = document.querySelectorAll('#admin-menu-desktop .card');

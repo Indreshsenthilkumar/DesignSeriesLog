@@ -6,7 +6,7 @@
 const STUDENT_SHEET = "StudentData";
 const LOG_SHEET     = "Attendancelog";
 const DIGITAL_FOOTPRINT_SHEET = "DigitalFootprint";
-const SUPER_ADMIN   = "indreshs.it24@bitsathy.ac.in";
+const SUPER_ADMIN   = "akashr.ad24@bitsathy.ac.in";
 const CACHE_TTL     = 60; 
 
 // --- CACHE ENGINE ---

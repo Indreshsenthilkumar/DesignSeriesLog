@@ -2,7 +2,7 @@
 const STUDENT_DATABASE = [
     {
         name: "INDRESH S",
-        mailid: "indreshs.it24@bitsathy.ac.in",
+        mailid: "akashr.ad24@bitsathy.ac.in",
         reg_num: "7376242IT181",
         department: "Information Technology",
         year: "2nd Year",
