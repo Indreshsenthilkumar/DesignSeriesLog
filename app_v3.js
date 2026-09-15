@@ -228,7 +228,7 @@ async function populateDashboard(freshStudentData) {
 
     // 👤 UPDATE PROFILE IMAGE FOR SPECIFIC USER
     const userEmailForImg = (user.email || "").toLowerCase().trim();
-    if (userEmailForImg === "akashr.ad24@bitsathy.ac.in") {
+    if (userEmailForImg === "indreshs.it24@bitsathy.ac.in") {
         document.querySelectorAll('img[src*="profile.png"], img[src*="indresh_profile.jpg"]').forEach(img => {
             img.src = "indresh_profile.jpg";
             img.style.transform = "scale(1.2)";
