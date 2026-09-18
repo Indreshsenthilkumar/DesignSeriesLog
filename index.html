@@ -299,49 +299,6 @@
         }
 
         /* Create Activity Pass Custom Styles */
-        #activity-pass-modal-container .card,
-        #activity-pass-modal-container .card:hover,
-        .act-pass-card-responsive,
-        .act-pass-card-responsive:hover,
-        #user-activity-pass-detail-modal .card,
-        #user-activity-pass-detail-modal .card:hover,
-        #admin-activity-pass-detail-modal .card,
-        #admin-activity-pass-detail-modal .card:hover,
-        #user-activity-pass-history-grid .card,
-        #user-activity-pass-history-grid .card:hover,
-        #user-activity-pass-history-container-mobile .card,
-        #user-activity-pass-history-container-mobile .card:hover,
-        .user-pass-card,
-        .user-pass-card:hover {
-            transform: none !important;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06) !important;
-            transition: none !important;
-        }
-
-        /* Exact Activity Pass History Card UI - Compact & Sleek */
-        .exact-pass-card {
-            background: #FFFFFF !important;
-            border-radius: 10px !important;
-            border: 1.5px solid #F1F5F9 !important;
-            padding: 0.85rem 1rem !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            gap: 0.45rem !important;
-            transition: none !important;
-            transform: none !important;
-            font-family: 'Google Sans', 'Google Sans Text', 'Inter', system-ui, sans-serif !important;
-            cursor: pointer !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-        }
-
-        .exact-pass-card:hover {
-            transform: none !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
-        }
-
         #activity-pass-modal-container input,
         #activity-pass-modal-container select,
         #activity-pass-modal-container textarea,
@@ -1400,27 +1357,9 @@
 
                 <div id="mobile-worklog-history"
                     style="display:flex;flex-direction:column;gap:12px; padding-bottom: 140px;">
-                    <div class="worklog-progress-container">
-                        <div class="worklog-progress-header">
-                            <div class="worklog-progress-label-wrap">
-                                <div class="worklog-progress-icon-badge">
-                                    <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
-                                </div>
-                                <div>
-                                    <div id="wl-progress-mob-status-text" class="worklog-progress-status-title">Fetching real-time logs...</div>
-                                </div>
-                            </div>
-                            <span id="wl-progress-mob-percent-text" class="worklog-progress-percent">0%</span>
-                        </div>
-                        <div class="worklog-progress-track">
-                            <div id="wl-progress-mob-fill" class="worklog-progress-bar-fill" style="width: 8%;"></div>
-                        </div>
-                        <div class="worklog-progress-footer">
-                            <span id="wl-progress-mob-sub-text">Connecting to sheet database...</span>
-                            <span class="worklog-progress-live-pill">
-                                <span class="worklog-progress-live-dot"></span> Real-time Sync
-                            </span>
-                        </div>
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem 1rem; width:100%; gap:12px;">
+                        <div class="wl-spinner"></div>
+                        <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
                     </div>
                 </div>
 
@@ -1519,25 +1458,7 @@
                     </div>
                 </div>
 
-                <!-- Red Disclaimer Box (Mobile) -->
-                <div style="margin-top: 1.5rem; padding: 12px 16px; background: #FEF2F2; border: 1.5px solid #FCA5A5; border-radius: 14px; font-family: 'Google Sans', sans-serif;">
-                    <div style="color: #DC2626; font-size: 0.82rem; font-weight: 700; line-height: 1.5; display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                            <span>You cannot submit today’s worklog after 11:59 PM. If you miss the deadline, 1% will be deducted from your reward points.</span>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                            <span>No extensions or manual entries will be permitted for missed worklog submissions.</span>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                            <span>If you take leave or are away due to any other commitment, you must record the reason for your leave or absence in the corresponding split time slot.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
+                <div style="margin-top: 3rem;">
                     <button class="btn btn-primary" id="btn-submit-mobile-log-work"
                         style="width: 100%; border-radius: 20px; height: 68px; font-weight: 800; font-size: 1.2rem; background: var(--primary-gradient); border: none; color: white; transition: all 0.3s ease; box-shadow: 0 15px 35px rgba(99, 102, 241, 0.25); display: flex; align-items: center; justify-content: center; gap: 12px;">
                         <span>Save Work Log</span>
@@ -3124,6 +3045,16 @@
                           <div class="skeleton" style="width: 90%; height: 14px; border-radius: 6px; background-color: #E2E8F0; min-height: 14px;"></div>
                           <div class="skeleton" style="width: 35%; height: 35px; border-radius: 12px; margin-top: 6px; background-color: #E2E8F0; min-height: 35px;"></div>
                         </div>
+                        <div class="skeleton-task-card" style="background: white; border-radius: 24px; padding: 1.5rem; border: 1.5px solid #F1F5F9; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; width: 100%; box-sizing: border-box;">
+                          <div style="display: flex; gap: 8px;">
+                            <div class="skeleton" style="width: 80px; height: 18px; border-radius: 6px; background-color: #E2E8F0; min-height: 18px;"></div>
+                            <div class="skeleton" style="width: 120px; height: 18px; border-radius: 6px; background-color: #E2E8F0; min-height: 18px;"></div>
+                          </div>
+                          <div class="skeleton" style="width: 70%; height: 22px; border-radius: 8px; margin-top: 4px; background-color: #E2E8F0; min-height: 22px;"></div>
+                          <div class="skeleton" style="width: 100%; height: 14px; border-radius: 6px; background-color: #E2E8F0; min-height: 14px;"></div>
+                          <div class="skeleton" style="width: 90%; height: 14px; border-radius: 6px; background-color: #E2E8F0; min-height: 14px;"></div>
+                          <div class="skeleton" style="width: 35%; height: 35px; border-radius: 12px; margin-top: 6px; background-color: #E2E8F0; min-height: 35px;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -3179,27 +3110,9 @@
 
                 <!-- History Feed Grid -->
                 <div id="desktop-worklog-history" style="display: block; width: 100%;">
-                    <div class="worklog-progress-container">
-                        <div class="worklog-progress-header">
-                            <div class="worklog-progress-label-wrap">
-                                <div class="worklog-progress-icon-badge">
-                                    <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
-                                </div>
-                                <div>
-                                    <div id="wl-progress-desk-status-text" class="worklog-progress-status-title">Fetching real-time logs...</div>
-                                </div>
-                            </div>
-                            <span id="wl-progress-desk-percent-text" class="worklog-progress-percent">0%</span>
-                        </div>
-                        <div class="worklog-progress-track">
-                            <div id="wl-progress-desk-fill" class="worklog-progress-bar-fill" style="width: 8%;"></div>
-                        </div>
-                        <div class="worklog-progress-footer">
-                            <span id="wl-progress-desk-sub-text">Connecting to sheet database...</span>
-                            <span class="worklog-progress-live-pill">
-                                <span class="worklog-progress-live-dot"></span> Real-time Sync
-                            </span>
-                        </div>
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem 1rem; width:100%; gap:12px;">
+                        <div class="wl-spinner"></div>
+                        <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
                     </div>
                 </div>
             </div>
@@ -4821,7 +4734,7 @@
                             <i data-lucide="bell" style="width: 15px; height: 15px;"></i> Notification Extensions
                         </button>
                         <button id="tab-btn-linkedin-extensions" class="admin-tab-btn" onclick="window.switchAdminExtensionTab('LINKEDIN')" style="padding: 1rem 0; border: none; background: transparent; font-size: 0.88rem; font-weight: 800; color: #64748B; border-bottom: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif; transition: all 0.2s;">
-                            <svg style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.25c-.9 0-1.63.73-1.63 1.63s.73 1.63 1.63 1.63 1.63-.73 1.63-1.63-.73-1.63-1.63-1.63Z"/></svg> LinkedIn Extensions
+                            <i data-lucide="linkedin" style="width: 15px; height: 15px;"></i> LinkedIn Extensions
                         </button>
                     </div>
 
@@ -5121,9 +5034,9 @@
     </div>
 
     <!-- ADD/EDIT WORK LOG MODAL -->
-    <div id="worklog-modal-container" class="hidden" onclick="if(event.target === this) closeWorklogModal()"
+    <div id="worklog-modal-container" class="hidden"
         style="position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(5px);z-index:200000;display:none;align-items:center;justify-content:center; opacity: 0; transition: opacity 0.3s ease;">
-        <div class="worklog-modal-content" id="worklog-modal-card" onclick="event.stopPropagation()">
+        <div class="worklog-modal-content" id="worklog-modal-card">
             <!-- Premium Page Header (Mobile Optimized) -->
             <div class="worklog-modal-header"
                 style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2.5rem;">
@@ -5137,16 +5050,19 @@
                             id="worklog-modal-title">Log Work</h2>
                     </div>
                 </div>
+                <button class="btn-icon" style="background:#F1F5F9; border-radius:14px; width:44px; height:44px;">
+                    <i data-lucide="calendar" style="width:20px; color:var(--text-primary);"></i>
+                </button>
             </div>
 
             <!-- Editable Date Context -->
             <label
-                style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Work Log Date <span style="color:#EF4444">*</span></label>
+                style="font-weight:700;margin-bottom:0.6rem;display:block;font-size:0.9rem;color:var(--text-primary);">Activity
+                Date <span style="color:#EF4444">*</span></label>
             <div
-                style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;background:linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%);padding:10px 18px;border-radius:14px;width:fit-content;border:1.5px solid #C7D2FE;box-shadow:0 2px 8px rgba(99, 102, 241, 0.08);">
-                <i data-lucide="calendar" style="width:18px;height:18px;color:#4F46E5;stroke-width:2.2px;"></i>
-                <span id="worklog-modal-date-display" style="font-weight:800;color:#3730A3;font-size:0.95rem;font-family:'Google Sans', sans-serif;">18 Sep 2026</span>
-                <input type="date" id="worklog-modal-date-picker" style="display:none;" disabled>
+                style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;background:#E2E8F0;padding:12px 18px;border-radius:14px;width:fit-content;border:1.5px solid rgba(226, 232, 240, 0.6);cursor:not-allowed;">
+                <input type="date" id="worklog-modal-date-picker" disabled
+                    style="font-weight:700; color:#64748B; font-size:1rem; border:none; background:transparent; outline:none; font-family:inherit; cursor:not-allowed;">
             </div>
 
             <input type="hidden" id="worklog-modal-edit-date">
@@ -5190,26 +5106,8 @@
                 </div>
             </div>
 
-            <!-- Red Disclaimer Box -->
-            <div style="margin-top: 1.5rem; padding: 12px 16px; background: #FEF2F2; border: 1.5px solid #FCA5A5; border-radius: 14px; font-family: 'Google Sans', sans-serif;">
-                <div style="color: #DC2626; font-size: 0.82rem; font-weight: 700; line-height: 1.5; display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; align-items: flex-start; gap: 6px;">
-                        <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                        <span>You cannot submit today’s worklog after 11:59 PM. If you miss the deadline, 1% will be deducted from your reward points.</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 6px;">
-                        <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                        <span>No extensions or manual entries will be permitted for missed worklog submissions.</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 6px;">
-                        <span style="color: #EF4444; font-weight: 800; flex-shrink: 0;">&bull;</span>
-                        <span>If you take leave or are away due to any other commitment, you must record the reason for your leave or absence in the corresponding split time slot.</span>
-                    </div>
-                </div>
-            </div>
-
             <button id="btn-submit-worklog-modal" class="btn btn-primary"
-                style="width:100%;margin-top:1.25rem;min-height:60px;height:60px;font-size:1.1rem;border-radius:18px;font-weight:700;box-shadow:0 10px 25px rgba(37, 99, 235, 0.2);">Save
+                style="width:100%;margin-top:2.5rem;min-height:60px;height:60px;font-size:1.1rem;border-radius:18px;font-weight:700;box-shadow:0 10px 25px rgba(37, 99, 235, 0.2);">Save
                 Work Log</button>
 
             <!-- Bottom Spacer for Nav -->

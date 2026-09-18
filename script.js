@@ -205,88 +205,6 @@ window.initReasonSuggestions = function (textareaId, suggestionsId) {
     });
 };
 
-window.getWorklogProgressLoadingHTML = function(idPrefix = 'wl-progress') {
-    return `
-      <div class="worklog-progress-container">
-        <div class="worklog-progress-header">
-          <div class="worklog-progress-label-wrap">
-            <div class="worklog-progress-icon-badge">
-              <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
-            </div>
-            <div>
-              <div id="${idPrefix}-status-text" class="worklog-progress-status-title">Fetching real-time logs...</div>
-            </div>
-          </div>
-          <span id="${idPrefix}-percent-text" class="worklog-progress-percent">0%</span>
-        </div>
-        
-        <div class="worklog-progress-track">
-          <div id="${idPrefix}-fill" class="worklog-progress-bar-fill" style="width: 6%;"></div>
-        </div>
-
-        <div class="worklog-progress-footer">
-          <span id="${idPrefix}-sub-text">Connecting to sheet database...</span>
-          <span class="worklog-progress-live-pill">
-            <span class="worklog-progress-live-dot"></span> Real-time Sync
-          </span>
-        </div>
-      </div>
-    `;
-};
-
-window.animateWorklogProgressBar = function() {
-    if (window._worklogProgressTimer) clearInterval(window._worklogProgressTimer);
-    let progress = 8;
-
-    const stages = [
-        { max: 25, status: "Initializing secure sync...", sub: "Connecting to database..." },
-        { max: 55, status: "Fetching real-time work logs...", sub: "Retrieving history records..." },
-        { max: 82, status: "Verifying entries & timestamps...", sub: "Validating student log data..." },
-        { max: 96, status: "Formatting activity timeline...", sub: "Preparing verified entries..." }
-    ];
-
-    const updateUI = (val) => {
-        const stage = stages.find(s => val <= s.max) || stages[stages.length - 1];
-        ['wl-progress-desk', 'wl-progress-mob', 'wl-progress'].forEach(prefix => {
-            const fill = document.getElementById(`${prefix}-fill`);
-            const percent = document.getElementById(`${prefix}-percent-text`);
-            const status = document.getElementById(`${prefix}-status-text`);
-            const sub = document.getElementById(`${prefix}-sub-text`);
-            if (fill) fill.style.width = `${val}%`;
-            if (percent) percent.textContent = `${Math.round(val)}%`;
-            if (status && stage) status.textContent = stage.status;
-            if (sub && stage) sub.textContent = stage.sub;
-        });
-    };
-
-    updateUI(progress);
-
-    window._worklogProgressTimer = setInterval(() => {
-        if (!window.WORKLOG_LOADING) {
-            clearInterval(window._worklogProgressTimer);
-            return;
-        }
-        if (progress < 94) {
-            const increment = Math.max(1, (94 - progress) * 0.12 + Math.random() * 2);
-            progress = Math.min(94, progress + increment);
-            updateUI(progress);
-        }
-    }, 120);
-};
-
-// Start animating immediately if initial HTML is already in DOM
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.WORKLOG_LOADING && typeof window.animateWorklogProgressBar === 'function') {
-            window.animateWorklogProgressBar();
-        }
-    });
-} else {
-    if (window.WORKLOG_LOADING && typeof window.animateWorklogProgressBar === 'function') {
-        window.animateWorklogProgressBar();
-    }
-}
-
 async function fetchWorklogs(email, rollNo) {
     if (!WORKLOG_API_URL || WORKLOG_API_URL.includes("YOUR_WORKLOG_APPS_SCRIPT_WEB_APP_URL")) {
         window.WORKLOG_LOADING = false;
@@ -296,76 +214,41 @@ async function fetchWorklogs(email, rollNo) {
         return;
     }
 
-    const cachedUser = JSON.parse(localStorage.getItem('user'));
-    const cleanEmail = (email && email !== "undefined" && email !== "null") ? email : (cachedUser?.email || "");
-    const cleanRoll = (rollNo && rollNo !== "undefined" && rollNo !== "null") ? rollNo : (typeof getStudentRoll === 'function' ? getStudentRoll(cachedUser) : "");
-    const cacheKey = cleanEmail || cleanRoll ? `user_worklogs_${cleanEmail || cleanRoll}` : null;
+    // Inject Spinner loading state
+    const mobEl = document.getElementById('mobile-worklog-history');
+    const deskEl = document.getElementById('desktop-worklog-history');
+    const spinnerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; width:100%; gap:12px; grid-column: 1 / -1;">
+        <div class="wl-spinner"></div>
+        <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
+      </div>
+    `;
 
-    // Load from local storage cache immediately if available
-    const storedLogs = (cacheKey ? localStorage.getItem(cacheKey) : null) || localStorage.getItem('user_worklogs_latest');
-    if (storedLogs) {
-        try {
-            const parsedLogs = JSON.parse(storedLogs);
-            if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
-                window.WORKLOG_HISTORY = parsedLogs;
-                window.WORKLOG_LOADING = false;
-                if (typeof window.renderWorklogHistory === 'function') {
-                    window.renderWorklogHistory();
-                }
-            }
-        } catch (e) {}
+    if (mobEl) mobEl.innerHTML = spinnerHTML;
+    if (deskEl) {
+        deskEl.style.display = 'block';
+        deskEl.innerHTML = spinnerHTML;
     }
 
-    // Inject Progress Bar loading state ONLY IF we don't already have history rendered
-    if (!window.WORKLOG_HISTORY || window.WORKLOG_HISTORY.length === 0) {
-        const mobEl = document.getElementById('mobile-worklog-history');
-        const deskEl = document.getElementById('desktop-worklog-history');
-        
-        if (mobEl) mobEl.innerHTML = window.getWorklogProgressLoadingHTML('wl-progress-mob');
-        if (deskEl) {
-            deskEl.style.display = 'block';
-            deskEl.innerHTML = window.getWorklogProgressLoadingHTML('wl-progress-desk');
-        }
-        if (window.lucide) window.lucide.createIcons();
-
-        window.WORKLOG_LOADING = true;
-        window.animateWorklogProgressBar();
-    }
-
+    window.WORKLOG_LOADING = true;
     try {
-        let identifier = cleanRoll || cleanEmail || "";
+        let identifier = rollNo || email || "";
+        if (identifier === "undefined" || identifier === "null") {
+            identifier = "";
+        }
+        const cleanEmail = (email === "undefined" || email === "null") ? "" : (email || "");
         const res = await fetch(`${WORKLOG_API_URL}?email=${encodeURIComponent(cleanEmail)}&rollNo=${encodeURIComponent(identifier)}&t=${Date.now()}`);
         const data = await res.json();
         if (data.status === 'success') {
-            const fetched = data.worklogs || data.history || [];
-            if (Array.isArray(fetched) && fetched.length > 0) {
-                window.WORKLOG_HISTORY = fetched;
-                if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(fetched));
-                localStorage.setItem('user_worklogs_latest', JSON.stringify(fetched));
-            } else if (!window.WORKLOG_HISTORY || window.WORKLOG_HISTORY.length === 0) {
-                window.WORKLOG_HISTORY = [];
-            }
+            window.WORKLOG_HISTORY = data.worklogs || data.history || [];
         }
     } catch (err) {
         console.warn("[Worklog] Error fetching worklogs from separate sheet:", err);
     } finally {
-        ['wl-progress-desk', 'wl-progress-mob', 'wl-progress'].forEach(prefix => {
-            const fill = document.getElementById(`${prefix}-fill`);
-            const percent = document.getElementById(`${prefix}-percent-text`);
-            const status = document.getElementById(`${prefix}-status-text`);
-            const sub = document.getElementById(`${prefix}-sub-text`);
-            if (fill) fill.style.width = '100%';
-            if (percent) percent.textContent = '100%';
-            if (status) status.textContent = "Logs synchronized!";
-            if (sub) sub.textContent = "Rendering verified timeline...";
-        });
-
-        setTimeout(() => {
-            window.WORKLOG_LOADING = false;
-            if (typeof window.renderWorklogHistory === 'function') {
-                window.renderWorklogHistory();
-            }
-        }, 180);
+        window.WORKLOG_LOADING = false;
+        if (typeof window.renderWorklogHistory === 'function') {
+            window.renderWorklogHistory();
+        }
     }
 }
 
@@ -2570,27 +2453,10 @@ async function fetchAttendance(email, forceBypass = false) {
             window.ATTENDANCE_HISTORY = cached.history;
             renderHistory();
         }
-        if (cached.worklog && Array.isArray(cached.worklog) && cached.worklog.length > 0) {
+        if (cached.worklog) {
             window.WORKLOG_HISTORY = cached.worklog;
             if (typeof window.renderWorklogHistory === 'function') {
                 window.renderWorklogHistory();
-            }
-        } else {
-            const cachedUser = cached.student || JSON.parse(localStorage.getItem('user'));
-            const cleanEmail = cachedUser?.email || email || '';
-            const cleanRoll = typeof getStudentRoll === 'function' ? getStudentRoll(cachedUser) : '';
-            const cacheKey = cleanEmail || cleanRoll ? `user_worklogs_${cleanEmail || cleanRoll}` : null;
-            const storedLogs = (cacheKey ? localStorage.getItem(cacheKey) : null) || localStorage.getItem('user_worklogs_latest');
-            if (storedLogs) {
-                try {
-                    const parsed = JSON.parse(storedLogs);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        window.WORKLOG_HISTORY = parsed;
-                        if (typeof window.renderWorklogHistory === 'function') {
-                            window.renderWorklogHistory();
-                        }
-                    }
-                } catch(e) {}
             }
         }
         if (cached.assignedTasks) {
@@ -2618,16 +2484,8 @@ async function fetchAttendance(email, forceBypass = false) {
         const notifContainer = document.getElementById('notifications-container');
 
         const spinnerTasks = `
-          <div class="skeleton-task-card" style="background: white; border-radius: 20px; padding: 1.25rem; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 12px; width: 100%; box-sizing: border-box;">
-            <div style="display: flex; gap: 8px;">
-              <div class="skeleton" style="width: 80px; height: 18px; border-radius: 6px; background-color: #E2E8F0; min-height: 18px;"></div>
-              <div class="skeleton" style="width: 120px; height: 18px; border-radius: 6px; background-color: #E2E8F0; min-height: 18px;"></div>
-            </div>
-            <div class="skeleton" style="width: 70%; height: 22px; border-radius: 8px; margin-top: 4px; background-color: #E2E8F0; min-height: 22px;"></div>
-            <div class="skeleton" style="width: 100%; height: 14px; border-radius: 6px; background-color: #E2E8F0; min-height: 14px;"></div>
-            <div class="skeleton" style="width: 90%; height: 14px; border-radius: 6px; background-color: #E2E8F0; min-height: 14px;"></div>
-            <div class="skeleton" style="width: 35%; height: 35px; border-radius: 12px; margin-top: 6px; background-color: #E2E8F0; min-height: 35px;"></div>
-          </div>
+          <div class="skeleton-card" style="height: 80px; grid-column: 1 / -1;"></div>
+          <div class="skeleton-card" style="height: 80px; grid-column: 1 / -1;"></div>
         `;
         const spinnerHistory = `
           <div class="skeleton-card"></div>
@@ -2793,7 +2651,90 @@ async function fetchRewardPoints(emailOrReg, rollNo = null) {
     
     console.log("[Rewards] Fetching points for:", emailOrReg, "Roll:", rollNo);
 
-    // Fetch via main API_URL with action=getRewardPoints (bypasses CORS via Apps Script proxy)
+    // Try direct web-published CSV fetch first (faster, direct bypass)
+    const directCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuoa_2Si7e9QKvKoQEQ7kjg2LblBTqGMyuJZIEqMWS2vna_VcSrxFPQ1FIBRbyTyd8BMHrNghbE9xR/pub?output=csv";
+    try {
+        console.log("[Rewards] Trying direct CSV sync...");
+        const csvRes = await fetch(`${directCsvUrl}&t=${Date.now()}`);
+        if (csvRes.ok) {
+            const csvText = await csvRes.text();
+
+            // Safe CSV Parser
+            const rows = [];
+            let currentRow = [""];
+            let inQuotes = false;
+            for (let i = 0; i < csvText.length; i++) {
+                const c = csvText[i];
+                const next = csvText[i + 1];
+                if (inQuotes) {
+                    if (c === '"') {
+                        if (next === '"') { currentRow[currentRow.length - 1] += '"'; i++; }
+                        else { inQuotes = false; }
+                    } else { currentRow[currentRow.length - 1] += c; }
+                } else {
+                    if (c === '"') { inQuotes = true; }
+                    else if (c === ',') { currentRow.push(""); }
+                    else if (c === '\r' || c === '\n') {
+                        if (c === '\r' && next === '\n') i++;
+                        rows.push(currentRow);
+                        currentRow = [""];
+                    } else { currentRow[currentRow.length - 1] += c; }
+                }
+            }
+            if (currentRow.length > 1 || currentRow[0] !== "") rows.push(currentRow);
+
+            if (rows.length > 1) {
+                const headers = rows[0].map(h => h.toLowerCase().trim().replace(/[\s_]/g, ''));
+
+                // Identify column indices
+                const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('mail') || h === 'id');
+                const rollIdx = headers.findIndex(h => h.includes('roll') || h.includes('reg') || h.includes('register'));
+
+                const earnedIdx = headers.findIndex(h => h.includes('earned') || h.includes('totalpoints') || (h.includes('points') && !h.includes('used') && !h.includes('balance')));
+                const usedIdx = headers.findIndex(h => h.includes('used') || h.includes('redeem'));
+                const balanceIdx = headers.findIndex(h => h.includes('balance') || h.includes('reward') || h.includes('current'));
+
+                const queryEmail = emailOrReg.toLowerCase().trim();
+                const queryRoll = (rollNo || '').toLowerCase().trim();
+                
+                const matchedRow = rows.slice(1).find(r => {
+                    const emailVal = emailIdx !== -1 ? (r[emailIdx] || '').toLowerCase().trim() : '';
+                    const rollVal = rollIdx !== -1 ? (r[rollIdx] || '').toLowerCase().trim() : '';
+                    return (queryEmail && emailVal === queryEmail) || (queryRoll && rollVal === queryRoll);
+                });
+
+                if (matchedRow) {
+                    const earned = earnedIdx !== -1 ? (matchedRow[earnedIdx] || '0').trim() : '0';
+                    const used = usedIdx !== -1 ? (matchedRow[usedIdx] || '0').trim() : '0';
+                    const balance = balanceIdx !== -1 ? (matchedRow[balanceIdx] || '0').trim() : '0';
+
+                    console.log(`[Rewards] Direct CSV Success: E:${earned} U:${used} B:${balance}`);
+
+                    document.querySelectorAll('[id^="p-reward-earned"]').forEach(el => {
+                        el.innerText = earned;
+                        el.classList.remove('skeleton-text');
+                    });
+                    document.querySelectorAll('[id^="p-reward-used"]').forEach(el => {
+                        el.innerText = used;
+                        el.classList.remove('skeleton-text');
+                    });
+                    document.querySelectorAll('[id^="p-reward-balance"]').forEach(el => {
+                        el.innerText = balance;
+                        el.classList.remove('skeleton-text');
+                        el.classList.add('animate-pulse');
+                        setTimeout(() => el.classList.remove('animate-pulse'), 2000);
+                    });
+
+                    if (window.updateRewardProgressDesk) window.updateRewardProgressDesk();
+                    return; // Successfully loaded from direct CSV, exit function!
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[Rewards] Direct CSV lookup failed or blocked by CORS:", e);
+    }
+
+    // Try main API_URL with action=getRewardPoints first (proxy fetch to bypass CORS)
     try {
         console.log("[Rewards] Fetching via main API getRewardPoints...");
         const res = await fetch(`${API_URL}?action=getRewardPoints&email=${encodeURIComponent(emailOrReg)}&rollNo=${encodeURIComponent(rollNo || '')}&t=${Date.now()}`);
@@ -4163,17 +4104,6 @@ window.openWorklogModal = function (editDateStr = null) {
     if (editHidden) editHidden.value = editDateStr || '';
     if (datePicker) datePicker.value = formatToISODate(targetDate);
 
-    const dateDisplay = document.getElementById('worklog-modal-date-display');
-    if (dateDisplay) {
-        const dObj = parseDateToLocalDate(targetDate);
-        if (dObj && !isNaN(dObj.getTime())) {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            dateDisplay.textContent = `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
-        } else {
-            dateDisplay.textContent = targetDate;
-        }
-    }
-
     if (editDateStr) {
         titleEl.textContent = isMobile ? 'Edit Activity' : 'Edit Work Log';
         const entry = (window.WORKLOG_HISTORY || []).find(i => i.date === editDateStr);
@@ -4353,15 +4283,6 @@ const handleWorklogSubmit = async (btnId) => {
     }
 
     // Render local updates instantly
-    try {
-        const cachedUser = JSON.parse(localStorage.getItem('user'));
-        const cleanEmail = cachedUser?.email || '';
-        const cleanRoll = typeof getStudentRoll === 'function' ? getStudentRoll(cachedUser) : '';
-        const cacheKey = cleanEmail || cleanRoll ? `user_worklogs_${cleanEmail || cleanRoll}` : null;
-        if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(window.WORKLOG_HISTORY));
-        localStorage.setItem('user_worklogs_latest', JSON.stringify(window.WORKLOG_HISTORY));
-    } catch (e) {}
-
     if (typeof window.renderWorklogHistory === 'function') {
         window.renderWorklogHistory();
     }
@@ -4572,20 +4493,13 @@ function parseDateToLocalDate(dateStr) {
     if (!dateStr) return null;
     const str = String(dateStr).trim();
 
-    // 1. If ISO timestamp string containing 'T' (e.g., "2026-09-17T18:30:00.000Z"), parse via Date and extract local Y/M/D
-    if (str.includes('T')) {
-        const d = new Date(str);
-        if (isNaN(d.getTime())) return null;
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    }
-
-    // 2. Check if pure ISO date format (YYYY-MM-DD)
+    // Check if it's already an ISO date (YYYY-MM-DD)
     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
         const parts = str.split('-');
         return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     }
 
-    // 3. Handle MM/DD/YYYY or MM-DD-YYYY or YYYY/MM/DD (sheet date format)
+    // Handle MM/DD/YYYY or MM-DD-YYYY (sheet date format)
     const separator = str.includes('-') ? '-' : (str.includes('/') ? '/' : null);
     if (separator) {
         const parts = str.split(separator);
@@ -4596,8 +4510,8 @@ function parseDateToLocalDate(dateStr) {
                 const dd = parseInt(parts[1], 10);
                 const yyyy = parseInt(parts[2], 10);
                 return new Date(yyyy, mm - 1, dd);
-            } else if (parts[0].length === 4 && /^\d+$/.test(parts[2])) {
-                // YYYY-MM-DD or YYYY/MM/DD
+            } else if (parts[0].length === 4) {
+                // YYYY/MM/DD
                 const yyyy = parseInt(parts[0], 10);
                 const mm = parseInt(parts[1], 10);
                 const dd = parseInt(parts[2], 10);
@@ -4606,7 +4520,7 @@ function parseDateToLocalDate(dateStr) {
         }
     }
     const d = new Date(str);
-    return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return isNaN(d.getTime()) ? null : d;
 }
 
 window.formatWorklogDescription = function (text) {
@@ -4874,21 +4788,16 @@ window.renderWorklogHistory = function (searchTerm = '') {
     const activeDateFilter = mobDateVal || deskDateVal;
 
     if (window.WORKLOG_LOADING && (!window.WORKLOG_HISTORY || window.WORKLOG_HISTORY.length === 0)) {
-        const deskLoadingHTML = typeof window.getWorklogProgressLoadingHTML === 'function'
-            ? window.getWorklogProgressLoadingHTML('wl-progress-desk')
-            : '';
-        const mobLoadingHTML = typeof window.getWorklogProgressLoadingHTML === 'function'
-            ? window.getWorklogProgressLoadingHTML('wl-progress-mob')
-            : deskLoadingHTML;
-
-        if (mobEl) mobEl.innerHTML = mobLoadingHTML;
+        const spinnerHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; width:100%; gap:12px; grid-column: 1 / -1;">
+            <div class="wl-spinner"></div>
+            <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
+          </div>
+        `;
+        if (mobEl) mobEl.innerHTML = spinnerHTML;
         if (deskEl) {
             deskEl.style.display = 'block';
-            deskEl.innerHTML = deskLoadingHTML;
-        }
-        if (window.lucide) window.lucide.createIcons();
-        if (typeof window.animateWorklogProgressBar === 'function') {
-            window.animateWorklogProgressBar();
+            deskEl.innerHTML = spinnerHTML;
         }
         const mobCountEl = document.getElementById('mobile-worklog-count-label');
         if (mobCountEl) mobCountEl.innerText = `HISTORY TRACKER (Loading...)`;
@@ -12164,7 +12073,7 @@ window.renderLinkedinPostTracker = function (usersToRender) {
             linkedinProfile = 'https://linkedin.com/in/' + linkedinProfile;
         }
         const profileHtml = linkedinProfile
-            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><svg style="width: 14px; height: 14px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.25c-.9 0-1.63.73-1.63 1.63s.73 1.63 1.63 1.63 1.63-.73 1.63-1.63-.73-1.63-1.63-1.63Z"/></svg> Profile</a>`
+            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><i data-lucide="linkedin" style="width: 14px;"></i> Profile</a>`
             : `<span style="color: #94A3B8; font-size: 0.82rem;">-</span>`;
 
         const displayId = id === 'N/A' ? '' : id;
@@ -15031,43 +14940,16 @@ window.submitActivityPass = function() {
     const name = user.name || user.student_name || '';
     const year = user.year || user.student_year || '';
 
-    // Create optimistic activity pass object for instant display via cache
-    const tempRequestId = 'PASS-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    const newPass = {
-        requestId: tempRequestId,
-        email: email,
-        rollNo: rollNo,
-        name: name,
-        year: year,
-        category: selectedCategory,
-        title: title,
-        venue: venue,
-        date: date,
-        fromTime: fromTime,
-        toTime: toTime,
-        reason: reason,
-        status: 'Pending Approval',
-        timestamp: new Date().toISOString()
-    };
-
-    // Instantly add to memory state & local cache
-    window.USER_ACTIVITY_PASSES = [newPass, ...(window.USER_ACTIVITY_PASSES || [])];
-    const cacheKey = `user_activity_passes_${email}`;
-    try {
-        localStorage.setItem(cacheKey, JSON.stringify(window.USER_ACTIVITY_PASSES));
-    } catch (e) {
-        console.error("Cache save error:", e);
+    // Show loading style on button if possible
+    const submitBtn = document.querySelector('button[onclick="window.submitActivityPass()"]');
+    let originalText = "";
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i> Submitting...';
+        if (window.lucide) window.lucide.createIcons();
+        submitBtn.disabled = true;
     }
 
-    // Instantly render the new pass card on screen
-    if (typeof window.renderUserActivityPasses === 'function') {
-        window.renderUserActivityPasses(window.USER_ACTIVITY_PASSES);
-    }
-
-    // Close modal and reset fields immediately without making the user wait
-    window.toggleActivityPassModal(false);
-
-    // Perform backend save asynchronously in background
     fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
@@ -15088,20 +14970,33 @@ window.submitActivityPass = function() {
     .then(r => r.json())
     .then(data => {
         if (data.status === 'success') {
-            if (data.requestId) {
-                const passItem = (window.USER_ACTIVITY_PASSES || []).find(p => p.requestId === tempRequestId);
-                if (passItem) passItem.requestId = data.requestId;
-            }
-            try {
-                localStorage.setItem(cacheKey, JSON.stringify(window.USER_ACTIVITY_PASSES));
-            } catch (e) {}
-            if (typeof window.renderUserActivityPasses === 'function') {
-                window.renderUserActivityPasses(window.USER_ACTIVITY_PASSES);
-            }
+            alert("Activity Pass request submitted successfully!");
+            window.toggleActivityPassModal(false);
+            // Clear input fields
+            if (customCat) customCat.value = "";
+            if (actTitle) actTitle.value = "";
+            if (actVenue) actVenue.value = "";
+            if (actDate) actDate.value = "";
+            if (actFrom) actFrom.value = "";
+            if (actTo) actTo.value = "";
+            if (actReason) actReason.value = "";
+            
+            // Reload history list
+            window.loadUserActivityPasses(true);
+        } else {
+            alert("Failed to submit request: " + (data.message || "Unknown error"));
         }
     })
     .catch(err => {
-        console.error("Background Submit Activity Pass Error: ", err);
+        console.error("Submit Activity Pass Error: ", err);
+        alert("Connection error while submitting request.");
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            if (window.lucide) window.lucide.createIcons();
+        }
     });
 };
 
@@ -15129,12 +15024,16 @@ function formatISOToClean(str) {
 
 function formatDateOnly(str) {
     if (!str) return '';
-    const d = parseDateToLocalDate(str);
-    if (!d || isNaN(d.getTime())) return str.toString();
-    const yr = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, '0');
-    const dy = String(d.getDate()).padStart(2, '0');
-    return `${yr}-${mo}-${dy}`;
+    const s = str.toString();
+    if (s.includes('T')) {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return s;
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${dy}`;
+    }
+    return s;
 }
 
 function formatTimeOnly(str) {
@@ -15163,20 +15062,10 @@ function getStatusPillHtml(status, isSmall = false) {
     return `<span style="background: ${bgColor}; color: #ffffff; padding: ${padding}; border-radius: 9999px; font-size: ${fontSize}; font-weight: 800; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">${status || 'Pending'}</span>`;
 }
 
-function isActivityPassExpired(dateStr, toTimeStr, category = '') {
-    if (!dateStr) return false;
-    const dDate = parseDateToLocalDate(dateStr);
-    if (!dDate || isNaN(dDate.getTime())) return false;
-    
-    const cat = (category || '').trim().toLowerCase();
-    
-    // For PS Slot / PS SLOT category, pass expires ONLY AFTER the entire date ends (past 23:59:59 of pass date)
-    if (cat.includes('ps') || cat.includes('slot')) {
-        const endOfDay = new Date(dDate.getFullYear(), dDate.getMonth(), dDate.getDate(), 23, 59, 59, 999);
-        return new Date() > endOfDay;
-    }
-
-    if (!toTimeStr) return false;
+function isActivityPassExpired(dateStr, toTimeStr) {
+    if (!dateStr || !toTimeStr) return false;
+    const dDate = new Date(dateStr);
+    if (isNaN(dDate.getTime())) return false;
     const dTime = new Date(toTimeStr);
     if (isNaN(dTime.getTime())) return false;
     
@@ -15185,118 +15074,46 @@ function isActivityPassExpired(dateStr, toTimeStr, category = '') {
     return new Date() > target;
 }
 
-function getCategoryPillHtml(category) {
-    const cat = (category || '').trim().toUpperCase();
-    let bg = '#DCFCE7';
-    let text = '#15803D';
-    let iconBg = '#16A34A';
-    let iconName = 'check';
-
-    if (cat.includes('LAB')) {
-        bg = '#EFF6FF';
-        text = '#1D4ED8';
-        iconBg = '#2563EB';
-        iconName = 'flask-conical';
-    } else if (cat.includes('GUEST') || cat.includes('LECTURE') || cat.includes('SEMINAR')) {
-        bg = '#F3E8FF';
-        text = '#7E22CE';
-        iconBg = '#9333EA';
-        iconName = 'user-check';
-    } else if (cat.includes('ACADEMIC')) {
-        bg = '#EEF2FF';
-        text = '#3730A3';
-        iconBg = '#4F46E5';
-        iconName = 'book-open';
-    } else if (cat.includes('EVENT')) {
-        bg = '#FEF3C7';
-        text = '#B45309';
-        iconBg = '#D97706';
-        iconName = 'sparkles';
-    }
-
-    return `
-        <span style="background: ${bg}; color: ${text}; padding: 3px 10px 3px 4px; border-radius: 9999px; font-weight: 800; font-size: 0.7rem; font-family: 'Google Sans', sans-serif; display: inline-flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;">
-            <span style="width: 16px; height: 16px; border-radius: 50%; background: ${iconBg}; display: inline-flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
-                <i data-lucide="${iconName}" style="width: 10px; height: 10px; stroke-width: 3px;"></i>
-            </span>
-            ${category || 'PS SLOT'}
-        </span>
-    `;
-}
-
-function getExactStatusPillHtml(status, isExpired, category = '', passDate = '') {
+function getUserStatusPillHtml(status, isExpired, category = '', passDate = '') {
     const cat = (category || '').trim().toLowerCase();
-    let label = 'Pending Approval';
-    let type = 'pending';
-
     if (cat.includes('ps') || cat.includes('slot')) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const activityDate = parseDateToLocalDate(passDate);
         if (activityDate && !isNaN(activityDate.getTime())) {
             activityDate.setHours(0, 0, 0, 0);
-            if (activityDate.getTime() >= today.getTime()) {
-                label = 'Active';
-                type = 'approved';
+            if (activityDate.getTime() === today.getTime()) {
+                return `<span style="background: #22C55E; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Active</span>`;
+            } else if (activityDate.getTime() > today.getTime()) {
+                return `<span style="background: #3B82F6; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Upcoming</span>`;
             } else {
-                label = 'Expired';
-                type = 'expired';
+                return `<span style="background: #EF4444; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Expired</span>`;
             }
-        } else {
-            label = 'Active';
-            type = 'approved';
-        }
-    } else {
-        if (isExpired) {
-            label = 'Expired';
-            type = 'expired';
-        } else if (status === 'Approved') {
-            label = 'Approved';
-            type = 'approved';
-        } else if (status === 'Rejected') {
-            label = 'Rejected';
-            type = 'rejected';
-        } else {
-            label = status || 'Pending Approval';
-            type = 'pending';
         }
     }
 
-    let bg = '#FEF3C7';
-    let text = '#B45309';
-    let dotColor = '#D97706';
-
-    if (type === 'approved') {
-        bg = '#DCFCE7';
-        text = '#15803D';
-        dotColor = '#16A34A';
-    } else if (type === 'upcoming') {
-        bg = '#EFF6FF';
-        text = '#1D4ED8';
-        dotColor = '#2563EB';
-    } else if (type === 'expired' || type === 'rejected') {
-        bg = '#FEE2E2';
-        text = '#B91C1C';
-        dotColor = '#DC2626';
+    if (isExpired) {
+        return `<span style="background: #F87171; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">Expired</span>`;
     }
-
-    return `
-        <span style="background: ${bg}; color: ${text}; padding: 3px 10px 3px 8px; border-radius: 9999px; font-weight: 800; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 5px; font-family: 'Google Sans', sans-serif;">
-            <span style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; display: inline-block;"></span>
-            ${label}
-        </span>
-    `;
-}
-
-function getUserStatusPillHtml(status, isExpired, category = '', passDate = '') {
-    return getExactStatusPillHtml(status, isExpired, category, passDate);
+    
+    let bgColor = "#D97706"; // Pending
+    let label = "Pending Approval";
+    if (status === 'Approved') {
+        bgColor = "#008000";
+        label = "Approved";
+    } else if (status === 'Rejected') {
+        bgColor = "#DC2626";
+        label = "Rejected";
+    }
+    
+    return `<span style="background: ${bgColor}; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-align: center; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Google Sans', sans-serif;">${label}</span>`;
 }
 
 function formatPassRangeHeader(dateStr, fromTimeStr, toTimeStr) {
     if (!dateStr || !fromTimeStr || !toTimeStr) return '';
-    const d = parseDateToLocalDate(dateStr);
+    const d = new Date(dateStr);
     let datePart = '';
-    if (d && !isNaN(d.getTime())) {
+    if (!isNaN(d.getTime())) {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         datePart = `${d.getDate()} ${months[d.getMonth()]}`;
     } else {
@@ -15309,140 +15126,11 @@ function formatPassRangeHeader(dateStr, fromTimeStr, toTimeStr) {
 
 window.USER_ACTIVITY_PASSES = [];
 
-// Separate rendering helper to display compact, perfectly aligned activity pass cards
-window.renderUserActivityPasses = function(passes) {
-    const desktopContainer = document.getElementById('user-activity-pass-history-container');
-    const desktopEmptyState = document.getElementById('user-activity-pass-empty-state');
-    const desktopGrid = document.getElementById('user-activity-pass-history-grid');
-    
-    const mobileContainer = document.getElementById('user-activity-pass-history-container-mobile');
-    const mobileEmptyState = document.getElementById('user-activity-pass-empty-state-mobile');
-
-    if (passes && passes.length > 0) {
-        const renderSingleExactCardHtml = (pass) => {
-            const isExpired = isActivityPassExpired(pass.date, pass.toTime, pass.category);
-            const categoryPill = getCategoryPillHtml(pass.category);
-            const statusPill = getExactStatusPillHtml(pass.status, isExpired, pass.category, pass.date);
-            
-            // Format date nicely (e.g. 9 Sep 2026)
-            const d = parseDateToLocalDate(pass.date);
-            let dateFormatted = '';
-            if (d && !isNaN(d.getTime())) {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                dateFormatted = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-            } else {
-                dateFormatted = pass.date || 'Today';
-            }
-
-            // Time range string (e.g. 2:30 PM – 3:30 PM)
-            const timeRangeText = (pass.fromTime && pass.toTime) 
-                ? `${formatTimeOnly(pass.fromTime)} – ${formatTimeOnly(pass.toTime)}` 
-                : (formatTimeOnly(pass.fromTime) || formatTimeOnly(pass.toTime) || '');
-
-            // Format serial number cleanly without overflow
-            let passSerial = '217';
-            if (pass.requestId) {
-                const s = pass.requestId.toString().trim();
-                const parts = s.split('-').filter(Boolean);
-                passSerial = parts[parts.length - 1] || s;
-                if (passSerial.length > 8) {
-                    passSerial = passSerial.slice(-6).toUpperCase();
-                }
-            }
-
-            return `
-                <div class="card user-pass-card exact-pass-card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')">
-                    <!-- Top Row: Category Badge & Pass Serial -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                        ${categoryPill}
-                        <span style="font-family: 'Google Sans', sans-serif; font-size: 0.75rem; font-weight: 700; color: #94A3B8; letter-spacing: 0.2px; white-space: nowrap; flex-shrink: 0;">
-                            #PASS-${passSerial}
-                        </span>
-                    </div>
-
-                    <!-- Title -->
-                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 2px 0 1px 0; font-family: 'Google Sans', sans-serif; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">
-                        ${pass.title || 'Activity Request'}
-                    </h4>
-
-                    <!-- Date & Time Row (No Background Highlight) -->
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 1px;">
-                        <div style="color: #475569; font-weight: 700; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 4px; font-family: 'Google Sans', sans-serif;">
-                            <i data-lucide="calendar" style="width: 13px; height: 13px; color: #2563EB; stroke-width: 2.2px;"></i>
-                            <span>${dateFormatted}</span>
-                        </div>
-                        ${timeRangeText ? `
-                        <div style="color: #475569; font-weight: 700; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 4px; font-family: 'Google Sans', sans-serif;">
-                            <i data-lucide="clock" style="width: 13px; height: 13px; color: #9333EA; stroke-width: 2.2px;"></i>
-                            <span>${timeRangeText}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    <!-- Single Compact Row for Reason (If reason exists) -->
-                    ${pass.reason ? `
-                    <div style="border-top: 1px solid #F1F5F9; margin: 2px 0 1px 0;"></div>
-                    <div style="display: flex; align-items: center; gap: 5px; color: #475569; font-size: 0.78rem; font-weight: 500; font-family: 'Google Sans', sans-serif; overflow: hidden;">
-                        <i data-lucide="file-text" style="width: 12px; height: 12px; color: #64748B; stroke-width: 2px; flex-shrink: 0;"></i>
-                        <span style="font-weight: 700; color: #64748B; flex-shrink: 0;">Reason:</span>
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pass.reason}</span>
-                    </div>
-                    ` : ''}
-
-                    <!-- Bottom Row: Status Pill & Chevron Circle Button -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-                        ${statusPill}
-                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #475569; flex-shrink: 0;">
-                            <i data-lucide="chevron-right" style="width: 13px; height: 13px; stroke-width: 2.5px; color: #475569;"></i>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        const desktopCardsHtml = passes.map(pass => renderSingleExactCardHtml(pass)).join('');
-        const mobileCardsHtml = passes.map(pass => renderSingleExactCardHtml(pass)).join('');
-
-        if (desktopGrid) desktopGrid.innerHTML = desktopCardsHtml;
-        if (mobileContainer) mobileContainer.innerHTML = mobileCardsHtml;
-        
-        if (window.lucide) window.lucide.createIcons();
-
-        if (desktopContainer) desktopContainer.style.display = 'block';
-        if (desktopEmptyState) desktopEmptyState.style.display = 'none';
-        if (mobileContainer) mobileContainer.style.display = 'grid';
-        if (mobileEmptyState) mobileEmptyState.style.display = 'none';
-    } else {
-        if (desktopContainer) desktopContainer.style.display = 'none';
-        if (desktopEmptyState) desktopEmptyState.style.display = 'block';
-        if (mobileContainer) mobileContainer.style.display = 'none';
-        if (mobileEmptyState) mobileEmptyState.style.display = 'block';
-    }
-};
-
 window.loadUserActivityPasses = async function(force = false) {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
     const email = user.email || user.email_id || user.mailid || user.mail || '';
     if (!email) return;
-
-    const cacheKey = `user_activity_passes_${email}`;
-    let loadedFromCache = false;
-
-    // Load from cache first for instant UI response
-    const cachedStr = localStorage.getItem(cacheKey);
-    if (cachedStr) {
-        try {
-            const cachedPasses = JSON.parse(cachedStr);
-            if (Array.isArray(cachedPasses) && cachedPasses.length > 0) {
-                window.USER_ACTIVITY_PASSES = cachedPasses;
-                window.renderUserActivityPasses(cachedPasses);
-                loadedFromCache = true;
-            }
-        } catch (e) {
-            console.error("Failed to parse cached activity passes: ", e);
-        }
-    }
 
     try {
         const desktopContainer = document.getElementById('user-activity-pass-history-container');
@@ -15452,43 +15140,173 @@ window.loadUserActivityPasses = async function(force = false) {
         const mobileContainer = document.getElementById('user-activity-pass-history-container-mobile');
         const mobileEmptyState = document.getElementById('user-activity-pass-empty-state-mobile');
 
-        // Only show full loading spinner if nothing was rendered from cache
-        if (!loadedFromCache) {
-            if (desktopEmptyState) desktopEmptyState.style.display = 'none';
-            if (desktopContainer) desktopContainer.style.display = 'block';
-            if (desktopGrid) {
-                desktopGrid.innerHTML = `
-                    <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 4rem 2rem; background: transparent !important; border: none !important; box-shadow: none !important; font-family: 'Google Sans', sans-serif;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; color: #4F46E5;">
-                            <div class="analytics-spin-loader" style="width: 28px; height: 28px; border-width: 3px; border-top-color: #4F46E5;"></div>
-                            <span style="font-size: 0.85rem; font-weight: 700; letter-spacing: -0.2px;">Loading activity passes...</span>
-                        </div>
+        // Show spinner on load and hide default empty state screen
+        if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+        if (desktopContainer) desktopContainer.style.display = 'block';
+        if (desktopGrid) {
+            desktopGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 4rem 2rem; background: transparent !important; border: none !important; box-shadow: none !important; font-family: 'Google Sans', sans-serif;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; color: #4F46E5;">
+                        <div class="analytics-spin-loader" style="width: 28px; height: 28px; border-width: 3px; border-top-color: #4F46E5;"></div>
+                        <span style="font-size: 0.85rem; font-weight: 700; letter-spacing: -0.2px;">Loading activity passes...</span>
                     </div>
-                `;
-            }
+                </div>
+            `;
+        }
 
-            if (mobileEmptyState) mobileEmptyState.style.display = 'none';
-            if (mobileContainer) {
-                mobileContainer.style.display = 'flex';
-                mobileContainer.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; width: 100%; box-sizing: border-box; font-family: 'Google Sans', sans-serif;">
-                        <div class="analytics-spin-loader" style="width: 24px; height: 24px; border-width: 3px; border-top-color: #4F46E5; margin-bottom: 8px;"></div>
-                        <span style="font-size: 0.8rem; font-weight: 700; color: #4F46E5; letter-spacing: -0.2px;">Loading...</span>
-                    </div>
-                `;
-            }
+        if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+        if (mobileContainer) {
+            mobileContainer.style.display = 'flex';
+            mobileContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; width: 100%; box-sizing: border-box; font-family: 'Google Sans', sans-serif;">
+                    <div class="analytics-spin-loader" style="width: 24px; height: 24px; border-width: 3px; border-top-color: #4F46E5; margin-bottom: 8px;"></div>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #4F46E5; letter-spacing: -0.2px;">Loading...</span>
+                </div>
+            `;
         }
 
         const res = await fetch(`${API_URL}?action=getUserActivityPasses&email=${encodeURIComponent(email)}&t=${Date.now()}`);
         const data = await res.json();
         
-        if (data.status === 'success' && data.passes) {
+        if (data.status === 'success' && data.passes && data.passes.length > 0) {
             window.USER_ACTIVITY_PASSES = data.passes;
-            try {
-                localStorage.setItem(cacheKey, JSON.stringify(data.passes));
-            } catch (e) {}
-            window.renderUserActivityPasses(data.passes);
-        } else if (!loadedFromCache) {
+            
+            // Helper for category badge styling
+            const getCategoryBadgeHtml = (category) => {
+                const cat = (category || '').trim().toLowerCase();
+                let bg = '#EEF2FF';
+                let text = '#4F46E5';
+                let border = '#C7D2FE';
+                
+                if (cat.includes('lab')) {
+                    bg = '#EFF6FF'; // light blue
+                    text = '#1D4ED8';
+                    border = '#BFDBFE';
+                } else if (cat.includes('guest') || cat.includes('lecture') || cat.includes('seminar')) {
+                    bg = '#FAF5FF'; // light purple
+                    text = '#6B21A8';
+                    border = '#F3E8FF';
+                } else if (cat.includes('ps') || cat.includes('slot')) {
+                    bg = '#ECFDF5'; // light emerald
+                    text = '#047857';
+                    border = '#A7F3D0';
+                } else if (cat.includes('exam') || cat.includes('test')) {
+                    bg = '#FEF2F2'; // light red
+                    text = '#991B1B';
+                    border = '#FEE2E2';
+                }
+                
+                return `<span style="background: ${bg}; color: ${text}; border: 1px solid ${border}; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; font-family: 'Google Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">${category || ''}</span>`;
+            };
+
+            // Build card grid elements for desktop & mobile
+            const desktopCardsHtml = data.passes.map(pass => {
+                const isExpired = isActivityPassExpired(pass.date, pass.toTime);
+                const rangeHeader = formatPassRangeHeader(pass.date, pass.fromTime, pass.toTime);
+                const reasonPreview = pass.reason ? (pass.reason.length > 75 ? pass.reason.substring(0, 75) + '...' : pass.reason) : '';
+                
+                return `
+                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 10px !important; padding: 1.25rem; box-shadow: 0 4px 18px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; border: none !important;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.09)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 18px rgba(0,0,0,0.06)';">
+                        <div>
+                            <div style="font-size: 0.78rem; font-weight: 700; color: #4F46E5; margin-bottom: 0.5rem; font-family: 'Google Sans', sans-serif; letter-spacing: -0.2px;">
+                                ${rangeHeader}
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.title || ''}">
+                                ${pass.title || ''}
+                            </h4>
+                            ${reasonPreview ? `
+                            <p style="font-size: 0.82rem; color: #64748B; margin: 0.5rem 0 0 0; line-height: 1.5; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${pass.reason}">
+                                ${reasonPreview}
+                            </p>
+                            ` : ''}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Google Sans', sans-serif;">
+                            ${getCategoryBadgeHtml(pass.category)}
+                            ${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const mobileCardsHtml = data.passes.map(pass => {
+                const isExpired = isActivityPassExpired(pass.date, pass.toTime);
+                
+                // Parse date nicely
+                const d = new Date(pass.date);
+                let datePart = '';
+                if (!isNaN(d.getTime())) {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    datePart = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                } else {
+                    datePart = pass.date || '';
+                }
+                
+                const timeRangeText = `${formatTimeOnly(pass.fromTime)} - ${formatTimeOnly(pass.toTime)}`;
+                
+                // Determine category icon and dynamic colors
+                const cat = (pass.category || '').trim().toLowerCase();
+                let iconBg = '#F1F5F9';
+                let iconColor = '#475569';
+                
+                if (cat.includes('lab')) {
+                    iconBg = '#EFF6FF';
+                    iconColor = '#1D4ED8';
+                } else if (cat.includes('guest') || cat.includes('lecture') || cat.includes('seminar')) {
+                    iconBg = '#FAF5FF';
+                    iconColor = '#6B21A8';
+                } else if (cat.includes('ps') || cat.includes('slot')) {
+                    iconBg = '#ECFDF5';
+                    iconColor = '#047857';
+                } else if (cat.includes('exam') || cat.includes('test')) {
+                    iconBg = '#FEF2F2';
+                    iconColor = '#991B1B';
+                }
+                
+                return `
+                    <div class="card" onclick="window.showUserActivityPassDetailModal('${pass.requestId}')" style="background: white; border-radius: 12px !important; padding: 1.25rem 3.5rem 1.25rem 1.25rem !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important; border: 1.5px solid #F1F5F9 !important; display: flex; flex-direction: column; gap: 0.85rem; transition: all 0.2s; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', sans-serif; cursor: pointer; position: relative; width: 100%; box-sizing: border-box;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='none';">
+                        <!-- Top Row: Category and Status -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; background: ${iconBg}; color: ${iconColor}; padding: 4px 10px; border-radius: 9999px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: none; font-family: 'Google Sans', sans-serif;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${iconColor}; display: inline-block;"></span>
+                                ${pass.category || ''}
+                            </span>
+                            ${getUserStatusPillHtml(pass.status, isExpired, pass.category, pass.date)}
+                        </div>
+
+                        <!-- Title -->
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: #1E293B; margin: 0; line-height: 1.4; font-family: 'Google Sans', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; padding-right: 0.5rem;" title="${pass.title || ''}">
+                            ${pass.title || ''}
+                        </h4>
+                        <!-- Date / Time Section with Icons -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #F1F5F9; padding-top: 0.85rem; margin-top: 0.25rem;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #1E293B; font-size: 0.85rem; font-weight: 700; font-family: 'Google Sans', sans-serif;">
+                                <i data-lucide="calendar" style="width: 15px; height: 15px; color: #4F46E5; flex-shrink: 0; stroke-width: 2.5px;"></i>
+                                <span>${datePart}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; color: #1E293B; font-size: 0.85rem; font-weight: 700; font-family: 'Google Sans', sans-serif;">
+                                <i data-lucide="clock" style="width: 15px; height: 15px; color: #4F46E5; flex-shrink: 0; stroke-width: 2.5px;"></i>
+                                <span>${timeRangeText}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Indicator Chevron -->
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #F8FAFC; border: 1.5px solid #E2E8F0; display: flex; align-items: center; justify-content: center; color: #94A3B8; position: absolute; right: 1.25rem; top: calc(50% + 12px); transform: translateY(-50%); transition: all 0.2s;">
+                            <i data-lucide="chevron-right" style="width: 14px; height: 14px; stroke-width: 3px; color: #64748B;"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (desktopGrid) desktopGrid.innerHTML = desktopCardsHtml;
+            if (mobileContainer) mobileContainer.innerHTML = mobileCardsHtml;
+            
+            if (window.lucide) window.lucide.createIcons();
+
+            if (desktopContainer) desktopContainer.style.display = 'block';
+            if (desktopEmptyState) desktopEmptyState.style.display = 'none';
+            if (mobileContainer) mobileContainer.style.display = 'grid';
+            if (mobileEmptyState) mobileEmptyState.style.display = 'none';
+        } else {
             if (desktopContainer) desktopContainer.style.display = 'none';
             if (desktopEmptyState) desktopEmptyState.style.display = 'block';
             if (mobileContainer) mobileContainer.style.display = 'none';
