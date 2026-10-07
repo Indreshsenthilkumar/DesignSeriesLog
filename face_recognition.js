@@ -21,22 +21,22 @@
 
     // Default Schedules
     const DEFAULT_SCHEDULES = {
-        schedule_mode: "session", // "session" (FN/AN) or "hourly"
+        schedule_mode: "hourly", // "session" (FN/AN) or "hourly"
         fn_start_time: "08:30",
         fn_end_time: "12:30",
         fn_grace_minutes: "15",
         an_start_time: "13:30",
         an_end_time: "17:30",
         an_grace_minutes: "15",
+        hourly_grace_minutes: "10",
         hourly_slots: [
-            { hour: 1, name: "Hour 1", start: "08:45", end: "09:45" },
-            { hour: 2, name: "Hour 2", start: "09:45", end: "10:45" },
-            { hour: 3, name: "Hour 3", start: "11:00", end: "12:00" },
-            { hour: 4, name: "Hour 4", start: "12:00", end: "13:00" },
-            { hour: 5, name: "Hour 5", start: "13:45", end: "14:45" },
-            { hour: 6, name: "Hour 6", start: "14:45", end: "15:45" },
-            { hour: 7, name: "Hour 7", start: "16:00", end: "17:00" },
-            { hour: 8, name: "Hour 8", start: "17:00", end: "18:00" }
+            { hour: 1, name: "1st Hour", start: "08:45", end: "09:35", label: "8:45 - 9:35 AM", grace_minutes: 10 },
+            { hour: 2, name: "2nd Hour", start: "09:35", end: "10:25", label: "9:35 - 10:25 AM", grace_minutes: 10 },
+            { hour: 3, name: "3rd Hour", start: "10:40", end: "11:30", label: "10:40 - 11:30 AM", grace_minutes: 10 },
+            { hour: 4, name: "4th Hour", start: "11:30", end: "12:25", label: "11:30 AM - 12:25 PM", grace_minutes: 10 },
+            { hour: 5, name: "5th Hour", start: "13:30", end: "14:20", label: "1:30 - 2:20 PM", grace_minutes: 10 },
+            { hour: 6, name: "6th Hour", start: "14:20", end: "15:10", label: "2:20 - 3:10 PM", grace_minutes: 10 },
+            { hour: 7, name: "7th Hour", start: "15:25", end: "16:25", label: "3:25 - 4:25 PM", grace_minutes: 10 }
         ]
     };
 
@@ -238,7 +238,13 @@
             if (savedLogs) window.FaceRecognitionState.attendanceLogs = JSON.parse(savedLogs);
 
             const savedSchedules = localStorage.getItem(STORAGE_KEY_SCHEDULES);
-            if (savedSchedules) window.FaceRecognitionState.schedules = { ...DEFAULT_SCHEDULES, ...JSON.parse(savedSchedules) };
+            if (savedSchedules) {
+                const parsed = JSON.parse(savedSchedules);
+                if (!parsed.hourly_slots || !Array.isArray(parsed.hourly_slots) || parsed.hourly_slots.length !== 7) {
+                    parsed.hourly_slots = DEFAULT_SCHEDULES.hourly_slots;
+                }
+                window.FaceRecognitionState.schedules = { ...DEFAULT_SCHEDULES, ...parsed };
+            }
 
             const savedHolidays = localStorage.getItem(STORAGE_KEY_HOLIDAYS);
             if (savedHolidays) window.FaceRecognitionState.holidays = JSON.parse(savedHolidays);
@@ -337,11 +343,7 @@
         const currentMins = now.getMinutes();
         const currentTimeMinutes = currentHours * 60 + currentMins;
 
-        const timeToMinutes = (str) => {
-            if (!str) return 0;
-            const parts = str.split(':');
-            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-        };
+        const timeToMinutes = (str) => parseTimeToMinutes(str);
 
         // 2. Session Mode (FN / AN)
         if (schedules.schedule_mode === 'session') {
@@ -389,21 +391,33 @@
             }
         }
 
-        // 3. Hourly Mode
-        const hourlySlots = schedules.hourly_slots || DEFAULT_SCHEDULES.hourly_slots;
+        // 3. Hourly Mode (7 Periods with strict 10-Minute Grace Window)
+        const hourlySlots = (schedules.hourly_slots && schedules.hourly_slots.length === 7)
+            ? schedules.hourly_slots
+            : DEFAULT_SCHEDULES.hourly_slots;
+
         for (const slot of hourlySlots) {
             const startMins = timeToMinutes(slot.start);
             const endMins = timeToMinutes(slot.end);
+            const graceMins = parseInt(slot.grace_minutes || schedules.hourly_grace_minutes || "10", 10);
+            const graceCutoffMins = startMins + graceMins;
+
             if (currentTimeMinutes >= startMins && currentTimeMinutes <= endMins) {
+                const isWithin10 = currentTimeMinutes <= graceCutoffMins;
+                const statusText = isWithin10 ? "Present" : "Absent";
+                const isLate = !isWithin10;
+
                 return {
                     isHoliday: false,
                     isOpen: true,
                     sessionType: `Hour_${slot.hour}`,
                     slotName: slot.name || `Hour ${slot.hour}`,
-                    isLate: false,
-                    statusText: "Present",
-                    windowDesc: `${slot.start} - ${slot.end}`,
-                    statusBadge: `<span style="background: #F5F3FF; color: #7C3AED; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">🕒 ${slot.name} Active (${slot.start} - ${slot.end})</span>`
+                    isLate: isLate,
+                    statusText: statusText,
+                    windowDesc: `${slot.label || (slot.start + ' - ' + slot.end)} • Grace: ${slot.start}-${minutesToTimeString(graceCutoffMins)}`,
+                    statusBadge: isWithin10
+                        ? `<span style="background: #DCFCE7; color: #166534; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">🟢 ${slot.name} Active (${slot.start} - ${slot.end})</span>`
+                        : `<span style="background: #FEE2E2; color: #991B1B; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">🔴 10m Window Expired (${slot.name})</span>`
                 };
             }
         }
@@ -416,6 +430,34 @@
             windowDesc: "Check hourly schedule timings",
             statusBadge: `<span style="background: #F1F5F9; color: #64748B; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">⏳ No Active Hour Slot</span>`
         };
+    }
+
+    // --- Time Parsers & Helpers ---
+    function parseTimeToMinutes(str) {
+        if (!str) return 0;
+        str = String(str).trim();
+        const match12 = str.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+        if (match12) {
+            let hrs = parseInt(match12[1], 10);
+            const mins = parseInt(match12[2], 10);
+            const ampm = match12[3] ? match12[3].toUpperCase() : null;
+            if (ampm === "PM" && hrs < 12) hrs += 12;
+            if (ampm === "AM" && hrs === 12) hrs = 0;
+            return hrs * 60 + mins;
+        }
+        const parts = str.split(':');
+        return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+    }
+
+    function minutesToTimeString(totalMins, use12hr = true) {
+        const hrs = Math.floor(totalMins / 60) % 24;
+        const mins = totalMins % 60;
+        if (!use12hr) {
+            return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+        const ampm = hrs >= 12 ? 'PM' : 'AM';
+        const displayHrs = hrs % 12 || 12;
+        return `${displayHrs}:${String(mins).padStart(2, '0')} ${ampm}`;
     }
 
     // --- Camera Handling ---
@@ -468,7 +510,14 @@
 
         const activeSlot = sessionInfo || getActiveScheduleStatus();
         const sessionType = activeSlot.sessionType || (now.getHours() < 13 ? "FN" : "AN");
-        const status = activeSlot.isLate ? "Late" : "Present";
+        
+        const schedules = window.FaceRecognitionState.schedules || DEFAULT_SCHEDULES;
+        let status = "Present";
+        if (schedules.schedule_mode === 'hourly') {
+            status = activeSlot.isLate ? "Absent" : "Present";
+        } else {
+            status = activeSlot.isLate ? "Late" : "Present";
+        }
 
         // Check duplicate in local state for today + session
         const isDuplicate = window.FaceRecognitionState.attendanceLogs.some(log =>
@@ -1126,9 +1175,87 @@
         }
     }
 
+    function formatTime12hr(time24) {
+        if (!time24) return '';
+        const parts = String(time24).split(':');
+        if (parts.length < 2) return time24;
+        let h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) return time24;
+        const period = h >= 12 ? 'PM' : 'AM';
+        const hour12 = h % 12 || 12;
+        return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+
+    function computeGraceBadgeText(startStr, graceMins) {
+        if (!startStr) return '';
+        const parts = String(startStr).split(':');
+        if (parts.length < 2) return '';
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) return '';
+        const totalMins = h * 60 + m + (parseInt(graceMins, 10) || 0);
+        const endH = Math.floor(totalMins / 60) % 24;
+        const endM = totalMins % 60;
+        const period = endH >= 12 ? 'PM' : 'AM';
+        const hour12 = endH % 12 || 12;
+        return `Grace ≤ ${hour12}:${String(endM).padStart(2, '0')} ${period}`;
+    }
+
+    window.onFaceSlotInputChanged = function (slotIndex) {
+        const start = document.getElementById(`face-slot-start-${slotIndex}`)?.value || '';
+        const grace = document.getElementById(`face-slot-grace-${slotIndex}`)?.value || '10';
+        const badge = document.getElementById(`face-slot-badge-${slotIndex}`);
+        if (badge && start) {
+            badge.textContent = computeGraceBadgeText(start, grace);
+        }
+    };
+
+    window.onFaceSlotInputChangedMobile = function (slotIndex) {
+        const start = document.getElementById(`face-slot-start-mob-${slotIndex}`)?.value || '';
+        const grace = document.getElementById(`face-slot-grace-mob-${slotIndex}`)?.value || '10';
+        const badge = document.getElementById(`face-slot-badge-mob-${slotIndex}`);
+        if (badge && start) {
+            badge.textContent = computeGraceBadgeText(start, grace);
+        }
+    };
+
+    window.onFaceScheduleModeChanged = function () {
+        const mode = document.getElementById('face-sched-mode')?.value || 'hourly';
+        const sessCont = document.getElementById('face-session-schedule-container');
+        const hourlyCont = document.getElementById('face-hourly-schedule-container');
+        if (sessCont && hourlyCont) {
+            if (mode === 'session') {
+                sessCont.style.display = 'flex';
+                hourlyCont.style.display = 'none';
+            } else {
+                sessCont.style.display = 'none';
+                hourlyCont.style.display = 'block';
+            }
+        }
+    };
+
+    window.onFaceScheduleModeChangedMobile = function () {
+        const mode = document.getElementById('face-sched-mode-mobile')?.value || 'hourly';
+        const sessCont = document.getElementById('face-session-schedule-container-mobile');
+        const hourlyCont = document.getElementById('face-hourly-schedule-container-mobile');
+        if (sessCont && hourlyCont) {
+            if (mode === 'session') {
+                sessCont.style.display = 'flex';
+                hourlyCont.style.display = 'none';
+            } else {
+                sessCont.style.display = 'none';
+                hourlyCont.style.display = 'flex';
+            }
+        }
+    };
+
     function renderSchedulesAndHolidays() {
         const sched = window.FaceRecognitionState.schedules || DEFAULT_SCHEDULES;
         const holidays = window.FaceRecognitionState.holidays || [];
+        const slots = (sched.hourly_slots && sched.hourly_slots.length === 7)
+            ? sched.hourly_slots
+            : DEFAULT_SCHEDULES.hourly_slots;
 
         // Desktop Inputs
         const modeSelect = document.getElementById('face-sched-mode');
@@ -1139,13 +1266,26 @@
         const anEnd = document.getElementById('face-sched-an-end');
         const anGrace = document.getElementById('face-sched-an-grace');
 
-        if (modeSelect) modeSelect.value = sched.schedule_mode || 'session';
+        if (modeSelect) modeSelect.value = sched.schedule_mode || 'hourly';
         if (fnStart) fnStart.value = sched.fn_start_time || '08:30';
         if (fnEnd) fnEnd.value = sched.fn_end_time || '12:30';
         if (fnGrace) fnGrace.value = sched.fn_grace_minutes || '15';
         if (anStart) anStart.value = sched.an_start_time || '13:30';
         if (anEnd) anEnd.value = sched.an_end_time || '17:30';
         if (anGrace) anGrace.value = sched.an_grace_minutes || '15';
+
+        // Desktop Hourly Slots (7 Periods)
+        slots.forEach((slot, i) => {
+            const startInput = document.getElementById(`face-slot-start-${i}`);
+            const endInput = document.getElementById(`face-slot-end-${i}`);
+            const graceInput = document.getElementById(`face-slot-grace-${i}`);
+            const badge = document.getElementById(`face-slot-badge-${i}`);
+
+            if (startInput) startInput.value = slot.start || '08:45';
+            if (endInput) endInput.value = slot.end || '09:35';
+            if (graceInput) graceInput.value = slot.grace_minutes !== undefined ? slot.grace_minutes : 10;
+            if (badge) badge.textContent = computeGraceBadgeText(slot.start || '08:45', slot.grace_minutes || 10);
+        });
 
         // Mobile Inputs
         const modeSelectMob = document.getElementById('face-sched-mode-mobile');
@@ -1156,13 +1296,30 @@
         const anEndMob = document.getElementById('face-sched-an-end-mobile');
         const anGraceMob = document.getElementById('face-sched-an-grace-mobile');
 
-        if (modeSelectMob) modeSelectMob.value = sched.schedule_mode || 'session';
+        if (modeSelectMob) modeSelectMob.value = sched.schedule_mode || 'hourly';
         if (fnStartMob) fnStartMob.value = sched.fn_start_time || '08:30';
         if (fnEndMob) fnEndMob.value = sched.fn_end_time || '12:30';
         if (fnGraceMob) fnGraceMob.value = sched.fn_grace_minutes || '15';
         if (anStartMob) anStartMob.value = sched.an_start_time || '13:30';
         if (anEndMob) anEndMob.value = sched.an_end_time || '17:30';
         if (anGraceMob) anGraceMob.value = sched.an_grace_minutes || '15';
+
+        // Mobile Hourly Slots (7 Periods)
+        slots.forEach((slot, i) => {
+            const startInputMob = document.getElementById(`face-slot-start-mob-${i}`);
+            const endInputMob = document.getElementById(`face-slot-end-mob-${i}`);
+            const graceInputMob = document.getElementById(`face-slot-grace-mob-${i}`);
+            const badgeMob = document.getElementById(`face-slot-badge-mob-${i}`);
+
+            if (startInputMob) startInputMob.value = slot.start || '08:45';
+            if (endInputMob) endInputMob.value = slot.end || '09:35';
+            if (graceInputMob) graceInputMob.value = slot.grace_minutes !== undefined ? slot.grace_minutes : 10;
+            if (badgeMob) badgeMob.textContent = computeGraceBadgeText(slot.start || '08:45', slot.grace_minutes || 10);
+        });
+
+        // Update container displays
+        if (window.onFaceScheduleModeChanged) window.onFaceScheduleModeChanged();
+        if (window.onFaceScheduleModeChangedMobile) window.onFaceScheduleModeChangedMobile();
 
         // Desktop Holidays list
         const holListCont = document.getElementById('face-holidays-list-container');
@@ -1431,7 +1588,7 @@
     };
 
     window.saveFaceSchedules = function () {
-        const mode = document.getElementById('face-sched-mode')?.value || 'session';
+        const mode = document.getElementById('face-sched-mode')?.value || 'hourly';
         const fnStart = document.getElementById('face-sched-fn-start')?.value || '08:30';
         const fnEnd = document.getElementById('face-sched-fn-end')?.value || '12:30';
         const fnGrace = document.getElementById('face-sched-fn-grace')?.value || '15';
@@ -1439,6 +1596,26 @@
         const anEnd = document.getElementById('face-sched-an-end')?.value || '17:30';
         const anGrace = document.getElementById('face-sched-an-grace')?.value || '15';
 
+        const ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+        const defaultSlots = DEFAULT_SCHEDULES.hourly_slots;
+        const hourlySlots = [];
+
+        for (let i = 0; i < 7; i++) {
+            const start = document.getElementById(`face-slot-start-${i}`)?.value || defaultSlots[i].start;
+            const end = document.getElementById(`face-slot-end-${i}`)?.value || defaultSlots[i].end;
+            const graceVal = document.getElementById(`face-slot-grace-${i}`)?.value;
+            const grace = graceVal !== undefined && graceVal !== '' ? parseInt(graceVal, 10) : 10;
+
+            hourlySlots.push({
+                hour: i + 1,
+                name: `${ordinals[i]} Hour`,
+                start: start,
+                end: end,
+                label: `${formatTime12hr(start)} - ${formatTime12hr(end)}`,
+                grace_minutes: isNaN(grace) ? 10 : grace
+            });
+        }
+
         window.FaceRecognitionState.schedules = {
             ...window.FaceRecognitionState.schedules,
             schedule_mode: mode,
@@ -1447,11 +1624,16 @@
             fn_grace_minutes: fnGrace,
             an_start_time: anStart,
             an_end_time: anEnd,
-            an_grace_minutes: anGrace
+            an_grace_minutes: anGrace,
+            hourly_slots: hourlySlots
         };
 
         saveLocalState();
         updateKioskScheduleBadge();
+
+        if (window.renderStudentFaceDashboard && typeof window.renderStudentFaceDashboard === 'function') {
+            try { window.renderStudentFaceDashboard(); } catch (e) { }
+        }
 
         const apiUrl = window.FaceRecognitionState.apiUrl;
         if (apiUrl) {
@@ -1465,11 +1647,14 @@
             }).catch(e => console.warn(e));
         }
 
-        alert("Attendance timing schedules saved successfully!");
+        // Synchronize and refresh displays
+        renderSchedulesAndHolidays();
+
+        alert("Attendance timing schedules & 7-period timings saved successfully!");
     };
 
     window.saveFaceSchedulesMobile = function () {
-        const mode = document.getElementById('face-sched-mode-mobile')?.value || 'session';
+        const mode = document.getElementById('face-sched-mode-mobile')?.value || 'hourly';
         const fnStart = document.getElementById('face-sched-fn-start-mobile')?.value || '08:30';
         const fnEnd = document.getElementById('face-sched-fn-end-mobile')?.value || '12:30';
         const fnGrace = document.getElementById('face-sched-fn-grace-mobile')?.value || '15';
@@ -1477,6 +1662,26 @@
         const anEnd = document.getElementById('face-sched-an-end-mobile')?.value || '17:30';
         const anGrace = document.getElementById('face-sched-an-grace-mobile')?.value || '15';
 
+        const ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+        const defaultSlots = DEFAULT_SCHEDULES.hourly_slots;
+        const hourlySlots = [];
+
+        for (let i = 0; i < 7; i++) {
+            const start = document.getElementById(`face-slot-start-mob-${i}`)?.value || defaultSlots[i].start;
+            const end = document.getElementById(`face-slot-end-mob-${i}`)?.value || defaultSlots[i].end;
+            const graceVal = document.getElementById(`face-slot-grace-mob-${i}`)?.value;
+            const grace = graceVal !== undefined && graceVal !== '' ? parseInt(graceVal, 10) : 10;
+
+            hourlySlots.push({
+                hour: i + 1,
+                name: `${ordinals[i]} Hour`,
+                start: start,
+                end: end,
+                label: `${formatTime12hr(start)} - ${formatTime12hr(end)}`,
+                grace_minutes: isNaN(grace) ? 10 : grace
+            });
+        }
+
         window.FaceRecognitionState.schedules = {
             ...window.FaceRecognitionState.schedules,
             schedule_mode: mode,
@@ -1485,11 +1690,16 @@
             fn_grace_minutes: fnGrace,
             an_start_time: anStart,
             an_end_time: anEnd,
-            an_grace_minutes: anGrace
+            an_grace_minutes: anGrace,
+            hourly_slots: hourlySlots
         };
 
         saveLocalState();
         updateKioskScheduleBadge();
+
+        if (window.renderStudentFaceDashboard && typeof window.renderStudentFaceDashboard === 'function') {
+            try { window.renderStudentFaceDashboard(); } catch (e) { }
+        }
 
         const apiUrl = window.FaceRecognitionState.apiUrl;
         if (apiUrl) {
@@ -1503,7 +1713,10 @@
             }).catch(e => console.warn(e));
         }
 
-        alert("Attendance timing schedules saved successfully!");
+        // Synchronize and refresh displays
+        renderSchedulesAndHolidays();
+
+        alert("Attendance timing schedules & 7-period timings saved successfully!");
     };
 
     window.addFaceHoliday = function () {
@@ -1950,11 +2163,212 @@
         }, showSkeleton ? 350 : 0);
     };
 
+    // --- 7-Period Hourly Matrix Computation Engine ---
+    function computeHourlyDayMatrix(personalLogs, schedules = DEFAULT_SCHEDULES) {
+        const slots = (schedules.hourly_slots && schedules.hourly_slots.length === 7)
+            ? schedules.hourly_slots
+            : DEFAULT_SCHEDULES.hourly_slots;
+
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Collect all distinct dates from personal logs and always include today
+        const dateSet = new Set();
+        personalLogs.forEach(l => {
+            if (l.date && l.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                dateSet.add(l.date);
+            }
+        });
+        dateSet.add(todayStr);
+
+        const sortedDates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+
+        return sortedDates.map(dateStr => {
+            const isToday = (dateStr === todayStr);
+            const isPast = (dateStr < todayStr);
+            const isFuture = (dateStr > todayStr);
+
+            const dayLogs = personalLogs.filter(l => l.date === dateStr);
+
+            const hourCells = slots.map(slot => {
+                const startMins = parseTimeToMinutes(slot.start);
+                const endMins = parseTimeToMinutes(slot.end);
+                const graceMins = parseInt(slot.grace_minutes || schedules.hourly_grace_minutes || "10", 10);
+                const graceCutoffMins = startMins + graceMins;
+
+                // Match log for this hour slot
+                const matchingLog = dayLogs.find(l => {
+                    const sess = (l.session_type || '').toLowerCase();
+                    const slotName = (slot.name || '').toLowerCase();
+                    if (sess === `hour_${slot.hour}` || sess === `hour ${slot.hour}` || sess === slotName || sess === `h${slot.hour}`) {
+                        return true;
+                    }
+                    if (l.time) {
+                        const logMins = parseTimeToMinutes(l.time);
+                        if (logMins >= (startMins - 5) && logMins <= (endMins + 5)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+
+                if (matchingLog) {
+                    const logMins = parseTimeToMinutes(matchingLog.time);
+                    const isWithin10 = (logMins >= (startMins - 5) && logMins <= graceCutoffMins);
+                    const isExplicitPresent = (matchingLog.status || '').toLowerCase().includes('present');
+
+                    if (isExplicitPresent || isWithin10) {
+                        return {
+                            hour: slot.hour,
+                            name: slot.name,
+                            label: slot.label,
+                            start: slot.start,
+                            end: slot.end,
+                            graceCutoff: minutesToTimeString(graceCutoffMins),
+                            status: 'present',
+                            statusLabel: 'Present',
+                            time: matchingLog.time,
+                            confidence: matchingLog.confidence_score || '98%'
+                        };
+                    } else {
+                        // Logged after 10 minutes window -> Absent
+                        return {
+                            hour: slot.hour,
+                            name: slot.name,
+                            label: slot.label,
+                            start: slot.start,
+                            end: slot.end,
+                            graceCutoff: minutesToTimeString(graceCutoffMins),
+                            status: 'absent',
+                            statusLabel: 'Absent (Late)',
+                            time: matchingLog.time,
+                            confidence: matchingLog.confidence_score || '98%'
+                        };
+                    }
+                }
+
+                // No log found for this hour
+                if (isPast) {
+                    return {
+                        hour: slot.hour,
+                        name: slot.name,
+                        label: slot.label,
+                        start: slot.start,
+                        end: slot.end,
+                        graceCutoff: minutesToTimeString(graceCutoffMins),
+                        status: 'absent',
+                        statusLabel: 'Absent',
+                        time: 'Not Affixed',
+                        confidence: null
+                    };
+                }
+
+                if (isToday) {
+                    if (nowMinutes < startMins) {
+                        return {
+                            hour: slot.hour,
+                            name: slot.name,
+                            label: slot.label,
+                            start: slot.start,
+                            end: slot.end,
+                            graceCutoff: minutesToTimeString(graceCutoffMins),
+                            status: 'upcoming',
+                            statusLabel: 'Yet to start',
+                            time: 'Upcoming',
+                            confidence: null
+                        };
+                    } else if (nowMinutes <= graceCutoffMins) {
+                        return {
+                            hour: slot.hour,
+                            name: slot.name,
+                            label: slot.label,
+                            start: slot.start,
+                            end: slot.end,
+                            graceCutoff: minutesToTimeString(graceCutoffMins),
+                            status: 'active',
+                            statusLabel: 'Scan Now',
+                            time: `Grace till ${minutesToTimeString(graceCutoffMins)}`,
+                            confidence: null
+                        };
+                    } else {
+                        // Time has passed start + 10 mins without scan -> Absent
+                        return {
+                            hour: slot.hour,
+                            name: slot.name,
+                            label: slot.label,
+                            start: slot.start,
+                            end: slot.end,
+                            graceCutoff: minutesToTimeString(graceCutoffMins),
+                            status: 'absent',
+                            statusLabel: 'Absent',
+                            time: 'Missed 10m Window',
+                            confidence: null
+                        };
+                    }
+                }
+
+                // Future date
+                return {
+                    hour: slot.hour,
+                    name: slot.name,
+                    label: slot.label,
+                    start: slot.start,
+                    end: slot.end,
+                    graceCutoff: minutesToTimeString(graceCutoffMins),
+                    status: 'upcoming',
+                    statusLabel: 'Yet to start',
+                    time: 'Upcoming',
+                    confidence: null
+                };
+            });
+
+            const presentCount = hourCells.filter(c => c.status === 'present').length;
+            const absentCount = hourCells.filter(c => c.status === 'absent').length;
+            const upcomingCount = hourCells.filter(c => c.status === 'upcoming' || c.status === 'active').length;
+            const completedPeriods = presentCount + absentCount;
+            const dayPct = completedPeriods > 0 ? Math.round((presentCount / completedPeriods) * 100) : (isToday ? 100 : 0);
+
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const dayOfWeek = isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            const monthDay = isNaN(dateObj.getTime()) ? dateStr : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const formattedDate = isToday ? `Today (${dayOfWeek}, ${monthDay})` : `${dayOfWeek}, ${monthDay}`;
+
+            return {
+                date: dateStr,
+                formattedDate: formattedDate,
+                dayOfWeek: dayOfWeek,
+                monthDay: monthDay,
+                isToday: isToday,
+                hourCells: hourCells,
+                presentCount: presentCount,
+                absentCount: absentCount,
+                upcomingCount: upcomingCount,
+                completedPeriods: completedPeriods,
+                dayPct: dayPct
+            };
+        });
+    }
+
+    // Helper for friendly 12-hour period subtitle
+    function formatPeriodShortTime(time24) {
+        if (!time24) return '';
+        const parts = time24.split(':');
+        let hrs = parseInt(parts[0], 10);
+        const mins = parts[1];
+        if (hrs > 12) hrs -= 12;
+        if (hrs === 0) hrs = 12;
+        return `${hrs}:${mins}`;
+    }
+
     window.renderStudentFaceDashboard = function () {
         const currentUser = JSON.parse(localStorage.getItem('user')) || {};
         const regNum = (currentUser.reg_num || currentUser.roll_no || currentUser.roll_num || "7376242IT181").trim().toUpperCase();
         const email = (currentUser.email || currentUser.email_id || currentUser.mailid || "").trim().toLowerCase();
-        const studentName = currentUser.name || "Student";
+        const studentName = currentUser.name || "INDRESH S";
         const department = currentUser.department || currentUser.dept || "Information Technology";
 
         // Find registered face status
@@ -1972,144 +2386,277 @@
             (l.name && l.name.toLowerCase() === studentName.toLowerCase())
         );
 
-        const totalLogs = personalLogs.length;
-        const onTimeCount = personalLogs.filter(l => (l.status || '').toLowerCase().includes('present') || (l.status || '').toLowerCase().includes('on time')).length;
-        const lateCount = personalLogs.filter(l => (l.status || '').toLowerCase().includes('late')).length;
-        const presentCount = onTimeCount + lateCount;
+        const schedules = window.FaceRecognitionState.schedules || DEFAULT_SCHEDULES;
+        const dayMatrix = computeHourlyDayMatrix(personalLogs, schedules);
 
-        const totalPossibleSessions = Math.max(totalLogs, 1);
-        const attendancePct = totalLogs > 0 ? ((presentCount / totalPossibleSessions) * 100).toFixed(1) : "100.0";
+        // Overall stats across all hourly periods
+        let totalPossiblePeriods = 0;
+        let totalPresentPeriods = 0;
+        let totalAbsentPeriods = 0;
 
-        // Check today's active session status
+        dayMatrix.forEach(day => {
+            if (day.isToday) {
+                totalPossiblePeriods += (day.presentCount + day.absentCount);
+            } else {
+                totalPossiblePeriods += 7;
+            }
+            totalPresentPeriods += day.presentCount;
+            totalAbsentPeriods += day.absentCount;
+        });
+
+        if (totalPossiblePeriods === 0) totalPossiblePeriods = Math.max(totalPresentPeriods, 1);
+        const attendancePct = ((totalPresentPeriods / Math.max(totalPossiblePeriods, 1)) * 100).toFixed(1);
+
+        // Standing badge calculation
+        let standingBg = '#EEF2FF';
+        let standingColor = '#4F46E5';
+        let standingBorder = '#C7D2FE';
+        let standingText = 'Active';
+        if (totalPresentPeriods === 0 && totalAbsentPeriods > 0) {
+            standingBg = '#FFF1F2';
+            standingColor = '#E11D48';
+            standingBorder = '#FECDD3';
+            standingText = 'Needs Action';
+        } else if (parseFloat(attendancePct) >= 75) {
+            standingBg = '#ECFDF5';
+            standingColor = '#059669';
+            standingBorder = '#A7F3D0';
+            standingText = 'Good';
+        } else if (parseFloat(attendancePct) >= 50) {
+            standingBg = '#FFFBEB';
+            standingColor = '#B45309';
+            standingBorder = '#FDE68A';
+            standingText = 'Average';
+        }
+
+        // Check active session status right now
         const activeSlot = getActiveScheduleStatus();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const todayLog = personalLogs.find(l => l.date === todayStr);
 
         // --- Render Desktop View ---
         const desktopContainer = document.getElementById('student-face-dashboard-container');
         if (desktopContainer) {
             desktopContainer.innerHTML = `
                 <!-- Top Overview Grid -->
-                <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
-                    <!-- Percentage Card -->
-                    <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.06); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transform: none !important;">
+                <div style="display: grid; grid-template-columns: 1.15fr 1.25fr 1.2fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                    
+                    <!-- 1. Student Identity Card -->
+                    <div class="card no-hover-card" style="padding: 1.4rem; border-radius: 22px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05); display: flex; flex-direction: column; justify-content: space-between; transform: none !important;">
                         <div>
-                            <span style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Attendance Standing</span>
-                            <div style="display: flex; align-items: baseline; gap: 8px; margin: 8px 0 4px 0;">
-                                <h2 style="font-size: 2.5rem; font-weight: 900; color: #4F46E5; margin: 0; font-family: 'Google Sans', Inter, sans-serif; letter-spacing: -1px;">${attendancePct}%</h2>
-                                <span style="background: #DCFCE7; color: #166534; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 99px;">Verified</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.6px;">Student Profile</span>
+                                <span style="font-size: 0.7rem; font-weight: 800; background: #ECFDF5; color: #059669; padding: 2px 8px; border-radius: 99px; border: 1px solid #A7F3D0; display: inline-flex; align-items: center; gap: 4px;">
+                                    ● Verified
+                                </span>
                             </div>
-                            <p style="font-size: 0.8rem; color: #64748B; margin: 0;">${presentCount} attended of ${totalPossibleSessions} sessions</p>
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 1rem; border-top: 1px solid #F1F5F9; padding-top: 10px;">
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.7rem; color: #64748B; font-weight: 700;">ON TIME</div>
-                                <div style="font-size: 1.1rem; font-weight: 900; color: #10B981;">${onTimeCount}</div>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.7rem; color: #64748B; font-weight: 700;">LATE</div>
-                                <div style="font-size: 1.1rem; font-weight: 900; color: #F59E0B;">${lateCount}</div>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.7rem; color: #64748B; font-weight: 700;">EXEMPTIONS</div>
-                                <div style="font-size: 1.1rem; font-weight: 900; color: #3B82F6;">${(window.FaceRecognitionState.holidays || []).length}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Profile Card -->
-                    <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; transform: none !important;">
-                        <div>
-                            <span style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Student Profile</span>
-                            <div style="display: flex; align-items: center; gap: 14px; margin-top: 12px;">
-                                <img src="${photoSrc}" alt="${studentName}"
-                                    style="width: 54px; height: 54px; border-radius: 16px; object-fit: cover; border: 2.5px solid #EDE9FE; box-shadow: 0 4px 12px rgba(99,102,241,0.15);"
-                                    onerror="this.src='profile.png'">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div style="position: relative; flex-shrink: 0;">
+                                    <img src="${photoSrc}" alt="${studentName}"
+                                        style="width: 58px; height: 58px; border-radius: 16px; object-fit: cover; border: 2.5px solid #EEF2FF; box-shadow: 0 4px 14px rgba(99,102,241,0.15); display: block;"
+                                        onerror="this.src='profile.png'">
+                                </div>
                                 <div style="flex: 1; min-width: 0;">
-                                    <h4 style="font-size: 1rem; font-weight: 900; color: #0F172A; margin: 0 0 2px 0;">${studentName}</h4>
-                                    <p style="font-size: 0.8rem; font-weight: 700; color: #6366F1; margin: 0 0 2px 0;">${regNum}</p>
-                                    <p style="font-size: 0.72rem; color: #64748B; margin: 0;">${department}</p>
+                                    <h4 style="font-size: 1.08rem; font-weight: 900; color: #0F172A; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px;">${studentName}</h4>
+                                    <div style="font-size: 0.8rem; font-weight: 800; color: #4F46E5; margin-top: 2px;">${regNum}</div>
+                                    <div style="font-size: 0.74rem; color: #64748B; font-weight: 600; margin-top: 2px;">${department}</div>
                                 </div>
                             </div>
                         </div>
-                        <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; background: #F8FAFC; padding: 8px 12px; border-radius: 12px;">
-                            <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">Biometric ID:</span>
-                            <span style="font-size: 0.75rem; font-weight: 800; color: #10B981; display: inline-flex; align-items: center; gap: 4px;">
-                                ● Active
+
+                        <!-- Profile Meta Badges -->
+                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; color: #64748B;">
+                            <span style="font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                <i data-lucide="shield-check" style="width: 14px; color: #10B981;"></i> Face Registered
+                            </span>
+                            <span style="font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 2px 8px; border-radius: 6px;">
+                                7-Period Mode
                             </span>
                         </div>
                     </div>
 
-                    <!-- Today's Session Card -->
-                    <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; transform: none !important;">
+                    <!-- 2. Attendance Standing & KPI Card -->
+                    <div class="card no-hover-card" style="padding: 1.4rem; border-radius: 22px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05); display: flex; flex-direction: column; justify-content: space-between; transform: none !important;">
                         <div>
-                            <span style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">Today's Session</span>
-                            <div style="margin-top: 10px;">
-                                <div style="font-size: 0.95rem; font-weight: 900; color: #0F172A;">${activeSlot.slotName || 'Active Slot'}</div>
-                                <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">${activeSlot.windowDesc || 'Check schedule timings'}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.6px;">Attendance Rate</span>
+                                <span style="background: ${standingBg}; color: ${standingColor}; font-size: 0.72rem; font-weight: 800; padding: 2px 9px; border-radius: 99px; border: 1px solid ${standingBorder};">${standingText}</span>
+                            </div>
+                            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px;">
+                                <div style="display: flex; align-items: baseline; gap: 6px;">
+                                    <h2 style="font-size: 2.2rem; font-weight: 900; color: ${standingColor}; margin: 0; font-family: 'Google Sans', Inter, sans-serif; letter-spacing: -1px; line-height: 1;">${attendancePct}%</h2>
+                                    <span style="font-size: 0.75rem; color: #94A3B8; font-weight: 700;">(${totalPresentPeriods}/${totalPossiblePeriods} periods)</span>
+                                </div>
+                                <span style="font-size: 0.72rem; font-weight: 700; color: #64748B;">Target: 75%</span>
                             </div>
                         </div>
-                        <div style="margin-top: 1rem;">
-                            ${todayLog ? `
-                                <div style="background: #DCFCE7; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.1rem;">✅</span>
-                                    <div>
-                                        <div style="font-weight: 800; font-size: 0.85rem; color: #166534;">Affixed at ${todayLog.time}</div>
-                                        <div style="font-size: 0.72rem; color: #15803D;">Status: ${todayLog.status} (${todayLog.session_type})</div>
-                                    </div>
+
+                        <!-- 3 Stat Blocks -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px;">
+                            <div style="background: #F0FDF4; padding: 8px 6px; border-radius: 12px; border: 1px solid #DCFCE7; text-align: center;">
+                                <div style="font-size: 0.62rem; color: #166534; font-weight: 800; text-transform: uppercase;">PRESENT</div>
+                                <div style="font-size: 1.15rem; font-weight: 900; color: #059669; margin-top: 1px;">${totalPresentPeriods}</div>
+                            </div>
+                            <div style="background: #FFF1F2; padding: 8px 6px; border-radius: 12px; border: 1px solid #FFE4E6; text-align: center;">
+                                <div style="font-size: 0.62rem; color: #BE123C; font-weight: 800; text-transform: uppercase;">ABSENT</div>
+                                <div style="font-size: 1.15rem; font-weight: 900; color: #E11D48; margin-top: 1px;">${totalAbsentPeriods}</div>
+                            </div>
+                            <div style="background: #F8FAFC; padding: 8px 6px; border-radius: 12px; border: 1px solid #E2E8F0; text-align: center;">
+                                <div style="font-size: 0.62rem; color: #475569; font-weight: 800; text-transform: uppercase;">DAYS</div>
+                                <div style="font-size: 1.15rem; font-weight: 900; color: #4F46E5; margin-top: 1px;">${dayMatrix.length}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Current Schedule & Live Status Card -->
+                    <div class="card no-hover-card" style="padding: 1.4rem; border-radius: 22px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05); display: flex; flex-direction: column; justify-content: space-between; transform: none !important;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.6px;">Live Timetable Status</span>
+                                <span style="font-size: 0.7rem; font-weight: 800; color: #6366F1; background: #EEF2FF; padding: 2px 7px; border-radius: 6px;">10m Grace</span>
+                            </div>
+                            <div style="font-size: 1rem; font-weight: 900; color: #0F172A;">
+                                ${activeSlot.isOpen ? (activeSlot.slotName || 'Current Period Active') : 'Outside Class Hours'}
+                            </div>
+                            <div style="font-size: 0.72rem; color: #64748B; font-weight: 600; margin-top: 2px;">
+                                ${activeSlot.isOpen ? `Window: ${activeSlot.windowDesc}` : 'Regular Schedule: 8:45 AM – 4:25 PM'}
+                            </div>
+                        </div>
+
+                        <!-- Schedule Status Box -->
+                        <div style="margin-top: 12px;">
+                            ${activeSlot.isOpen ? `
+                                <div style="background: ${activeSlot.isLate ? '#FFF1F2' : '#ECFDF5'}; border: 1.5px solid ${activeSlot.isLate ? '#FECDD3' : '#A7F3D0'}; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-weight: 800; font-size: 0.82rem; color: ${activeSlot.isLate ? '#E11D48' : '#059669'};">
+                                        ${activeSlot.isLate ? '⚠️ Grace Period Expired' : '🟢 Biometric Scan Open'}
+                                    </span>
+                                    <span style="font-size: 0.7rem; font-weight: 700; color: ${activeSlot.isLate ? '#BE123C' : '#047857'};">
+                                        ${activeSlot.isLate ? 'Marked Absent' : 'Scan at Kiosk'}
+                                    </span>
                                 </div>
                             ` : `
-                                <div style="background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.1rem;">⏳</span>
-                                    <div>
-                                        <div style="font-weight: 800; font-size: 0.85rem; color: #92400E;">Pending Affix</div>
-                                        <div style="font-size: 0.72rem; color: #B45309;">Please scan face at kiosk during window</div>
-                                    </div>
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 0.75rem; font-weight: 700; color: #475569; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i data-lucide="clock" style="width: 14px; color: #64748B;"></i> Next: 1st Hr (8:45 AM)
+                                    </span>
+                                    <span style="font-size: 0.7rem; font-weight: 800; color: #059669; background: #ECFDF5; padding: 1px 6px; border-radius: 4px;">
+                                        Kiosk Active
+                                    </span>
                                 </div>
                             `}
                         </div>
                     </div>
                 </div>
 
-                <!-- Personal Logs Table (Desktop) -->
+                <!-- 7-Period Attendance History (Desktop) -->
                 <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                        <div>
-                            <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 0;">Attendance Log History</h3>
-                            <p style="font-size: 0.78rem; color: #64748B; margin: 2px 0 0 0;">${personalLogs.length} verified attendance records</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="font-size: 1.15rem; font-weight: 900; color: #0F172A; margin: 0;">Attendance History</h3>
+                        <div style="display: flex; align-items: center; gap: 14px; background: #F8FAFC; padding: 6px 14px; border-radius: 99px; border: 1px solid #E2E8F0; font-size: 0.75rem; font-weight: 700;">
+                            <span style="display: inline-flex; align-items: center; gap: 5px; color: #059669;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span> Present</span>
+                            <span style="display: inline-flex; align-items: center; gap: 5px; color: #E11D48;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444;"></span> Absent</span>
+                            <span style="display: inline-flex; align-items: center; gap: 5px; color: #64748B;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1;"></span> Upcoming</span>
                         </div>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+
+                    <!-- 7-Period Table -->
+                    <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #E2E8F0;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
                             <thead>
                                 <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
-                                    <th style="padding: 12px 14px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">#</th>
-                                    <th style="padding: 12px 14px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Date & Time</th>
-                                    <th style="padding: 12px 14px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Session Slot</th>
-                                    <th style="padding: 12px 14px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Status</th>
-                                    <th style="padding: 12px 14px; font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Confidence</th>
+                                    <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: #475569; text-transform: uppercase; width: 130px;">Date</th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">1st Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">8:45 - 9:35 AM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">2nd Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">9:35 - 10:25 AM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">3rd Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">10:40 - 11:30 AM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">4th Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">11:30 - 12:25 PM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">5th Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">1:30 - 2:20 PM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">6th Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">2:20 - 3:10 PM</div>
+                                    </th>
+                                    <th style="padding: 12px 10px; font-size: 0.72rem; font-weight: 800; color: #475569; text-align: center;">
+                                        <div style="font-weight: 900; color: #0F172A;">7th Hr</div>
+                                        <div style="font-size: 0.68rem; color: #64748B; font-weight: 600; margin-top: 1px;">3:25 - 4:25 PM</div>
+                                    </th>
+                                    <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: #475569; text-transform: uppercase; text-align: right;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${personalLogs.length === 0 ? `
-                                    <tr><td colspan="5" style="text-align: center; padding: 2.5rem; color: #94A3B8;">No attendance scans recorded for your account yet.</td></tr>
-                                ` : personalLogs.map((l, idx) => `
-                                    <tr style="border-bottom: 1px solid #F1F5F9;">
-                                        <td style="padding: 12px 14px; font-weight: 700; color: #64748B; font-size: 0.8rem;">${idx + 1}</td>
-                                        <td style="padding: 12px 14px;">
-                                            <div style="font-weight: 800; color: #0F172A; font-size: 0.85rem;">${l.date}</div>
-                                            <div style="font-size: 0.72rem; color: #64748B;">${l.time}</div>
+                                ${dayMatrix.length === 0 ? `
+                                    <tr><td colspan="9" style="text-align: center; padding: 2.5rem; color: #94A3B8;">No attendance history available.</td></tr>
+                                ` : dayMatrix.map(day => `
+                                    <tr style="border-bottom: 1px solid #F1F5F9; background: ${day.isToday ? '#FDFEFE' : 'white'};">
+                                        <td style="padding: 14px 16px; border-right: 1px solid #F1F5F9;">
+                                            <div style="font-weight: 800; color: #0F172A; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                                                ${day.date}
+                                                ${day.isToday ? '<span style="background: #EEF2FF; color: #4F46E5; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 99px;">Today</span>' : ''}
+                                            </div>
+                                            <div style="font-size: 0.72rem; color: #64748B; font-weight: 600; margin-top: 2px;">${day.dayOfWeek}</div>
                                         </td>
-                                        <td style="padding: 12px 14px;">
-                                            <span style="background: #F1F5F9; color: #334155; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 0.75rem;">${l.session_type}</span>
-                                        </td>
-                                        <td style="padding: 12px 14px;">
-                                            <span style="background: #DCFCE7; color: #166534; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.75rem;">
-                                                ${l.status || 'Present'}
+                                        ${day.hourCells.map(cell => {
+                                            if (cell.status === 'present') {
+                                                return `
+                                                    <td style="padding: 10px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+                                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                                            <span style="background: #ECFDF5; color: #059669; padding: 3px 9px; border-radius: 99px; font-weight: 800; font-size: 0.72rem; border: 1px solid #A7F3D0; display: inline-flex; align-items: center; gap: 3px;">
+                                                                ✓ Present
+                                                            </span>
+                                                            <span style="font-size: 0.68rem; color: #047857; font-weight: 700;">${cell.time}</span>
+                                                        </div>
+                                                    </td>
+                                                `;
+                                            } else if (cell.status === 'absent') {
+                                                return `
+                                                    <td style="padding: 10px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+                                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                                            <span style="background: #FFF1F2; color: #E11D48; padding: 3px 9px; border-radius: 99px; font-weight: 800; font-size: 0.72rem; border: 1px solid #FECDD3; display: inline-flex; align-items: center; gap: 3px;">
+                                                                ✕ Absent
+                                                            </span>
+                                                            <span style="font-size: 0.65rem; color: #94A3B8; font-weight: 600;">${cell.time === 'Not Affixed' || cell.time === 'Missed 10m Window' ? 'Missed' : cell.time}</span>
+                                                        </div>
+                                                    </td>
+                                                `;
+                                            } else if (cell.status === 'active') {
+                                                return `
+                                                    <td style="padding: 10px 8px; text-align: center; border-right: 1px solid #F1F5F9; background: #FFFBEB;">
+                                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                                            <span style="background: #FEF3C7; color: #B45309; padding: 3px 9px; border-radius: 99px; font-weight: 800; font-size: 0.72rem; border: 1.5px dashed #F59E0B; display: inline-flex; align-items: center; gap: 3px;">
+                                                                ⚡ Active
+                                                            </span>
+                                                            <span style="font-size: 0.65rem; color: #B45309; font-weight: 700;">${cell.time}</span>
+                                                        </div>
+                                                    </td>
+                                                `;
+                                            } else {
+                                                // Upcoming / Yet to start
+                                                return `
+                                                    <td style="padding: 10px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+                                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                                            <span style="background: #F8FAFC; color: #94A3B8; padding: 3px 9px; border-radius: 99px; font-weight: 700; font-size: 0.72rem; border: 1px solid #E2E8F0;">
+                                                                —
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                `;
+                                            }
+                                        }).join('')}
+                                        <td style="padding: 14px 16px; text-align: right;">
+                                            <span style="background: ${day.presentCount === 7 ? '#ECFDF5' : day.presentCount > 0 ? '#EEF2FF' : '#FFF1F2'}; color: ${day.presentCount === 7 ? '#059669' : day.presentCount > 0 ? '#4F46E5' : '#E11D48'}; border: 1px solid ${day.presentCount === 7 ? '#A7F3D0' : day.presentCount > 0 ? '#C7D2FE' : '#FECDD3'}; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 0.75rem;">
+                                                ${day.presentCount} / 7
                                             </span>
-                                        </td>
-                                        <td style="padding: 12px 14px; font-size: 0.8rem; font-weight: 700; color: #10B981;">
-                                            ${l.confidence_score || '98%'}
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -2120,115 +2667,148 @@
             `;
         }
 
-        // --- Render Mobile View (Streamlined, Beautiful, Individual Cards) ---
+        // --- Render Mobile View (Ultra-Neat & Spacious Layout) ---
         const mobileContainer = document.getElementById('student-face-dashboard-mobile-container');
         if (mobileContainer) {
             mobileContainer.innerHTML = `
-                <!-- Compact Integrated Profile & Performance Hero Card -->
-                <div class="card no-hover-card" style="padding: 1.15rem 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05); margin-bottom: 0.85rem; transform: none !important;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <!-- Neat Profile & Performance Card -->
+                <div class="card no-hover-card" style="padding: 1.25rem 1.15rem; border-radius: 20px; background: white; border: 1px solid #E2E8F0; box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04); margin-bottom: 1.1rem; transform: none !important;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                         <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                            <img src="${photoSrc}" alt="${studentName}"
-                                style="width: 46px; height: 46px; border-radius: 14px; object-fit: cover; border: 2px solid #EDE9FE; flex-shrink: 0;"
-                                onerror="this.src='profile.png'">
+                            <div style="position: relative; flex-shrink: 0;">
+                                <img src="${photoSrc}" alt="${studentName}"
+                                    style="width: 48px; height: 48px; border-radius: 14px; object-fit: cover; border: 2px solid #EEF2FF; box-shadow: 0 4px 10px rgba(99,102,241,0.12); display: block;"
+                                    onerror="this.src='profile.png'">
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 50%; background: #10B981; border: 2px solid white;"></div>
+                            </div>
                             <div style="min-width: 0;">
-                                <h3 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${studentName}</h3>
-                                <div style="font-size: 0.75rem; font-weight: 700; color: #6366F1; margin-top: 1px;">${regNum}</div>
+                                <h3 style="font-size: 1.02rem; font-weight: 900; color: #0F172A; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px;">${studentName}</h3>
+                                <div style="font-size: 0.76rem; font-weight: 800; color: #4F46E5; margin-top: 2px;">${regNum}</div>
                             </div>
                         </div>
                         <div style="text-align: right; flex-shrink: 0;">
-                            <div style="font-size: 1.6rem; font-weight: 900; color: #4F46E5; line-height: 1; letter-spacing: -0.5px; font-family: 'Google Sans', Inter, sans-serif;">${attendancePct}%</div>
-                            <span style="display: inline-block; margin-top: 3px; font-size: 0.65rem; font-weight: 800; background: #DCFCE7; color: #166534; padding: 2px 8px; border-radius: 99px;">Standing</span>
+                            <div style="font-size: 1.65rem; font-weight: 900; color: ${standingColor}; line-height: 1; letter-spacing: -0.8px; font-family: 'Google Sans', Inter, sans-serif;">${attendancePct}%</div>
+                            <span style="display: inline-block; margin-top: 3px; font-size: 0.65rem; font-weight: 800; background: ${standingBg}; color: ${standingColor}; padding: 2px 7px; border-radius: 99px; border: 1px solid ${standingBorder};">${standingText}</span>
                         </div>
                     </div>
                     
-                    <div style="height: 1px; background: #F8FAFC; margin: 12px 0 10px 0;"></div>
+                    <div style="height: 1px; background: #F1F5F9; margin: 14px 0 12px 0;"></div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center;">
-                        <div style="background: #F8FAFC; padding: 6px 4px; border-radius: 10px;">
-                            <div style="font-size: 0.65rem; font-weight: 700; color: #64748B; text-transform: uppercase;">ON TIME</div>
-                            <div style="font-size: 1rem; font-weight: 900; color: #10B981; margin-top: 1px;">${onTimeCount}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
+                        <div style="background: #F0FDF4; padding: 8px 4px; border-radius: 12px; border: 1px solid #DCFCE7;">
+                            <div style="font-size: 0.62rem; font-weight: 800; color: #166534; text-transform: uppercase;">PRESENT</div>
+                            <div style="font-size: 1.15rem; font-weight: 900; color: #059669; margin-top: 1px;">${totalPresentPeriods}</div>
                         </div>
-                        <div style="background: #F8FAFC; padding: 6px 4px; border-radius: 10px;">
-                            <div style="font-size: 0.65rem; font-weight: 700; color: #64748B; text-transform: uppercase;">LATE</div>
-                            <div style="font-size: 1rem; font-weight: 900; color: #F59E0B; margin-top: 1px;">${lateCount}</div>
+                        <div style="background: #FFF1F2; padding: 8px 4px; border-radius: 12px; border: 1px solid #FFE4E6;">
+                            <div style="font-size: 0.62rem; color: #BE123C; font-weight: 800; text-transform: uppercase;">ABSENT</div>
+                            <div style="font-size: 1.15rem; font-weight: 900; color: #E11D48; margin-top: 1px;">${totalAbsentPeriods}</div>
                         </div>
-                        <div style="background: #F8FAFC; padding: 6px 4px; border-radius: 10px;">
-                            <div style="font-size: 0.65rem; font-weight: 700; color: #64748B; text-transform: uppercase;">EXEMPTIONS</div>
-                            <div style="font-size: 1rem; font-weight: 900; color: #3B82F6; margin-top: 1px;">${(window.FaceRecognitionState.holidays || []).length}</div>
+                        <div style="background: #F8FAFC; padding: 8px 4px; border-radius: 12px; border: 1px solid #E2E8F0;">
+                            <div style="font-size: 0.62rem; color: #475569; font-weight: 800; text-transform: uppercase;">DAYS</div>
+                            <div style="font-size: 1.15rem; font-weight: 900; color: #4F46E5; margin-top: 1px;">${dayMatrix.length}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Today's Session Card -->
-                <div class="card no-hover-card" style="padding: 0.95rem 1.15rem; border-radius: 18px; background: white; border: 1.5px solid #F1F5F9; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 1.25rem; transform: none !important;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 0.7rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.3px;">TODAY'S SESSION</span>
-                        <span style="font-size: 0.72rem; color: #6366F1; font-weight: 700;">${activeSlot.windowDesc || ''}</span>
+                <!-- Section Header -->
+                <div style="margin-bottom: 0.85rem; padding: 0 2px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="font-size: 0.82rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.6px; margin: 0;">Daily Attendance</h4>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #4F46E5; background: #EEF2FF; padding: 2px 8px; border-radius: 99px; border: 1px solid #C7D2FE;">${dayMatrix.length} Days</span>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                        <div style="font-size: 0.92rem; font-weight: 800; color: #0F172A;">${activeSlot.slotName || 'Regular Session'}</div>
-                        ${todayLog ? `
-                            <span style="background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                                ✓ Affixed at ${todayLog.time}
-                            </span>
-                        ` : `
-                            <span style="background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                                ⏳ Pending Affix
-                            </span>
-                        `}
+                    <!-- Legend Bar -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid #E2E8F0; font-size: 0.72rem; font-weight: 800;">
+                        <span style="display: inline-flex; align-items: center; gap: 5px; color: #059669;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span> Present</span>
+                        <span style="display: inline-flex; align-items: center; gap: 5px; color: #E11D48;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444;"></span> Absent</span>
+                        <span style="display: inline-flex; align-items: center; gap: 5px; color: #64748B;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1;"></span> Upcoming</span>
                     </div>
                 </div>
 
-                <!-- Attendance History Header -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding: 0 2px;">
-                    <h4 style="font-size: 0.82rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">ATTENDANCE HISTORY</h4>
-                    <span style="font-size: 0.72rem; font-weight: 700; color: #6366F1; background: #EEF2FF; padding: 2px 8px; border-radius: 99px;">${personalLogs.length} Records</span>
-                </div>
-
-                <!-- Individual Attendance Cards -->
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    ${personalLogs.length === 0 ? `
-                        <div style="background: white; border-radius: 18px; padding: 2.25rem 1.5rem; text-align: center; border: 1.5px dashed #E2E8F0;">
-                            <div style="width: 42px; height: 42px; border-radius: 50%; background: #F8FAFC; color: #94A3B8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                <!-- Single Card Per Day with 7 Hour Bubbles -->
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    ${dayMatrix.length === 0 ? `
+                        <div style="background: white; border-radius: 20px; padding: 2.25rem 1.5rem; text-align: center; border: 1.5px dashed #E2E8F0;">
+                            <div style="width: 44px; height: 44px; border-radius: 50%; background: #F8FAFC; color: #94A3B8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
                                 <i data-lucide="clock" style="width: 20px;"></i>
                             </div>
                             <div style="font-weight: 800; font-size: 0.92rem; color: #1E293B;">No Attendance Records</div>
-                            <div style="font-size: 0.75rem; color: #64748B; margin-top: 3px;">Kiosk verified scans will automatically appear here.</div>
                         </div>
-                    ` : personalLogs.map(l => {
-                        const isPresent = (l.status || '').toLowerCase().includes('present');
-                        const statusBg = isPresent ? '#DCFCE7' : '#FEF3C7';
-                        const statusColor = isPresent ? '#166534' : '#B45309';
-                        return `
-                            <div class="card no-hover-card" style="background: white; border-radius: 16px; border: 1.5px solid #F1F5F9; padding: 0.95rem 1.15rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px; transform: none !important;">
-                                <!-- Card Header: Date & Status Badge -->
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <div style="width: 34px; height: 34px; border-radius: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; color: #6366F1; flex-shrink: 0;">
-                                            <i data-lucide="calendar" style="width: 16px; stroke-width: 2.2px;"></i>
+                    ` : dayMatrix.map(day => `
+                        <div class="card no-hover-card" style="background: white; border-radius: 20px; border: 1px solid #E2E8F0; padding: 1.15rem 1.1rem; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03); transform: none !important;">
+                            <!-- Top: Date Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                    <div style="width: 36px; height: 36px; border-radius: 11px; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #4F46E5; display: flex; align-items: center; justify-content: center; border: 1px solid #C7D2FE; flex-shrink: 0;">
+                                        <i data-lucide="calendar" style="width: 17px; height: 17px; stroke-width: 2.3px;"></i>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div style="font-weight: 900; font-size: 0.92rem; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            ${day.isToday ? 'Today' : day.dayOfWeek}, ${day.monthDay}
                                         </div>
-                                        <div>
-                                            <div style="font-weight: 800; font-size: 0.88rem; color: #0F172A;">${l.date}</div>
-                                            <div style="font-size: 0.72rem; color: #64748B; font-weight: 600;">${l.time}</div>
+                                        <div style="font-size: 0.72rem; color: #64748B; font-weight: 600; margin-top: 1px;">
+                                            ${day.presentCount} of 7 Periods Attended
                                         </div>
                                     </div>
-                                    <span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 9px; border-radius: 99px; font-weight: 800; font-size: 0.72rem;">
-                                        ${l.status || 'Present'}
-                                    </span>
                                 </div>
-                                <!-- Card Details Row: Session Slot & Verification Badge -->
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F8FAFC; padding-top: 8px; margin-top: 2px;">
-                                    <span style="background: #F1F5F9; color: #475569; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem;">
-                                        ${l.session_type} Session
-                                    </span>
-                                    <span style="font-size: 0.72rem; color: #10B981; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i data-lucide="shield-check" style="width: 14px;"></i> Verified
+                                <div style="flex-shrink: 0;">
+                                    <span style="background: ${day.presentCount === 7 ? '#ECFDF5' : day.presentCount > 0 ? '#FFFBEB' : '#FFF1F2'}; color: ${day.presentCount === 7 ? '#059669' : day.presentCount > 0 ? '#B45309' : '#E11D48'}; border: 1px solid ${day.presentCount === 7 ? '#A7F3D0' : day.presentCount > 0 ? '#FDE68A' : '#FECDD3'}; font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 99px; white-space: nowrap;">
+                                        ${day.presentCount}/7
                                     </span>
                                 </div>
                             </div>
-                        `;
-                    }).join('')}
+
+                            <!-- 7-Hour Bubble Row -->
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 10px 4px; background: #F8FAFC; border-radius: 16px; border: 1px solid #E2E8F0; text-align: center;">
+                                ${day.hourCells.map(cell => {
+                                    let bubbleBg = '#FFFFFF';
+                                    let bubbleColor = '#94A3B8';
+                                    let bubbleBorder = '1.5px dashed #CBD5E1';
+                                    let bubbleShadow = 'none';
+                                    let iconOrText = `—`;
+                                    let labelColor = '#64748B';
+                                    let timeSub = formatPeriodShortTime(cell.start);
+                                    let timeColor = '#64748B';
+
+                                    if (cell.status === 'present') {
+                                        bubbleBg = 'linear-gradient(135deg, #10B981, #059669)';
+                                        bubbleColor = '#FFFFFF';
+                                        bubbleBorder = '2px solid #34D399';
+                                        bubbleShadow = '0 3px 8px rgba(16, 185, 129, 0.25)';
+                                        iconOrText = '✓';
+                                        labelColor = '#059669';
+                                        timeColor = '#059669';
+                                    } else if (cell.status === 'absent') {
+                                        bubbleBg = '#FFF1F2';
+                                        bubbleColor = '#E11D48';
+                                        bubbleBorder = '1.5px solid #FECDD3';
+                                        bubbleShadow = '0 2px 4px rgba(225, 29, 72, 0.05)';
+                                        iconOrText = '✕';
+                                        labelColor = '#475569';
+                                        timeColor = '#94A3B8';
+                                    } else if (cell.status === 'active') {
+                                        bubbleBg = 'linear-gradient(135deg, #FEF3C7, #FDE68A)';
+                                        bubbleColor = '#B45309';
+                                        bubbleBorder = '2px solid #F59E0B';
+                                        bubbleShadow = '0 0 0 3px rgba(245, 158, 11, 0.2)';
+                                        iconOrText = '⚡';
+                                        labelColor = '#B45309';
+                                        timeSub = 'Scan';
+                                        timeColor = '#B45309';
+                                    }
+
+                                    return `
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                            <span style="font-size: 0.65rem; font-weight: 800; color: ${labelColor};">H${cell.hour}</span>
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${bubbleBg}; color: ${bubbleColor}; border: ${bubbleBorder}; box-shadow: ${bubbleShadow}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.78rem;">
+                                                ${iconOrText}
+                                            </div>
+                                            <span style="font-size: 0.6rem; color: ${timeColor}; font-weight: 700; white-space: nowrap; margin-top: 1px;">${timeSub}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             `;
         }

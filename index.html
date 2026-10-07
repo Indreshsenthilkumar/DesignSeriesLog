@@ -1144,7 +1144,7 @@
 
         <!-- Face Attendance Screen (Mobile) -->
         <div id="mobile-face-attendance" class="screen hidden"
-            style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem; padding-bottom: 140px;">
+            style="background: var(--bg-light); min-height: 100vh; padding: 1.1rem 1rem 140px 1rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <button class="btn-icon" onclick="window.show('history');">
@@ -1961,26 +1961,27 @@
                             <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 0 0 10px 0;">Attendance Timing Engine</h3>
                             
                             <label style="font-size: 0.75rem; font-weight: 800; color: #475569; display: block; margin-bottom: 4px;">Operation Mode</label>
-                            <select id="face-sched-mode-mobile" onchange="window.saveFaceSchedulesMobile()" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-weight: 800; color: #0F172A; background: #F8FAFC; margin-bottom: 12px;">
+                            <select id="face-sched-mode-mobile" onchange="window.onFaceScheduleModeChangedMobile()" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-weight: 800; color: #0F172A; background: #F8FAFC; margin-bottom: 12px;">
+                                <option value="hourly" selected>Hourly Mode: 7 Periods / Day (Configurable Grace)</option>
                                 <option value="session">Session Mode: Forenoon (FN) & Afternoon (AN)</option>
-                                <option value="hourly">Hourly Mode: 8 Periods / Day</option>
                             </select>
 
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Mobile Session Container -->
+                            <div id="face-session-schedule-container-mobile" style="display: none; flex-direction: column; gap: 10px;">
                                 <div style="padding: 10px 12px; background: #F0FDF4; border-radius: 12px; border: 1px solid #DCFCE7;">
                                     <div style="font-size: 0.85rem; font-weight: 800; color: #166534; margin-bottom: 6px;">🌅 Forenoon Window (FN)</div>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">Start</label>
-                                            <input type="time" id="face-sched-fn-start-mobile" value="08:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="time" id="face-sched-fn-start-mobile" value="08:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">End</label>
-                                            <input type="time" id="face-sched-fn-end-mobile" value="12:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="time" id="face-sched-fn-end-mobile" value="12:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">Grace</label>
-                                            <input type="number" id="face-sched-fn-grace-mobile" value="15" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="number" id="face-sched-fn-grace-mobile" value="15" min="0" max="60" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                     </div>
                                 </div>
@@ -1990,23 +1991,119 @@
                                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">Start</label>
-                                            <input type="time" id="face-sched-an-start-mobile" value="13:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="time" id="face-sched-an-start-mobile" value="13:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">End</label>
-                                            <input type="time" id="face-sched-an-end-mobile" value="17:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="time" id="face-sched-an-end-mobile" value="17:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                         <div>
                                             <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">Grace</label>
-                                            <input type="number" id="face-sched-an-grace-mobile" value="15" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                            <input type="number" id="face-sched-an-grace-mobile" value="15" min="0" max="60" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700; background: white;">
                                         </div>
                                     </div>
                                 </div>
-
-                                <button onclick="window.saveFaceSchedulesMobile()" style="height: 44px; border-radius: 10px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-top: 4px;">
-                                    💾 Save Timing Settings
-                                </button>
                             </div>
+
+                            <!-- Mobile Hourly Container (7 Periods Editable) -->
+                            <div id="face-hourly-schedule-container-mobile" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 2px;">🕒 7 Periods Timings (Editable)</div>
+
+                                <!-- Mobile Slot 0 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">1st Hr</span>
+                                        <span id="face-slot-badge-mob-0" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 8:55 AM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-0" value="08:45" oninput="window.onFaceSlotInputChangedMobile(0)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-0" value="09:35" oninput="window.onFaceSlotInputChangedMobile(0)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-0" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(0)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 1 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">2nd Hr</span>
+                                        <span id="face-slot-badge-mob-1" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 9:45 AM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-1" value="09:35" oninput="window.onFaceSlotInputChangedMobile(1)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-1" value="10:25" oninput="window.onFaceSlotInputChangedMobile(1)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-1" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(1)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 2 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">3rd Hr</span>
+                                        <span id="face-slot-badge-mob-2" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 10:50 AM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-2" value="10:40" oninput="window.onFaceSlotInputChangedMobile(2)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-2" value="11:30" oninput="window.onFaceSlotInputChangedMobile(2)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-2" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(2)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 3 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">4th Hr</span>
+                                        <span id="face-slot-badge-mob-3" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 11:40 AM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-3" value="11:30" oninput="window.onFaceSlotInputChangedMobile(3)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-3" value="12:25" oninput="window.onFaceSlotInputChangedMobile(3)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-3" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(3)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 4 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">5th Hr</span>
+                                        <span id="face-slot-badge-mob-4" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 1:40 PM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-4" value="13:30" oninput="window.onFaceSlotInputChangedMobile(4)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-4" value="14:20" oninput="window.onFaceSlotInputChangedMobile(4)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-4" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(4)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 5 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">6th Hr</span>
+                                        <span id="face-slot-badge-mob-5" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 2:30 PM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-5" value="14:20" oninput="window.onFaceSlotInputChangedMobile(5)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-5" value="15:10" oninput="window.onFaceSlotInputChangedMobile(5)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-5" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(5)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Slot 6 -->
+                                <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.78rem; color: #0F172A;">7th Hr</span>
+                                        <span id="face-slot-badge-mob-6" style="font-size: 0.68rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 1px 6px; border-radius: 4px;">Grace ≤ 3:35 PM</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 70px; gap: 4px;">
+                                        <input type="time" id="face-slot-start-mob-6" value="15:25" oninput="window.onFaceSlotInputChangedMobile(6)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="time" id="face-slot-end-mob-6" value="16:25" oninput="window.onFaceSlotInputChangedMobile(6)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;">
+                                        <input type="number" id="face-slot-grace-mob-6" value="10" min="0" max="60" oninput="window.onFaceSlotInputChangedMobile(6)" style="height: 32px; border-radius: 6px; border: 1px solid #CBD5E1; padding: 0 4px; font-size: 0.75rem; font-weight: 700; background: white;" placeholder="min">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="window.saveFaceSchedulesMobile()" style="height: 44px; border-radius: 10px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-top: 10px; width: 100%;">
+                                💾 Save Timing Settings
+                            </button>
                         </div>
 
                         <!-- Holidays Mobile -->
@@ -3194,20 +3291,14 @@
             <!-- Desktop Face Attendance Screen -->
             <div id="desktop-face-attendance" class="desktop-screen hidden" style="padding: 1.75rem 2.25rem; background: #F8FAFC; min-height: 100vh;">
                 <!-- Header -->
-                <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                     <div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <h2 style="font-size: 1.75rem; font-weight: 900; color: #0F172A; letter-spacing: -0.8px; margin: 0; font-family: 'Google Sans', Inter, sans-serif;">Face Attendance & Biometrics</h2>
-                            <span style="background: #EDE9FE; color: #7C3AED; font-weight: 800; font-size: 0.75rem; padding: 4px 10px; border-radius: 99px;">
-                                Real-Time AI Verification
-                            </span>
-                        </div>
-                        <p style="font-size: 0.9rem; color: #64748B; margin: 4px 0 0 0; font-weight: 500;">Your individual biometric attendance log history, percentage metrics, and real-time affix status.</p>
+                        <h2 style="font-size: 1.6rem; font-weight: 900; color: #0F172A; letter-spacing: -0.6px; margin: 0; font-family: 'Google Sans', Inter, sans-serif;">Biometric Attendance</h2>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <button onclick="window.syncFaceDataWithCloud(); window.renderStudentFaceDashboard && window.renderStudentFaceDashboard();" 
-                            style="height: 44px; padding: 0 1.25rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; background: white; color: #475569; border: 1.5px solid #E2E8F0; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: var(--shadow-sm);">
-                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh Status
+                            style="height: 40px; padding: 0 1.1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; background: white; color: #475569; border: 1.5px solid #E2E8F0; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: var(--shadow-sm);">
+                            <i data-lucide="refresh-cw" style="width: 15px;"></i> Refresh
                         </button>
                     </div>
                 </div>
@@ -4200,7 +4291,7 @@
 
             <!-- Tab 3: Timing & Holiday Schedules Pane -->
             <div id="face-pane-schedules" style="display: none;">
-                <div style="display: grid; grid-template-columns: 1.3fr 1.1fr; gap: 1.5rem; align-items: start;">
+                <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.5rem; align-items: start;">
                     <!-- Schedule Timing Card -->
                     <div class="card no-hover-card" style="padding: 1.75rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
@@ -4212,29 +4303,29 @@
 
                         <div style="margin-bottom: 1.5rem;">
                             <label style="font-size: 0.8rem; font-weight: 800; color: #475569; display: block; margin-bottom: 6px;">Schedule Operation Mode</label>
-                            <select id="face-sched-mode" onchange="window.saveFaceSchedules()" style="width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-weight: 800; color: #0F172A; outline: none; background: #F8FAFC;">
+                            <select id="face-sched-mode" onchange="window.onFaceScheduleModeChanged()" style="width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-weight: 800; color: #0F172A; outline: none; background: #F8FAFC;">
+                                <option value="hourly" selected>Hourly Mode: 7 Periods / Day (Configurable Grace)</option>
                                 <option value="session">Session Mode: Forenoon (FN) & Afternoon (AN)</option>
-                                <option value="hourly">Hourly Mode: 8 Periods / Day (Hour 1 to Hour 8)</option>
                             </select>
                         </div>
 
                         <!-- Session Configuration (FN/AN) -->
-                        <div id="face-session-schedule-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div id="face-session-schedule-container" style="display: none; flex-direction: column; gap: 1.25rem;">
                             <!-- FN Box -->
                             <div style="padding: 1.25rem; background: #F0FDF4; border-radius: 16px; border: 1.5px solid #DCFCE7;">
                                 <h4 style="font-size: 0.95rem; font-weight: 800; color: #166534; margin: 0 0 10px 0;">🌅 Forenoon Window (FN Session)</h4>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">Start Time</label>
-                                        <input type="time" id="face-sched-fn-start" value="08:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                        <input type="time" id="face-sched-fn-start" value="08:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">End Time</label>
-                                        <input type="time" id="face-sched-fn-end" value="12:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                        <input type="time" id="face-sched-fn-end" value="12:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">Late Grace (Mins)</label>
-                                        <input type="number" id="face-sched-fn-grace" value="15" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                        <input type="number" id="face-sched-fn-grace" value="15" min="0" max="60" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                 </div>
                             </div>
@@ -4245,24 +4336,100 @@
                                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">Start Time</label>
-                                        <input type="time" id="face-sched-an-start" value="13:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                        <input type="time" id="face-sched-an-start" value="13:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">End Time</label>
-                                        <input type="time" id="face-sched-an-end" value="17:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                        <input type="time" id="face-sched-an-end" value="17:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                     <div>
                                         <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">Late Grace (Mins)</label>
-                                        <input type="number" id="face-sched-an-grace" value="15" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                        <input type="number" id="face-sched-an-grace" value="15" min="0" max="60" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700; background: white;">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Hourly Configuration -->
-                        <div id="face-hourly-schedule-container" style="display: none; padding: 1rem; background: #F8FAFC; border-radius: 16px; border: 1.5px solid #E2E8F0;">
-                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-bottom: 8px;">🕒 Hourly Slot Matrix</h4>
-                            <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 12px;">Active periods: Hour 1 (08:45-09:45), Hour 2 (09:45-10:45), Hour 3 (11:00-12:00), Hour 4 (12:00-13:00), Hour 5 (13:45-14:45), Hour 6 (14:45-15:45), Hour 7 (16:00-17:00), Hour 8 (17:00-18:00).</p>
+                        <div id="face-hourly-schedule-container" style="display: block; padding: 1.25rem; background: #F8FAFC; border-radius: 18px; border: 1.5px solid #E2E8F0;">
+                            <div style="margin-bottom: 12px;">
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0;">🕒 7-Period Hourly Schedule Timings & Grace</h4>
+                                <p style="font-size: 0.78rem; color: #64748B; margin: 2px 0 0 0;">Configure start time, end time, and late grace cutoff window for each period.</p>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Header Row -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; gap: 8px; padding: 0 10px; font-size: 0.68rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.03em;">
+                                    <span>Period</span>
+                                    <span>Start Time</span>
+                                    <span>End Time</span>
+                                    <span style="text-align: center;">Grace</span>
+                                    <span style="text-align: center;">Cutoff</span>
+                                </div>
+
+                                <!-- Slot 0: 1st Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">1st Hr</span>
+                                    <input type="time" id="face-slot-start-0" value="08:45" oninput="window.onFaceSlotInputChanged(0)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-0" value="09:35" oninput="window.onFaceSlotInputChanged(0)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-0" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(0)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-0" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 8:55 AM</span>
+                                </div>
+
+                                <!-- Slot 1: 2nd Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">2nd Hr</span>
+                                    <input type="time" id="face-slot-start-1" value="09:35" oninput="window.onFaceSlotInputChanged(1)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-1" value="10:25" oninput="window.onFaceSlotInputChanged(1)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-1" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(1)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-1" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 9:45 AM</span>
+                                </div>
+
+                                <!-- Slot 2: 3rd Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">3rd Hr</span>
+                                    <input type="time" id="face-slot-start-2" value="10:40" oninput="window.onFaceSlotInputChanged(2)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-2" value="11:30" oninput="window.onFaceSlotInputChanged(2)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-2" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(2)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-2" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 10:50 AM</span>
+                                </div>
+
+                                <!-- Slot 3: 4th Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">4th Hr</span>
+                                    <input type="time" id="face-slot-start-3" value="11:30" oninput="window.onFaceSlotInputChanged(3)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-3" value="12:25" oninput="window.onFaceSlotInputChanged(3)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-3" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(3)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-3" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 11:40 AM</span>
+                                </div>
+
+                                <!-- Slot 4: 5th Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">5th Hr</span>
+                                    <input type="time" id="face-slot-start-4" value="13:30" oninput="window.onFaceSlotInputChanged(4)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-4" value="14:20" oninput="window.onFaceSlotInputChanged(4)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-4" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(4)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-4" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 1:40 PM</span>
+                                </div>
+
+                                <!-- Slot 5: 6th Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">6th Hr</span>
+                                    <input type="time" id="face-slot-start-5" value="14:20" oninput="window.onFaceSlotInputChanged(5)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-5" value="15:10" oninput="window.onFaceSlotInputChanged(5)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-5" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(5)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-5" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 2:30 PM</span>
+                                </div>
+
+                                <!-- Slot 6: 7th Hr -->
+                                <div style="display: grid; grid-template-columns: 80px 1fr 1fr 65px 125px; align-items: center; gap: 8px; background: white; padding: 8px 10px; border-radius: 12px; border: 1.5px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #0F172A;">7th Hr</span>
+                                    <input type="time" id="face-slot-start-6" value="15:25" oninput="window.onFaceSlotInputChanged(6)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="time" id="face-slot-end-6" value="16:25" oninput="window.onFaceSlotInputChanged(6)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 6px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A;">
+                                    <input type="number" id="face-slot-grace-6" value="10" min="0" max="60" oninput="window.onFaceSlotInputChanged(6)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #CBD5E1; padding: 0 4px; font-weight: 700; font-size: 0.82rem; background: #F8FAFC; color: #0F172A; text-align: center;" placeholder="min">
+                                    <span id="face-slot-badge-6" style="font-size: 0.7rem; font-weight: 700; color: #4F46E5; background: #EEF2FF; padding: 6px 6px; border-radius: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Grace ≤ 3:35 PM</span>
+                                </div>
+                            </div>
                         </div>
 
                         <button onclick="window.saveFaceSchedules()" style="margin-top: 1.5rem; width: 100%; height: 48px; border-radius: 12px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.95rem; cursor: pointer;">

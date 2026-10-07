@@ -83,14 +83,13 @@ function ensureSheetsSetup(ss) {
       ["an_end_time", "17:30", "Afternoon Window End (HH:mm)", new Date().toISOString(), "System"],
       ["an_grace_minutes", "15", "Afternoon Late Grace Period (mins)", new Date().toISOString(), "System"],
       ["hourly_slots", JSON.stringify([
-        { hour: 1, name: "Hour 1", start: "08:45", end: "09:45" },
-        { hour: 2, name: "Hour 2", start: "09:45", end: "10:45" },
-        { hour: 3, name: "Hour 3", start: "11:00", end: "12:00" },
-        { hour: 4, name: "Hour 4", start: "12:00", end: "13:00" },
-        { hour: 5, name: "Hour 5", start: "13:45", end: "14:45" },
-        { hour: 6, name: "Hour 6", start: "14:45", end: "15:45" },
-        { hour: 7, name: "Hour 7", start: "16:00", end: "17:00" },
-        { hour: 8, name: "Hour 8", start: "17:00", end: "18:00" }
+        { hour: 1, name: "1st Hour", start: "08:45", end: "09:35", grace_minutes: 10 },
+        { hour: 2, name: "2nd Hour", start: "09:35", end: "10:25", grace_minutes: 10 },
+        { hour: 3, name: "3rd Hour", start: "10:40", end: "11:30", grace_minutes: 10 },
+        { hour: 4, name: "4th Hour", start: "11:30", end: "12:25", grace_minutes: 10 },
+        { hour: 5, name: "5th Hour", start: "13:30", end: "14:20", grace_minutes: 10 },
+        { hour: 6, name: "6th Hour", start: "14:20", end: "15:10", grace_minutes: 10 },
+        { hour: 7, name: "7th Hour", start: "15:25", end: "16:25", grace_minutes: 10 }
       ]), "Hourly slots configuration JSON", new Date().toISOString(), "System"]
     ];
     defaultConfigs.forEach(row => schedSheet.appendRow(row));
