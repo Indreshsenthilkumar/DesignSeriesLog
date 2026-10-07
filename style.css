@@ -236,6 +236,36 @@ body {
     border-color: var(--primary-teal);
 }
 
+/* Disable card hover animation on Face Attendance section, Admin pages, and static cards */
+.no-hover-card,
+.no-hover-card:hover,
+.no-hover,
+.no-hover:hover,
+#desktop-face-attendance .card,
+#desktop-face-attendance .card:hover,
+#mobile-face-attendance .card,
+#mobile-face-attendance .card:hover,
+#admin-subview-face-recognition .card,
+#admin-subview-face-recognition .card:hover,
+#admin-subview-face-recognition-mobile .card,
+#admin-subview-face-recognition-mobile .card:hover,
+#admin-menu-desktop .card,
+#admin-menu-desktop .card:hover,
+#admin-menu-mobile .card,
+#admin-menu-mobile .card:hover,
+[id^="admin-subview-"] .card,
+[id^="admin-subview-"] .card:hover,
+[id^="face-pane-"] .card,
+[id^="face-pane-"] .card:hover,
+[id*="face-attendance"] .card,
+[id*="face-attendance"] .card:hover,
+[id*="face-recognition"] .card,
+[id*="face-recognition"] .card:hover {
+    transform: none !important;
+    transition: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
 .skeleton {
     background: #f1f5f9;
     background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);

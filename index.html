@@ -41,6 +41,8 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Face API AI Neural Network -->
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
     <link rel="stylesheet" href="style.css?v=21">
     <style>
         /* Unified table font sizes */
@@ -1140,10 +1142,30 @@
         </div>
 
 
+        <!-- Face Attendance Screen (Mobile) -->
+        <div id="mobile-face-attendance" class="screen hidden"
+            style="background: var(--bg-light); min-height: 100vh; padding: 1.5rem; padding-bottom: 140px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-icon" onclick="window.show('history');">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; margin: 0; color: #0F172A;">Biometric Attendance</h2>
+                </div>
+                <button class="btn-icon" id="btn-face-dash-refresh" onclick="window.refreshStudentFaceDashboard && window.refreshStudentFaceDashboard(true);"
+                    style="background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
+                    <i data-lucide="refresh-cw" id="face-dash-refresh-icon" style="color: #6366F1; width: 18px;"></i>
+                </button>
+            </div>
+
+            <!-- Dynamic Mobile Student Dashboard Container -->
+            <div id="student-face-dashboard-mobile-container"></div>
+        </div>
+
         <!-- History Screen (Mobile) -->
         <div id="mobile-history" class="screen hidden"
             style="background: var(--bg-light); min-height: 100vh; padding-left: 1.5rem; padding-right: 1.5rem; padding-bottom: 120px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <button class="btn-icon" id="btn-back-history"
                         onclick="document.getElementById('nav-dash-mobile').click()"><i
@@ -1156,7 +1178,7 @@
                 </button>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem;">
                 <!-- Today's Log Card -->
                 <div class="card"
                     style="padding: 1rem 1.25rem; background: white; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 10px 25px rgba(0,0,0,0.03); border-radius: 18px !important; display: flex; flex-direction: column; align-items: flex-start; height: 122px; justify-content: space-between;">
@@ -1185,6 +1207,24 @@
                             style="font-size: 1.5rem; font-weight: 900; color: #1E293B; letter-spacing: -0.5px; margin: 0; line-height: 1;">
                             0 <span style="font-size: 0.85rem; font-weight: 700; color: #CBD5E1;">Days</span></h3>
                     </div>
+                </div>
+            </div>
+
+            <!-- Biometric Face Attendance Action Banner (Compact Height, Positioned Above Recent Activity) -->
+            <div onclick="window.show('face-attendance')" class="no-hover-card"
+                style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%); border-radius: 16px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; color: white; cursor: pointer; box-shadow: 0 6px 18px rgba(79, 70, 229, 0.2); border: 1px solid rgba(255,255,255,0.15); transform: none !important;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i data-lucide="scan-face" style="width: 18px; height: 18px; stroke-width: 2.3px; color: white;"></i>
+                    </div>
+                    <div style="min-width: 0;">
+                        <h4 style="font-size: 0.88rem; font-weight: 800; margin: 0; letter-spacing: -0.2px; font-family: 'Google Sans', Inter, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Biometric Face Attendance</h4>
+                        <p style="font-size: 0.72rem; margin: 1px 0 0 0; opacity: 0.88; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Verified facial logs & attendance %</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', Inter, sans-serif; white-space: nowrap; flex-shrink: 0;">
+                    <span>View Logs</span>
+                    <i data-lucide="chevron-right" style="width: 12px; height: 12px; stroke-width: 2.5px;"></i>
                 </div>
             </div>
 
@@ -1709,6 +1749,369 @@
                         <span style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #10B981; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
                             Manage <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
                         </span>
+                    </div>
+
+                    <!-- Face Recognition Card Mobile -->
+                    <div class="card no-hover" onclick="window.toggleAdminSubView('face-recognition')"
+                        style="padding: 1.25rem 1rem; border-radius: 20px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: white; transition: all 0.2s; min-height: 180px; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: #EDE9FE; color: #7C3AED; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                                <i data-lucide="scan-face" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 6px 0; line-height: 1.2; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Face Recognition</h4>
+                        </div>
+                        <span style="display: inline-flex; align-items: center; gap: 4px; background: #EDE9FE; color: #7C3AED; padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                            Launch <i data-lucide="arrow-right" style="width: 10px; height: 10px; stroke-width: 2.5px;"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Face Recognition Subview Mobile (Full Interactive Biometric Engine) -->
+            <div id="admin-subview-face-recognition-mobile" class="hidden" style="padding-bottom: 40px;">
+                <!-- Header -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button onclick="window.toggleAdminSubView('menu')"
+                            style="width: 40px; height: 40px; border-radius: 12px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-sm);">
+                            <i data-lucide="chevron-left" style="width: 20px; color: #1E293B;"></i>
+                        </button>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <h2 style="font-size: 1.25rem; font-weight: 900; margin: 0; color: #0F172A; font-family: 'Google Sans', Inter, sans-serif;">Face Attendance</h2>
+                                <span id="face-model-status-badge-mobile" style="font-size: 0.68rem; background: #ECFDF5; color: #059669; padding: 2px 8px; border-radius: 99px; font-weight: 800;">● Ready</span>
+                            </div>
+                            <p style="font-size: 0.72rem; color: #64748B; margin: 2px 0 0 0;">Real-time Biometric System</p>
+                        </div>
+                    </div>
+                    <button onclick="window.refreshAdminFaceRecognition && window.refreshAdminFaceRecognition(true)" style="width: 40px; height: 40px; border-radius: 12px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; color: #6366F1; cursor: pointer; box-shadow: var(--shadow-sm);">
+                        <i data-lucide="refresh-cw" id="admin-face-refresh-icon-mobile" style="width: 18px;"></i>
+                    </button>
+                </div>
+
+                <!-- Horizontal Scrollable Tab Pills -->
+                <div style="display: flex; overflow-x: auto; gap: 6px; padding-bottom: 8px; margin-bottom: 1.25rem; scrollbar-width: none; -webkit-overflow-scrolling: touch;">
+                    <button id="face-tab-btn-kiosk-mobile" onclick="window.switchFaceTab('kiosk')"
+                        style="white-space: nowrap; padding: 8px 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; background: #6366F1; color: white;">
+                        📸 Live Kiosk
+                    </button>
+                    <button id="face-tab-btn-register-mobile" onclick="window.switchFaceTab('register')"
+                        style="white-space: nowrap; padding: 8px 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; background: white; color: #475569; border: 1px solid #F1F5F9;">
+                        👥 Register Faces
+                    </button>
+                    <button id="face-tab-btn-schedules-mobile" onclick="window.switchFaceTab('schedules')"
+                        style="white-space: nowrap; padding: 8px 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; background: white; color: #475569; border: 1px solid #F1F5F9;">
+                        ⏰ Timings & Holidays
+                    </button>
+                    <button id="face-tab-btn-analytics-mobile" onclick="window.switchFaceTab('analytics')"
+                        style="white-space: nowrap; padding: 8px 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; background: white; color: #475569; border: 1px solid #F1F5F9;">
+                        📊 Logs & History
+                    </button>
+                    <button id="face-tab-btn-settings-mobile" onclick="window.switchFaceTab('settings')"
+                        style="white-space: nowrap; padding: 8px 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; background: white; color: #475569; border: 1px solid #F1F5F9;">
+                        ⚙️ Sheet & API
+                    </button>
+                </div>
+
+                <!-- Pane 1: Live Kiosk Mobile -->
+                <div id="face-pane-kiosk-mobile" style="display: block;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Camera Card -->
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 10px; height: 10px; border-radius: 99px; background: #10B981;"></div>
+                                    <span style="font-weight: 800; font-size: 0.9rem; color: #0F172A;">Biometric Scanner</span>
+                                </div>
+                                <div id="face-kiosk-live-slot-badge-mobile">
+                                    <span style="background: #ECFDF5; color: #059669; padding: 3px 10px; border-radius: 99px; font-weight: 800; font-size: 0.75rem;">● Live Slot</span>
+                                </div>
+                            </div>
+
+                            <!-- Video Box -->
+                            <div style="position: relative; width: 100%; height: 280px; background: #0F172A; border-radius: 16px; overflow: hidden;">
+                                <video id="face-kiosk-video-mobile" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                                <canvas id="face-kiosk-canvas-mobile" style="position: absolute; top:0; left:0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(-1);"></canvas>
+                                
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 210px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 90px; pointer-events: none;"></div>
+
+                                <!-- Recognized Popup Mobile -->
+                                <div id="face-recognized-popup-mobile" style="display: none; position: absolute; bottom: 12px; left: 12px; right: 12px; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); border-radius: 14px; padding: 10px 12px; box-shadow: 0 15px 30px rgba(0,0,0,0.25); border: 2px solid #10B981; align-items: center; gap: 10px; z-index: 10;">
+                                    <img id="face-popup-img-mobile" src="profile.png" alt="Student" style="width: 44px; height: 44px; border-radius: 12px; object-fit: cover; border: 2px solid #10B981;">
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div id="face-popup-name-mobile" style="font-weight: 900; font-size: 0.95rem; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Student</div>
+                                        <div id="face-popup-reg-mobile" style="font-size: 0.75rem; font-weight: 700; color: #6366F1;">7376...</div>
+                                        <div id="face-popup-score-mobile" style="font-size: 0.7rem; color: #64748B;">Match: 98%</div>
+                                    </div>
+                                    <span style="background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 0.75rem;">Affixed</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                <div id="face-scan-status-text-mobile" style="font-size: 0.78rem; font-weight: 600; color: #64748B;">
+                                    Align face in frame to mark attendance
+                                </div>
+                                <button onclick="window.switchFaceTab('kiosk')" style="background: #F1F5F9; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #475569; cursor: pointer;">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Today's Affixes List Mobile -->
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                                <div>
+                                    <h3 style="font-size: 1.05rem; font-weight: 800; color: #0F172A; margin: 0;">Today's Live Affixes</h3>
+                                    <p style="font-size: 0.75rem; color: #64748B; margin: 2px 0 0 0;">Recent attendance scans</p>
+                                </div>
+                                <span id="face-kiosk-today-count-mobile" style="background: #EDE9FE; color: #7C3AED; font-weight: 900; padding: 4px 12px; border-radius: 99px; font-size: 0.85rem;">
+                                    0
+                                </span>
+                            </div>
+
+                            <div id="face-kiosk-recent-logs-mobile" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+                                <p style="color: #94A3B8; font-size: 0.8rem; text-align: center; padding: 1.5rem 0;">No attendance scans recorded today yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 2: Register Faces Mobile -->
+                <div id="face-pane-register-mobile" style="display: none;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 0 0 4px 0;">Register New Face</h3>
+                            <p style="font-size: 0.78rem; color: #64748B; margin: 0 0 1rem 0;">Select a student to link their facial biometric profile</p>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div>
+                                    <div style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                        <label style="font-size: 0.75rem; font-weight: 800; color: #475569;">Select Student</label>
+                                        <button type="button" onclick="window.refreshFaceStudentList(true)" style="background: none; border: none; font-size: 0.72rem; color: #6366F1; font-weight: 700; cursor: pointer;">
+                                            🔄 Reload
+                                        </button>
+                                    </div>
+                                    <input type="text" id="face-reg-student-search-mobile" placeholder="🔍 Search name or roll number..." oninput="window.onFaceStudentSearchMobile(this.value)" style="width: 100%; height: 38px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.8rem; font-weight: 600; outline: none; margin-bottom: 6px;">
+                                    <select id="face-reg-student-select-mobile" onchange="window.onFaceStudentSelectChangedMobile()" style="width: 100%; height: 42px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-weight: 700; color: #0F172A; outline: none; background: white;">
+                                        <option value="">-- Select Student --</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style="font-size: 0.72rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 2px;">Student Name</label>
+                                    <input type="text" id="face-reg-name-mobile" placeholder="Full Name" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 8px; font-size: 0.82rem; font-weight: 600;">
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 2px;">Roll / Reg No</label>
+                                        <input type="text" id="face-reg-regnum-mobile" placeholder="7376..." style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 8px; font-size: 0.82rem; font-weight: 600;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 2px;">Department</label>
+                                        <input type="text" id="face-reg-dept-mobile" placeholder="Dept" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 8px; font-size: 0.82rem; font-weight: 600;">
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 2px;">Year</label>
+                                        <input type="text" id="face-reg-year-mobile" placeholder="2nd Year" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 8px; font-size: 0.82rem; font-weight: 600;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 2px;">Email</label>
+                                        <input type="email" id="face-reg-email-mobile" placeholder="Email" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 8px; font-size: 0.82rem; font-weight: 600;">
+                                    </div>
+                                </div>
+
+                                <!-- Registration Video Box -->
+                                <div style="position: relative; width: 100%; height: 220px; background: #0F172A; border-radius: 14px; overflow: hidden; margin-top: 4px;">
+                                    <video id="face-reg-video-mobile" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                                    <canvas id="face-reg-canvas-mobile" style="display: none;"></canvas>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 130px; height: 160px; border: 2px dashed rgba(99, 102, 241, 0.7); border-radius: 70px; pointer-events: none;"></div>
+                                </div>
+
+                                <div id="face-reg-analysis-status-mobile" style="font-size: 0.78rem; min-height: 20px;"></div>
+
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="window.captureAndAnalyzeFaceMobile()" 
+                                        style="flex: 1; height: 44px; border-radius: 10px; background: #EDE9FE; color: #7C3AED; border: none; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                                        📷 Capture Face
+                                    </button>
+                                    <button id="face-reg-save-btn-mobile" disabled onclick="window.saveFaceRegistrationMobile()" 
+                                        style="flex: 1; height: 44px; border-radius: 10px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.82rem; cursor: pointer; opacity: 0.6;">
+                                        💾 Save Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Registered Directory Mobile -->
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <h3 style="font-size: 1.05rem; font-weight: 800; color: #0F172A; margin: 0 0 8px 0;">Registered Students</h3>
+                            <div id="face-registered-list-grid-mobile" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 3: Timings & Holidays Mobile -->
+                <div id="face-pane-schedules-mobile" style="display: none;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 0 0 10px 0;">Attendance Timing Engine</h3>
+                            
+                            <label style="font-size: 0.75rem; font-weight: 800; color: #475569; display: block; margin-bottom: 4px;">Operation Mode</label>
+                            <select id="face-sched-mode-mobile" onchange="window.saveFaceSchedulesMobile()" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-weight: 800; color: #0F172A; background: #F8FAFC; margin-bottom: 12px;">
+                                <option value="session">Session Mode: Forenoon (FN) & Afternoon (AN)</option>
+                                <option value="hourly">Hourly Mode: 8 Periods / Day</option>
+                            </select>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="padding: 10px 12px; background: #F0FDF4; border-radius: 12px; border: 1px solid #DCFCE7;">
+                                    <div style="font-size: 0.85rem; font-weight: 800; color: #166534; margin-bottom: 6px;">🌅 Forenoon Window (FN)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">Start</label>
+                                            <input type="time" id="face-sched-fn-start-mobile" value="08:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">End</label>
+                                            <input type="time" id="face-sched-fn-end-mobile" value="12:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #166534;">Grace</label>
+                                            <input type="number" id="face-sched-fn-grace-mobile" value="15" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BBF7D0; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="padding: 10px 12px; background: #EFF6FF; border-radius: 12px; border: 1px solid #DBEAFE;">
+                                    <div style="font-size: 0.85rem; font-weight: 800; color: #1E40AF; margin-bottom: 6px;">🌇 Afternoon Window (AN)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">Start</label>
+                                            <input type="time" id="face-sched-an-start-mobile" value="13:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">End</label>
+                                            <input type="time" id="face-sched-an-end-mobile" value="17:30" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.68rem; font-weight: 700; color: #1E40AF;">Grace</label>
+                                            <input type="number" id="face-sched-an-grace-mobile" value="15" style="width: 100%; height: 34px; border-radius: 6px; border: 1px solid #BFDBFE; padding: 0 4px; font-size: 0.78rem; font-weight: 700;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="window.saveFaceSchedulesMobile()" style="height: 44px; border-radius: 10px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-top: 4px;">
+                                    💾 Save Timing Settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Holidays Mobile -->
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <h3 style="font-size: 1.05rem; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;">Schedule Holiday Exemption</h3>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; padding: 10px; background: #FEF2F2; border-radius: 12px; border: 1px solid #FEE2E2;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                    <input type="date" id="face-holiday-date-mobile" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #FECACA; padding: 0 6px; font-size: 0.78rem; font-weight: 700; background: white;">
+                                    <select id="face-holiday-type-mobile" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #FECACA; padding: 0 6px; font-size: 0.78rem; font-weight: 700; background: white;">
+                                        <option value="Full Day">Full Day</option>
+                                        <option value="FN Only">FN Only</option>
+                                        <option value="AN Only">AN Only</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="face-holiday-title-mobile" placeholder="Reason (e.g. Festival, Hackathon)" style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #FECACA; padding: 0 8px; font-size: 0.8rem; background: white;">
+                                <button onclick="window.addFaceHolidayMobile()" style="height: 38px; border-radius: 8px; background: #DC2626; color: white; border: none; font-weight: 800; font-size: 0.8rem; cursor: pointer;">
+                                    ➕ Add Holiday Exception
+                                </button>
+                            </div>
+
+                            <div id="face-holidays-list-container-mobile" style="max-height: 220px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 4: Logs & History Mobile -->
+                <div id="face-pane-analytics-mobile" style="display: none;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- 4 KPI Grid (2x2) -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="card no-hover-card" style="padding: 1rem; border-radius: 16px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                                <div style="color: #64748B; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Registered</div>
+                                <div id="face-kpi-total-registered-mobile" style="font-size: 1.4rem; font-weight: 900; color: #0F172A; margin: 2px 0;">0</div>
+                                <div style="font-size: 0.68rem; color: #10B981; font-weight: 700;">● Active</div>
+                            </div>
+                            <div class="card no-hover-card" style="padding: 1rem; border-radius: 16px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                                <div style="color: #64748B; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Today Present</div>
+                                <div id="face-kpi-today-present-mobile" style="font-size: 1.4rem; font-weight: 900; color: #10B981; margin: 2px 0;">0</div>
+                                <div style="font-size: 0.68rem; color: #10B981; font-weight: 700;">Affixed</div>
+                            </div>
+                            <div class="card no-hover-card" style="padding: 1rem; border-radius: 16px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                                <div style="color: #64748B; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Pending</div>
+                                <div id="face-kpi-today-absent-mobile" style="font-size: 1.4rem; font-weight: 900; color: #EF4444; margin: 2px 0;">0</div>
+                                <div style="font-size: 0.68rem; color: #EF4444; font-weight: 700;">Unaffixed</div>
+                            </div>
+                            <div class="card no-hover-card" style="padding: 1rem; border-radius: 16px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                                <div style="color: #64748B; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Rate</div>
+                                <div id="face-kpi-attendance-rate-mobile" style="font-size: 1.4rem; font-weight: 900; color: #6366F1; margin: 2px 0;">0%</div>
+                                <div style="font-size: 0.68rem; color: #6366F1; font-weight: 700;">Batch %</div>
+                            </div>
+                        </div>
+
+                        <!-- Logs Filter & Card List Mobile -->
+                        <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem;">
+                                <input type="text" id="face-filter-search-mobile" oninput="window.FaceRecognitionState && window.switchFaceTab('analytics')" placeholder="🔍 Search student name/roll..." style="height: 38px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.8rem; outline: none;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                    <input type="date" id="face-filter-date-mobile" onchange="window.FaceRecognitionState && window.switchFaceTab('analytics')" style="height: 36px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 6px; font-size: 0.75rem; font-weight: 600;">
+                                    <select id="face-filter-session-mobile" onchange="window.FaceRecognitionState && window.switchFaceTab('analytics')" style="height: 36px; border-radius: 8px; border: 1.5px solid #E2E8F0; padding: 0 6px; font-size: 0.75rem; font-weight: 700;">
+                                        <option value="ALL">All Sessions</option>
+                                        <option value="FN">FN Session</option>
+                                        <option value="AN">AN Session</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                                    <button onclick="window.syncFaceDataWithCloud()" style="flex: 1; height: 36px; border-radius: 8px; background: #F1F5F9; color: #475569; border: none; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                                        🔄 Sync Cloud
+                                    </button>
+                                    <button onclick="window.exportFaceAnalyticsCSV()" style="flex: 1; height: 36px; border-radius: 8px; background: #EDE9FE; color: #7C3AED; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer;">
+                                        📥 Export CSV
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="face-analytics-mobile-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 5: Sheet & API Mobile -->
+                <div id="face-pane-settings-mobile" style="display: none;">
+                    <div class="card no-hover-card" style="padding: 1.15rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 12px; background: #DCFCE7; color: #166534; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                                📊
+                            </div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; font-weight: 900; color: #0F172A; margin: 0;">Database Sheet</h3>
+                                <p style="font-size: 0.75rem; color: #64748B; margin: 2px 0 0 0;">Connected Google Spreadsheet</p>
+                            </div>
+                        </div>
+
+                        <div style="padding: 12px; background: #F8FAFC; border-radius: 12px; border: 1.5px solid #E2E8F0; margin-bottom: 1rem;">
+                            <div style="font-size: 0.72rem; color: #64748B; font-weight: 700;">SPREADSHEET ID:</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #0F172A; font-weight: 800; word-break: break-all; margin: 4px 0;">1Up9Z42R39lRxHzHy9ojLtrQy0CV9skA6EWl6rgIzKRA</div>
+                            <a href="https://docs.google.com/spreadsheets/d/1Up9Z42R39lRxHzHy9ojLtrQy0CV9skA6EWl6rgIzKRA/edit?gid=0#gid=0" target="_blank" 
+                                style="display: inline-flex; align-items: center; gap: 4px; color: #6366F1; font-weight: 800; font-size: 0.75rem; text-decoration: none; margin-top: 4px;">
+                                ↗ Open Google Sheet Tab
+                            </a>
+                        </div>
+
+                        <button onclick="window.syncFaceDataWithCloud()" style="width: 100%; height: 42px; border-radius: 10px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer;">
+                            🔄 Sync Cloud Database
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2280,6 +2683,10 @@
                     <i data-lucide="history"></i>
                     <span>Attendance log</span>
                 </li>
+                <li class="nav-item" id="nav-face-attendance-desktop">
+                    <i data-lucide="scan-face"></i>
+                    <span>Face Attendance</span>
+                </li>
                 <li class="nav-item" id="nav-work-log-desktop">
                     <i data-lucide="clipboard-list"></i>
                     <span>Work log</span>
@@ -2784,6 +3191,31 @@
                     </div>
                 </div>
             </div>
+            <!-- Desktop Face Attendance Screen -->
+            <div id="desktop-face-attendance" class="desktop-screen hidden" style="padding: 1.75rem 2.25rem; background: #F8FAFC; min-height: 100vh;">
+                <!-- Header -->
+                <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h2 style="font-size: 1.75rem; font-weight: 900; color: #0F172A; letter-spacing: -0.8px; margin: 0; font-family: 'Google Sans', Inter, sans-serif;">Face Attendance & Biometrics</h2>
+                            <span style="background: #EDE9FE; color: #7C3AED; font-weight: 800; font-size: 0.75rem; padding: 4px 10px; border-radius: 99px;">
+                                Real-Time AI Verification
+                            </span>
+                        </div>
+                        <p style="font-size: 0.9rem; color: #64748B; margin: 4px 0 0 0; font-weight: 500;">Your individual biometric attendance log history, percentage metrics, and real-time affix status.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button onclick="window.syncFaceDataWithCloud(); window.renderStudentFaceDashboard && window.renderStudentFaceDashboard();" 
+                            style="height: 44px; padding: 0 1.25rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; background: white; color: #475569; border: 1.5px solid #E2E8F0; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: var(--shadow-sm);">
+                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh Status
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Student Dashboard Container -->
+                <div id="student-face-dashboard-container"></div>
+            </div>
+
             <!-- Desktop History Screen -->
             <div id="desktop-history" class="desktop-screen hidden" style="padding: 1.5rem 2rem; background: #F8FAFC; min-height: 100vh;">
 
@@ -3533,6 +3965,456 @@
                     <span style="display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #10B981; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
                         Manage Approvals <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
                     </span>
+                </div>
+
+                <!-- Face Recognition Card Desktop -->
+                <div class="card no-hover" onclick="window.toggleAdminSubView('face-recognition')"
+                    style="padding: 2rem; border-radius: 24px !important; text-align: left; cursor: pointer; border: 1.5px solid #F1F5F9; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: white; box-shadow: var(--shadow-sm); min-height: 250px;"
+                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-md)';"
+                    onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-sm)';">
+                    <div>
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #EDE9FE; color: #7C3AED; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i data-lucide="scan-face" style="width: 26px; height: 26px;"></i>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 800; color: #1E293B; margin: 0 0 8px 0; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">Face Recognition</h4>
+                        <p style="font-size: 0.85rem; color: #64748B; line-height: 1.5; margin: 0 0 1.5rem 0; font-weight: 500;">Biometric AI kiosk, student face registration, custom timing slots & holiday exception manager.</p>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #EDE9FE; color: #7C3AED; padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; font-family: 'Google Sans', 'Google Sans Text', 'Inter', 'Roboto', 'Arial', sans-serif;">
+                        Open Kiosk <i data-lucide="arrow-right" style="width: 14px; height: 14px; stroke-width: 2.5px;"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Face Recognition Attendance Subview (Desktop) -->
+        <div id="admin-subview-face-recognition" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <button onclick="window.toggleAdminSubView('menu')"
+                        style="width: 48px; height: 48px; border-radius: 14px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-sm);">
+                        <i data-lucide="chevron-left" style="width: 22px; color: #1E293B;"></i>
+                    </button>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h2 style="font-size: 1.75rem; font-weight: 900; color: #0F172A; margin: 0; font-family: 'Google Sans', Inter, sans-serif;">Face Recognition Attendance</h2>
+                            <span id="face-model-status-badge" style="font-size: 0.75rem; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
+                                ● Ready
+                            </span>
+                        </div>
+                        <p style="color: #64748B; font-size: 0.88rem; margin: 4px 0 0 0;">
+                            Real-time AI Biometric Attendance • Database Sheet: 
+                            <a href="https://docs.google.com/spreadsheets/d/1Up9Z42R39lRxHzHy9ojLtrQy0CV9skA6EWl6rgIzKRA/edit?gid=0#gid=0" target="_blank" style="color: #6366F1; font-weight: 700; text-decoration: none;">1Up9Z42R39lRx... ↗</a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs & Refresh -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; background: #F1F5F9; padding: 5px; border-radius: 14px; gap: 4px;">
+                        <button id="face-tab-btn-kiosk" onclick="window.switchFaceTab('kiosk')"
+                            style="padding: 8px 16px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: #6366F1; color: white;">
+                            📸 Live Kiosk
+                        </button>
+                        <button id="face-tab-btn-register" onclick="window.switchFaceTab('register')"
+                            style="padding: 8px 16px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; color: #475569;">
+                            👥 Register Faces
+                        </button>
+                        <button id="face-tab-btn-schedules" onclick="window.switchFaceTab('schedules')"
+                            style="padding: 8px 16px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; color: #475569;">
+                            ⏰ Timings & Holidays
+                        </button>
+                        <button id="face-tab-btn-analytics" onclick="window.switchFaceTab('analytics')"
+                            style="padding: 8px 16px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; color: #475569;">
+                            📊 Logs & History
+                        </button>
+                        <button id="face-tab-btn-settings" onclick="window.switchFaceTab('settings')"
+                            style="padding: 8px 16px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; color: #475569;">
+                            ⚙️ Sheet & API
+                        </button>
+                    </div>
+                    <button onclick="window.refreshAdminFaceRecognition && window.refreshAdminFaceRecognition(true)" style="height: 44px; padding: 0 14px; border-radius: 14px; background: white; border: 1.5px solid #F1F5F9; display: flex; align-items: center; gap: 6px; color: #6366F1; font-weight: 800; font-size: 0.82rem; cursor: pointer; box-shadow: var(--shadow-sm);">
+                        <i data-lucide="refresh-cw" id="face-admin-refresh-icon" style="width: 16px;"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 1: Live Kiosk Pane -->
+            <div id="face-pane-kiosk" style="display: block;">
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; align-items: start;">
+                    <!-- Camera Viewport Card -->
+                    <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); position: relative; transform: none !important; transition: none !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 99px; background: #10B981;"></div>
+                                <span style="font-weight: 800; font-size: 0.95rem; color: #0F172A;">Biometric Attendance Camera</span>
+                            </div>
+                            <div id="face-kiosk-live-slot-badge">
+                                <span style="background: #ECFDF5; color: #059669; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">● Live Slot</span>
+                            </div>
+                        </div>
+
+                        <!-- Video & Detection Overlay Box -->
+                        <div style="position: relative; width: 100%; height: 420px; background: #0F172A; border-radius: 20px; overflow: hidden; box-shadow: inset 0 0 40px rgba(0,0,0,0.5);">
+                            <video id="face-kiosk-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                            <canvas id="face-kiosk-canvas" style="position: absolute; top:0; left:0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(-1);"></canvas>
+                            
+                            <!-- Scanner guideline overlay -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 280px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 120px; pointer-events: none;"></div>
+
+                            <!-- Pop-up match notification card -->
+                            <div id="face-recognized-popup" style="display: none; position: absolute; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border-radius: 18px; padding: 14px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); border: 2px solid #10B981; align-items: center; gap: 14px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 10;">
+                                <img id="face-popup-img" src="profile.png" alt="Student" style="width: 52px; height: 52px; border-radius: 14px; object-fit: cover; border: 2px solid #10B981;">
+                                <div style="flex: 1;">
+                                    <div id="face-popup-name" style="font-weight: 900; font-size: 1.05rem; color: #0F172A;">Indresh S</div>
+                                    <div id="face-popup-reg" style="font-size: 0.8rem; font-weight: 700; color: #6366F1;">7376242IT181 • Information Technology</div>
+                                    <div id="face-popup-score" style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">Match Confidence: 98.4%</div>
+                                </div>
+                                <div id="face-popup-status">
+                                    <span style="background: #DCFCE7; color: #166534; padding: 6px 14px; border-radius: 99px; font-weight: 800; font-size: 0.8rem;">✅ Affixed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <div id="face-scan-status-text" style="font-size: 0.85rem; font-weight: 600; color: #64748B;">
+                                Place your face within the frame to affix attendance.
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="window.switchFaceTab('kiosk')" style="background: #F1F5F9; border: none; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: #475569; cursor: pointer;">
+                                    🔄 Reset Camera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Today's Live Affixes Feed -->
+                    <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; height: 540px; transform: none !important; transition: none !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                            <div>
+                                <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 0;">Today's Affixes</h3>
+                                <p style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Live recognition feed</p>
+                            </div>
+                            <span id="face-kiosk-today-count" style="background: #EDE9FE; color: #7C3AED; font-weight: 900; padding: 6px 14px; border-radius: 99px; font-size: 0.9rem;">
+                                0
+                            </span>
+                        </div>
+
+                        <div id="face-kiosk-recent-logs" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;">
+                            <p style="color: #94A3B8; font-size: 0.85rem; text-align: center; padding: 2rem 0;">No attendance scans recorded today yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Register Faces Pane -->
+            <div id="face-pane-register" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 1.5rem; align-items: start;">
+                    <!-- Registration Form & Camera -->
+                    <div class="card no-hover-card" style="padding: 1.75rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <h3 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;">Register New Face</h3>
+                        <p style="font-size: 0.85rem; color: #64748B; margin: 0 0 1.25rem 0;">Select a student from the database and capture their facial vector descriptor.</p>
+
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <div style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                    <label style="font-size: 0.8rem; font-weight: 800; color: #475569;">Select Student (from Portal Database)</label>
+                                    <button type="button" onclick="window.refreshFaceStudentList(true)" style="background: none; border: none; font-size: 0.75rem; color: #6366F1; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        <i class="ri-refresh-line"></i> Reload Students
+                                    </button>
+                                </div>
+                                <div style="position: relative; margin-bottom: 8px;">
+                                    <input type="text" id="face-reg-student-search" placeholder="🔍 Search by name or roll number..." oninput="window.onFaceStudentSearch(this.value)" style="width: 100%; height: 38px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-size: 0.82rem; font-weight: 600; outline: none;">
+                                </div>
+                                <select id="face-reg-student-select" onchange="window.onFaceStudentSelectChanged()" style="width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-weight: 700; color: #0F172A; outline: none; background: white; cursor: pointer;">
+                                    <option value="">-- Select Student --</option>
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Student Name</label>
+                                    <input type="text" id="face-reg-name" placeholder="Full Name" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Roll / Reg Number</label>
+                                    <input type="text" id="face-reg-regnum" placeholder="73762..." style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Department</label>
+                                    <input type="text" id="face-reg-dept" placeholder="Information Technology" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Year / Domain</label>
+                                    <input type="text" id="face-reg-year" placeholder="2nd Year" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Student Email</label>
+                                <input type="email" id="face-reg-email" placeholder="student@bitsathy.ac.in" style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                            </div>
+
+                            <!-- Live Capture Camera Box -->
+                            <div style="position: relative; width: 100%; height: 240px; background: #0F172A; border-radius: 16px; overflow: hidden; margin-top: 6px;">
+                                <video id="face-reg-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                                <canvas id="face-reg-canvas" style="display: none;"></canvas>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140px; height: 180px; border: 2px dashed rgba(99, 102, 241, 0.7); border-radius: 80px; pointer-events: none;"></div>
+                            </div>
+
+                            <div id="face-reg-analysis-status" style="font-size: 0.82rem; min-height: 22px;"></div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="window.captureAndAnalyzeFace()" 
+                                    style="flex: 1; height: 46px; border-radius: 12px; background: #EDE9FE; color: #7C3AED; border: none; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    📷 Capture & Analyze
+                                </button>
+                                <button id="face-reg-save-btn" disabled onclick="window.saveFaceRegistration()" 
+                                    style="flex: 1; height: 46px; border-radius: 12px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; opacity: 0.6;">
+                                    💾 Save Registration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Registered Directory -->
+                    <div class="card no-hover-card" style="padding: 1.75rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0;">Registered Students</h3>
+                                <p style="font-size: 0.85rem; color: #64748B; margin: 2px 0 0 0;">Students with active facial recognition vectors</p>
+                            </div>
+                        </div>
+
+                        <div style="position: relative; margin-bottom: 1.25rem;">
+                            <input type="text" id="face-search-registered" oninput="window.FaceRecognitionState && window.switchFaceTab('register')" placeholder="Search registered by name, reg num, or dept..." style="width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 1rem; font-size: 0.85rem; outline: none;">
+                        </div>
+
+                        <div id="face-registered-list-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; max-height: 520px; overflow-y: auto; padding-right: 4px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Timing & Holiday Schedules Pane -->
+            <div id="face-pane-schedules" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1.3fr 1.1fr; gap: 1.5rem; align-items: start;">
+                    <!-- Schedule Timing Card -->
+                    <div class="card no-hover-card" style="padding: 1.75rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                            <div>
+                                <h3 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0;">Attendance Timing Engine</h3>
+                                <p style="font-size: 0.85rem; color: #64748B; margin: 2px 0 0 0;">Configure Forenoon/Afternoon or Hourly attendance split windows</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.8rem; font-weight: 800; color: #475569; display: block; margin-bottom: 6px;">Schedule Operation Mode</label>
+                            <select id="face-sched-mode" onchange="window.saveFaceSchedules()" style="width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-weight: 800; color: #0F172A; outline: none; background: #F8FAFC;">
+                                <option value="session">Session Mode: Forenoon (FN) & Afternoon (AN)</option>
+                                <option value="hourly">Hourly Mode: 8 Periods / Day (Hour 1 to Hour 8)</option>
+                            </select>
+                        </div>
+
+                        <!-- Session Configuration (FN/AN) -->
+                        <div id="face-session-schedule-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <!-- FN Box -->
+                            <div style="padding: 1.25rem; background: #F0FDF4; border-radius: 16px; border: 1.5px solid #DCFCE7;">
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: #166534; margin: 0 0 10px 0;">🌅 Forenoon Window (FN Session)</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">Start Time</label>
+                                        <input type="time" id="face-sched-fn-start" value="08:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">End Time</label>
+                                        <input type="time" id="face-sched-fn-end" value="12:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #166534; display: block; margin-bottom: 4px;">Late Grace (Mins)</label>
+                                        <input type="number" id="face-sched-fn-grace" value="15" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BBF7D0; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AN Box -->
+                            <div style="padding: 1.25rem; background: #EFF6FF; border-radius: 16px; border: 1.5px solid #DBEAFE;">
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: #1E40AF; margin: 0 0 10px 0;">🌇 Afternoon Window (AN Session)</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">Start Time</label>
+                                        <input type="time" id="face-sched-an-start" value="13:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">End Time</label>
+                                        <input type="time" id="face-sched-an-end" value="17:30" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.72rem; font-weight: 700; color: #1E40AF; display: block; margin-bottom: 4px;">Late Grace (Mins)</label>
+                                        <input type="number" id="face-sched-an-grace" value="15" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid #BFDBFE; padding: 0 8px; font-weight: 700;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hourly Configuration -->
+                        <div id="face-hourly-schedule-container" style="display: none; padding: 1rem; background: #F8FAFC; border-radius: 16px; border: 1.5px solid #E2E8F0;">
+                            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-bottom: 8px;">🕒 Hourly Slot Matrix</h4>
+                            <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 12px;">Active periods: Hour 1 (08:45-09:45), Hour 2 (09:45-10:45), Hour 3 (11:00-12:00), Hour 4 (12:00-13:00), Hour 5 (13:45-14:45), Hour 6 (14:45-15:45), Hour 7 (16:00-17:00), Hour 8 (17:00-18:00).</p>
+                        </div>
+
+                        <button onclick="window.saveFaceSchedules()" style="margin-top: 1.5rem; width: 100%; height: 48px; border-radius: 12px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.95rem; cursor: pointer;">
+                            💾 Save Timing Settings
+                        </button>
+                    </div>
+
+                    <!-- Holidays & Exceptions Card -->
+                    <div class="card no-hover-card" style="padding: 1.75rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <h3 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;">Holidays & Exceptions</h3>
+                        <p style="font-size: 0.85rem; color: #64748B; margin: 0 0 1.25rem 0;">Schedule holidays or special event dates to automatically exempt attendance calculation.</p>
+
+                        <!-- Add Holiday Form -->
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; padding: 1.25rem; background: #FEF2F2; border-radius: 16px; border: 1.5px solid #FEE2E2;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #991B1B; display: block; margin-bottom: 4px;">Holiday Date</label>
+                                    <input type="date" id="face-holiday-date" style="width: 100%; height: 40px; border-radius: 10px; border: 1px solid #FECACA; padding: 0 10px; font-weight: 700; background: white;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: #991B1B; display: block; margin-bottom: 4px;">Exemption Type</label>
+                                    <select id="face-holiday-type" style="width: 100%; height: 40px; border-radius: 10px; border: 1px solid #FECACA; padding: 0 10px; font-weight: 700; background: white;">
+                                        <option value="Full Day">Full Day Holiday</option>
+                                        <option value="FN Only">FN Session Only</option>
+                                        <option value="AN Only">AN Session Only</option>
+                                        <option value="Symposium/Exams">Symposium / Exams</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style="font-size: 0.75rem; font-weight: 700; color: #991B1B; display: block; margin-bottom: 4px;">Reason / Title</label>
+                                <input type="text" id="face-holiday-title" placeholder="e.g. Festival, College Day, Internal Hackathon" style="width: 100%; height: 40px; border-radius: 10px; border: 1px solid #FECACA; padding: 0 10px; font-size: 0.85rem; font-weight: 600; background: white;">
+                            </div>
+
+                            <button onclick="window.addFaceHoliday()" style="height: 42px; border-radius: 10px; background: #DC2626; color: white; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer;">
+                                ➕ Schedule Holiday Exemption
+                            </button>
+                        </div>
+
+                        <!-- Scheduled List -->
+                        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin: 0 0 10px 0;">Upcoming Scheduled Holidays</h4>
+                        <div id="face-holidays-list-container" style="max-height: 280px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Logs, History & Analytics Pane -->
+            <div id="face-pane-analytics" style="display: none;">
+                <!-- 4 KPI Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.5rem;">
+                    <div class="card no-hover-card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Total Registered</div>
+                        <div id="face-kpi-total-registered" style="font-size: 1.85rem; font-weight: 900; color: #0F172A; margin: 4px 0;">0</div>
+                        <div style="font-size: 0.72rem; color: #10B981; font-weight: 700;">● Active in Database</div>
+                    </div>
+                    <div class="card no-hover-card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Today's Present</div>
+                        <div id="face-kpi-today-present" style="font-size: 1.85rem; font-weight: 900; color: #10B981; margin: 4px 0;">0</div>
+                        <div style="font-size: 0.72rem; color: #10B981; font-weight: 700;">Affixed via Face Scan</div>
+                    </div>
+                    <div class="card no-hover-card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Today's Unaffixed</div>
+                        <div id="face-kpi-today-absent" style="font-size: 1.85rem; font-weight: 900; color: #EF4444; margin: 4px 0;">0</div>
+                        <div style="font-size: 0.72rem; color: #EF4444; font-weight: 700;">Pending attendance</div>
+                    </div>
+                    <div class="card no-hover-card" style="padding: 1.25rem; border-radius: 20px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                        <div style="color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Attendance Rate</div>
+                        <div id="face-kpi-attendance-rate" style="font-size: 1.85rem; font-weight: 900; color: #6366F1; margin: 4px 0;">0%</div>
+                        <div style="font-size: 0.72rem; color: #6366F1; font-weight: 700;">Real-time batch percentage</div>
+                    </div>
+                </div>
+
+                <!-- Filters & Table Card -->
+                <div class="card no-hover-card" style="padding: 1.5rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); transform: none !important; transition: none !important;">
+                    <!-- Filter Toolbar -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 1.25rem;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;">
+                            <input type="text" id="face-filter-search" oninput="window.FaceRecognitionState && window.switchFaceTab('analytics')" placeholder="Search student name or reg num..." style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-size: 0.85rem; outline: none; min-width: 240px;">
+                            <input type="date" id="face-filter-date" onchange="window.FaceRecognitionState && window.switchFaceTab('analytics')" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 10px; font-size: 0.85rem; font-weight: 600;">
+                            <select id="face-filter-session" onchange="window.FaceRecognitionState && window.switchFaceTab('analytics')" style="height: 40px; border-radius: 10px; border: 1.5px solid #E2E8F0; padding: 0 12px; font-size: 0.85rem; font-weight: 700;">
+                                <option value="ALL">All Sessions</option>
+                                <option value="FN">FN Session</option>
+                                <option value="AN">AN Session</option>
+                                <option value="Hour_1">Hour 1</option>
+                                <option value="Hour_2">Hour 2</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="window.syncFaceDataWithCloud()" style="height: 40px; padding: 0 14px; border-radius: 10px; background: #F1F5F9; color: #475569; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                                🔄 Cloud Sync
+                            </button>
+                            <button onclick="window.exportFaceAnalyticsCSV()" style="height: 40px; padding: 0 14px; border-radius: 10px; background: #EDE9FE; color: #7C3AED; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer;">
+                                📥 Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Logs Table -->
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="background: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">#</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Date & Time</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Student</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Department</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Slot / Session</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Confidence</th>
+                                    <th style="padding: 12px 16px; font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="face-analytics-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Sheet & API Settings Pane -->
+            <div id="face-pane-settings" style="display: none;">
+                <div class="card no-hover-card" style="padding: 2rem; border-radius: 24px; background: white; border: 1.5px solid #F1F5F9; box-shadow: var(--shadow-sm); max-width: 800px; margin: 0 auto; transform: none !important; transition: none !important;">
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem;">
+                        <div style="width: 54px; height: 54px; border-radius: 16px; background: #DCFCE7; color: #166534; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            📊
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.35rem; font-weight: 900; color: #0F172A; margin: 0;">Dedicated Database Google Sheet</h3>
+                            <p style="font-size: 0.85rem; color: #64748B; margin: 2px 0 0 0;">Separate standalone spreadsheet for Face Recognition vectors, logs, and schedules</p>
+                        </div>
+                    </div>
+
+                    <div style="padding: 1.25rem; background: #F8FAFC; border-radius: 16px; border: 1.5px solid #E2E8F0; margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">Spreadsheet URL</div>
+                        <a href="https://docs.google.com/spreadsheets/d/1Up9Z42R39lRxHzHy9ojLtrQy0CV9skA6EWl6rgIzKRA/edit?gid=0#gid=0" target="_blank" style="font-weight: 800; color: #6366F1; font-size: 0.95rem; word-break: break-all; text-decoration: none;">
+                            https://docs.google.com/spreadsheets/d/1Up9Z42R39lRxHzHy9ojLtrQy0CV9skA6EWl6rgIzKRA/edit?gid=0#gid=0 ↗
+                        </a>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-size: 0.85rem; font-weight: 800; color: #0F172A; display: block; margin-bottom: 6px;">Google Apps Script Web App Deployment URL</label>
+                        <p style="font-size: 0.8rem; color: #64748B; margin: 0 0 10px 0;">Deploy the standalone <code style="background: #EDE9FE; color: #7C3AED; padding: 2px 6px; border-radius: 6px;">GoogleAppsScript_FACE_RECOGNITION.gs</code> script in Apps Script as a Web App (Execute as: Me, Who has access: Anyone) and paste the URL below.</p>
+                        <input type="text" id="face-api-url-input" value="https://script.google.com/macros/s/AKfycbzIUuoIiPZvACnRoZr1ATaiBEtdHknPZG3lK3ENe7OwHI4BOpjoVUAewpaC4wIShvudWQ/exec" style="width: 100%; height: 48px; border-radius: 12px; border: 1.5px solid #CBD5E1; padding: 0 1rem; font-size: 0.9rem; outline: none; font-weight: 600;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="window.saveFaceApiUrl()" style="flex: 1; height: 48px; border-radius: 12px; background: #6366F1; color: white; border: none; font-weight: 800; font-size: 0.95rem; cursor: pointer;">
+                            💾 Save & Connect Web App
+                        </button>
+                        <button onclick="window.syncFaceDataWithCloud()" style="height: 48px; padding: 0 1.5rem; border-radius: 12px; background: #F1F5F9; color: #475569; border: none; font-weight: 800; font-size: 0.95rem; cursor: pointer;">
+                            🔄 Sync Now
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4734,7 +5616,7 @@
                             <i data-lucide="bell" style="width: 15px; height: 15px;"></i> Notification Extensions
                         </button>
                         <button id="tab-btn-linkedin-extensions" class="admin-tab-btn" onclick="window.switchAdminExtensionTab('LINKEDIN')" style="padding: 1rem 0; border: none; background: transparent; font-size: 0.88rem; font-weight: 800; color: #64748B; border-bottom: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Google Sans', 'Google Sans Text', 'Inter', sans-serif; transition: all 0.2s;">
-                            <i data-lucide="linkedin" style="width: 15px; height: 15px;"></i> LinkedIn Extensions
+                            <i class="ri-linkedin-box-fill" style="font-size: 15px;"></i> LinkedIn Extensions
                         </button>
                     </div>
 
@@ -5977,6 +6859,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     <script src="store.js"></script>
     <script src="students.js"></script>
+    <script src="face_recognition.js"></script>
     <script src="script.js?v=5.23" defer></script>
     <script>
         // Initialize Lucide icons

@@ -206,6 +206,37 @@ window.initReasonSuggestions = function (textareaId, suggestionsId) {
 };
 
 async function fetchWorklogs(email, rollNo) {
+    const cleanEmail = (email === "undefined" || email === "null" || !email) ? "" : email.toLowerCase().trim();
+    let identifier = rollNo || cleanEmail || "";
+    if (identifier === "undefined" || identifier === "null") identifier = "";
+
+    // 1. Immediately hydrate from local storage / cache if available
+    try {
+        const cachedStr = cleanEmail ? localStorage.getItem('worklogs_' + cleanEmail) : null;
+        if (cachedStr) {
+            const parsed = JSON.parse(cachedStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                window.WORKLOG_HISTORY = parsed;
+                window.WORKLOG_LOADING = false;
+                if (typeof window.renderWorklogHistory === 'function') {
+                    window.renderWorklogHistory();
+                }
+            }
+        }
+    } catch (e) {}
+
+    // 2. Also check AppStore cache
+    if ((!window.WORKLOG_HISTORY || window.WORKLOG_HISTORY.length === 0) && window.AppStore && typeof window.AppStore.get === 'function') {
+        const stored = window.AppStore.get('worklogs');
+        if (Array.isArray(stored) && stored.length > 0) {
+            window.WORKLOG_HISTORY = stored;
+            window.WORKLOG_LOADING = false;
+            if (typeof window.renderWorklogHistory === 'function') {
+                window.renderWorklogHistory();
+            }
+        }
+    }
+
     if (!WORKLOG_API_URL || WORKLOG_API_URL.includes("YOUR_WORKLOG_APPS_SCRIPT_WEB_APP_URL")) {
         window.WORKLOG_LOADING = false;
         if (typeof window.renderWorklogHistory === 'function') {
@@ -214,36 +245,51 @@ async function fetchWorklogs(email, rollNo) {
         return;
     }
 
-    // Inject Spinner loading state
-    const mobEl = document.getElementById('mobile-worklog-history');
-    const deskEl = document.getElementById('desktop-worklog-history');
-    const spinnerHTML = `
-      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; width:100%; gap:12px; grid-column: 1 / -1;">
-        <div class="wl-spinner"></div>
-        <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
-      </div>
-    `;
+    // Only display full skeleton/spinner if we have no existing logs in memory
+    if (!window.WORKLOG_HISTORY || window.WORKLOG_HISTORY.length === 0) {
+        const mobEl = document.getElementById('mobile-worklog-history');
+        const deskEl = document.getElementById('desktop-worklog-history');
+        const spinnerHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; width:100%; gap:12px; grid-column: 1 / -1;">
+            <div class="wl-spinner"></div>
+            <span style="font-size:0.85rem; font-weight:700; color:#94A3B8; letter-spacing:0.5px;">Loading history logs...</span>
+          </div>
+        `;
 
-    if (mobEl) mobEl.innerHTML = spinnerHTML;
-    if (deskEl) {
-        deskEl.style.display = 'block';
-        deskEl.innerHTML = spinnerHTML;
+        if (mobEl) mobEl.innerHTML = spinnerHTML;
+        if (deskEl) {
+            deskEl.style.display = 'block';
+            deskEl.innerHTML = spinnerHTML;
+        }
+        window.WORKLOG_LOADING = true;
     }
 
-    window.WORKLOG_LOADING = true;
     try {
-        let identifier = rollNo || email || "";
-        if (identifier === "undefined" || identifier === "null") {
-            identifier = "";
-        }
-        const cleanEmail = (email === "undefined" || email === "null") ? "" : (email || "");
         const res = await fetch(`${WORKLOG_API_URL}?email=${encodeURIComponent(cleanEmail)}&rollNo=${encodeURIComponent(identifier)}&t=${Date.now()}`);
-        const data = await res.json();
-        if (data.status === 'success') {
-            window.WORKLOG_HISTORY = data.worklogs || data.history || [];
+        if (res.ok) {
+            const text = await res.text();
+            if (text.startsWith('{') || text.startsWith('[')) {
+                const data = JSON.parse(text);
+                if (data.status === 'success') {
+                    const fetchedLogs = data.worklogs || data.history || [];
+                    if (Array.isArray(fetchedLogs)) {
+                        window.WORKLOG_HISTORY = fetchedLogs;
+                        if (cleanEmail) {
+                            try {
+                                localStorage.setItem('worklogs_' + cleanEmail, JSON.stringify(window.WORKLOG_HISTORY));
+                            } catch(e) {}
+                        }
+                        if (window.AppStore && typeof window.AppStore.set === 'function') {
+                            window.AppStore.set('worklogs', window.WORKLOG_HISTORY);
+                        }
+                    }
+                }
+            } else {
+                console.warn("[Worklog] Worklog endpoint returned HTML/non-JSON response.");
+            }
         }
     } catch (err) {
-        console.warn("[Worklog] Error fetching worklogs from separate sheet:", err);
+        console.warn("[Worklog] Error fetching worklogs from separate sheet, maintaining cache:", err);
     } finally {
         window.WORKLOG_LOADING = false;
         if (typeof window.renderWorklogHistory === 'function') {
@@ -1587,7 +1633,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initDuplicateTabsSync();
     // 🔍 FIX: Map screen names exactly to your IDs
     const screens = {
-        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes'), 'activity-approval': document.getElementById('mobile-activity-approval'), 'digital-footprint': document.getElementById('mobile-digital-footprint') },
+        mob: { dash: document.getElementById('mobile-dashboard'), add: document.getElementById('mobile-add'), history: document.getElementById('mobile-history'), 'work-log': document.getElementById('mobile-work-log'), 'log-work': document.getElementById('mobile-log-work'), profile: document.getElementById('mobile-profile'), admin: document.getElementById('mobile-admin'), notes: document.getElementById('desktop-notes'), 'activity-approval': document.getElementById('mobile-activity-approval'), 'digital-footprint': document.getElementById('mobile-digital-footprint'), 'face-attendance': document.getElementById('mobile-face-attendance') },
         dsk: {
             dash: document.getElementById('desktop-dashboard'),
             history: document.getElementById('desktop-history'),
@@ -1596,12 +1642,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'digital-footprint': document.getElementById('desktop-digital-footprint'),
             admin: document.getElementById('desktop-admin'),
             notes: document.getElementById('desktop-notes'),
-            'activity-approval': document.getElementById('desktop-activity-approval')
+            'activity-approval': document.getElementById('desktop-activity-approval'),
+            'face-attendance': document.getElementById('desktop-face-attendance')
         }
     };
     const navB = {
-        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile'), admin: document.getElementById('nav-admin-mobile'), notes: document.getElementById('nav-notes-mobile'), 'activity-approval': document.getElementById('nav-activity-approval-mobile') },
-        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), 'digital-footprint': document.getElementById('nav-digital-footprint-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop'), 'activity-approval': document.getElementById('nav-activity-approval-desktop') }
+        mob: { dash: document.getElementById('nav-dash-mobile'), update: document.getElementById('nav-update-mobile'), history: document.getElementById('nav-history-mobile'), 'work-log': document.getElementById('nav-work-log-mobile'), profile: document.getElementById('nav-profile-mobile'), admin: document.getElementById('nav-admin-mobile'), notes: document.getElementById('nav-notes-mobile'), 'activity-approval': document.getElementById('nav-activity-approval-mobile'), 'face-attendance': document.getElementById('nav-face-attendance-mobile') },
+        dsk: { dash: document.getElementById('nav-dash-desktop'), history: document.getElementById('nav-history-desktop'), 'work-log': document.getElementById('nav-work-log-desktop'), profile: document.getElementById('nav-profile-desktop'), 'digital-footprint': document.getElementById('nav-digital-footprint-desktop'), admin: document.getElementById('nav-admin-desktop'), notes: document.getElementById('nav-notes-desktop'), 'activity-approval': document.getElementById('nav-activity-approval-desktop'), 'face-attendance': document.getElementById('nav-face-attendance-desktop') }
     };
     const actions = {
         addM: document.getElementById('btn-add-mobile'), addD: document.getElementById('btn-add-desktop'),
@@ -1829,6 +1876,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if ((scr === 'admin' || scr === 'dash') && isAdmin) {
                 if (typeof window.loadAdminDashboardStats === 'function') window.loadAdminDashboardStats();
+            }
+            if (scr === 'face-attendance') {
+                if (typeof window.renderStudentFaceDashboard === 'function') window.renderStudentFaceDashboard();
+                if (typeof window.syncFaceDataWithCloud === 'function') window.syncFaceDataWithCloud(true);
             }
 
             // Toggle active states on buttons
@@ -2560,8 +2611,12 @@ async function fetchAttendance(email, forceBypass = false) {
                 window.ATTENDANCE_HISTORY = data.history;
                 renderHistory();
             }
-            if (data.worklog && (!WORKLOG_API_URL || WORKLOG_API_URL.includes("YOUR_WORKLOG_APPS_SCRIPT_WEB_APP_URL"))) {
+            if (data.worklog && Array.isArray(data.worklog) && data.worklog.length > 0) {
                 window.WORKLOG_HISTORY = data.worklog;
+                try {
+                    localStorage.setItem('worklogs_' + (email || '').toLowerCase().trim(), JSON.stringify(window.WORKLOG_HISTORY));
+                    if (window.AppStore) window.AppStore.set('worklogs', window.WORKLOG_HISTORY);
+                } catch(e) {}
                 if (typeof window.renderWorklogHistory === 'function') {
                     window.renderWorklogHistory();
                 }
@@ -4282,6 +4337,16 @@ const handleWorklogSubmit = async (btnId) => {
         }
     }
 
+    const currentEmail = (user.email || user.email_id || user.mail || '').toLowerCase().trim();
+    if (currentEmail) {
+        try {
+            localStorage.setItem('worklogs_' + currentEmail, JSON.stringify(window.WORKLOG_HISTORY));
+        } catch(e) {}
+    }
+    if (window.AppStore && typeof window.AppStore.set === 'function') {
+        window.AppStore.set('worklogs', window.WORKLOG_HISTORY);
+    }
+
     // Render local updates instantly
     if (typeof window.renderWorklogHistory === 'function') {
         window.renderWorklogHistory();
@@ -5945,7 +6010,8 @@ window.loadAdminData = async function (force = false) {
                     'worklogs',
                     'extension_requests',
                     'linkedin_tracker',
-                    'activity_approval'
+                    'activity_approval',
+                    'face_recognition'
                 ];
                 permissionKeys.forEach(key => {
                     if (key in meObj) {
@@ -6596,7 +6662,8 @@ window.toggleAdminSubView = function (viewId) {
                 'worklogs': 'worklogs',
                 'extension-requests': 'extension_requests',
                 'linkedin-tracker': 'linkedin_tracker',
-                'activity-approval': 'activity_approval'
+                'activity-approval': 'activity_approval',
+                'face-recognition': 'face_recognition'
             };
             const permKey = viewToHeaderKey[viewId];
             if (permKey) {
@@ -6629,12 +6696,14 @@ window.toggleAdminSubView = function (viewId) {
     const mLinkedinPost = document.getElementById('admin-subview-linkedin-post-tracker-mobile');
     const dActApproval = document.getElementById('admin-subview-activity-approval');
     const mActApproval = document.getElementById('admin-subview-activity-approval-mobile');
+    const dFace = document.getElementById('admin-subview-face-recognition');
+    const mFace = document.getElementById('admin-subview-face-recognition-mobile');
 
     // Always close detail view when switching
     if (typeof window.closeUserDetailModal === 'function') window.closeUserDetailModal();
 
     // Hide all
-    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, dActApproval, mActApproval,
+    [desktopMenu, mobileMenu, dList, mList, dAdmin, mAdmin, dNotif, mNotif, dTasks, mTasks, dAnalytics, mAnalytics, dLinkedinPost, mLinkedinPost, dActApproval, mActApproval, dFace, mFace,
         document.getElementById('admin-analytics-attendance-container'),
         document.getElementById('admin-analytics-attendance-container-mobile'),
         document.getElementById('admin-analytics-worklog-container'),
@@ -6780,6 +6849,10 @@ window.toggleAdminSubView = function (viewId) {
         if (dActApproval) dActApproval.classList.remove('hidden');
         if (mActApproval) mActApproval.classList.remove('hidden');
         if (typeof window.loadAllActivityPasses === 'function') window.loadAllActivityPasses(false);
+    } else if (viewId === 'face-recognition') {
+        if (dFace) dFace.classList.remove('hidden');
+        if (mFace) mFace.classList.remove('hidden');
+        if (typeof window.initFaceRecognitionModule === 'function') window.initFaceRecognitionModule();
     } else if (viewId === 'menu') {
         if (desktopMenu) desktopMenu.classList.remove('hidden');
         if (mobileMenu) mobileMenu.classList.remove('hidden');
@@ -6931,11 +7004,16 @@ window.loadAnalyticsData = async function (force = false) {
 
         if (attRes) {
             try {
-                const attData = await attRes.json();
-                if (attData.status === 'success') {
-                    window.cachedAnalyticsData = attData.history || [];
-                } else {
-                    console.warn("Analytics load error on attendance:", attData.message);
+                if (attRes.ok) {
+                    const text = await attRes.text();
+                    if (text.startsWith('{') || text.startsWith('[')) {
+                        const attData = JSON.parse(text);
+                        if (attData.status === 'success') {
+                            window.cachedAnalyticsData = attData.history || [];
+                        } else {
+                            console.warn("Analytics load error on attendance:", attData.message);
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn("Failed to parse attendance JSON:", e);
@@ -6944,11 +7022,16 @@ window.loadAnalyticsData = async function (force = false) {
 
         if (wlRes) {
             try {
-                const wlData = await wlRes.json();
-                if (wlData.status === 'success') {
-                    window.cachedWorklogData = wlData.history || [];
-                } else {
-                    console.warn("Analytics load error on worklogs:", wlData.message);
+                if (wlRes.ok) {
+                    const text = await wlRes.text();
+                    if (text.startsWith('{') || text.startsWith('[')) {
+                        const wlData = JSON.parse(text);
+                        if (wlData.status === 'success') {
+                            window.cachedWorklogData = wlData.history || [];
+                        } else {
+                            console.warn("Analytics load error on worklogs:", wlData.message);
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn("Failed to parse worklog JSON:", e);
@@ -10930,7 +11013,11 @@ window.loadTasks = async function (force = false) {
     if (!list) return;
 
     if (force) {
-        window.AppStore.remove('tasks');
+        if (window.AppStore && typeof window.AppStore.remove === 'function') {
+            window.AppStore.remove('tasks');
+        } else if (window.AppStore && typeof window.AppStore.delete === 'function') {
+            window.AppStore.delete('tasks');
+        }
     }
 
     window.renderFilteredTasks = (tasksList) => {
@@ -12073,7 +12160,7 @@ window.renderLinkedinPostTracker = function (usersToRender) {
             linkedinProfile = 'https://linkedin.com/in/' + linkedinProfile;
         }
         const profileHtml = linkedinProfile
-            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><i data-lucide="linkedin" style="width: 14px;"></i> Profile</a>`
+            ? `<a href="${linkedinProfile}" target="_blank" style="color: #0077B5; text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0F9FF; border-radius: 6px;"><i class="ri-linkedin-box-fill" style="font-size: 14px;"></i> Profile</a>`
             : `<span style="color: #94A3B8; font-size: 0.82rem;">-</span>`;
 
         const displayId = id === 'N/A' ? '' : id;
@@ -14775,7 +14862,8 @@ window.checkModuleAccessAndHideNav = function () {
             'worklogs': 'worklogs',
             'extension-requests': 'extension_requests',
             'linkedin-tracker': 'linkedin_tracker',
-            'activity-approval': 'activity_approval'
+            'activity-approval': 'activity_approval',
+            'face-recognition': 'face_recognition'
         };
         const permKey = viewToHeaderKey[subviewId];
         if (!permKey) return true;

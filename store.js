@@ -154,6 +154,22 @@
             window.dispatchEvent(new CustomEvent(`store:${moduleName}`, { detail: data }));
         },
 
+        // Delete/remove item from cache and database
+        async delete(moduleName) {
+            delete memoryCache[moduleName];
+            try {
+                localStorage.removeItem(`cache_${moduleName}`);
+            } catch(e) {}
+            if (db) {
+                await deleteDBItem(STORE_NAME, moduleName);
+            }
+            window.dispatchEvent(new CustomEvent(`store:${moduleName}`, { detail: null }));
+        },
+
+        async remove(moduleName) {
+            return this.delete(moduleName);
+        },
+
         // --- Safe POST helper with offline queueing fallback ---
         async safePost(url, body) {
             if (!navigator.onLine) {
